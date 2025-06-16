@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAquarium, Tank } from '@/contexts/AquariumContext';
 import { useNavigate } from 'react-router-dom';
-import { Chat, Plus } from 'lucide-react';
+import { MessageCircle, Plus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 const Index = () => {
@@ -60,7 +60,7 @@ const Index = () => {
               onClick={() => navigate('/aquabot')}
               className="bg-white/20 hover:bg-white/30 text-white border border-white/30"
             >
-              <Chat className="mr-2 h-4 w-4" />
+              <MessageCircle className="mr-2 h-4 w-4" />
               Ask AquaBot
             </Button>
           </div>
@@ -70,7 +70,7 @@ const Index = () => {
         <div className="grid grid-cols-2 gap-4">
           <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/aquabot')}>
             <CardContent className="p-4 text-center">
-              <Chat className="h-8 w-8 mx-auto mb-2 text-primary" />
+              <MessageCircle className="h-8 w-8 mx-auto mb-2 text-primary" />
               <p className="font-medium">Chat with AI</p>
               <p className="text-sm text-muted-foreground">Get instant help</p>
             </CardContent>

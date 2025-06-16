@@ -2,7 +2,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/contexts/ThemeContext';
-import { ArrowUp, Chat, Plus, Save, Upload } from 'lucide-react';
+import { ArrowUp, MessageCircle, Plus, Save, Upload } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 interface LayoutProps {
@@ -88,7 +88,7 @@ export function Layout({ children, title, showBackButton = false, actions }: Lay
               onClick={() => navigate('/aquabot')}
               className="flex flex-col gap-1 h-12 text-xs"
             >
-              <Chat className="h-4 w-4" />
+              <MessageCircle className="h-4 w-4" />
               AquaBot
             </Button>
             
