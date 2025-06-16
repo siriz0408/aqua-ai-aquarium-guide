@@ -83,6 +83,10 @@ const AquaBot = () => {
     await handleSendMessage(testData);
   };
 
+  const handleFollowUpClick = async (prompt: string) => {
+    await handleSendMessage(prompt);
+  };
+
   return (
     <Layout title="AquaBot" showBackButton>
       <div className="h-[calc(100vh-8rem)] flex bg-background rounded-lg border border-border overflow-hidden relative">
@@ -198,7 +202,11 @@ const AquaBot = () => {
                 ) : (
                   <div className="space-y-4">
                     {messages.map((message) => (
-                      <MessageBubble key={message.id} message={message} />
+                      <MessageBubble 
+                        key={message.id} 
+                        message={message} 
+                        onFollowUpClick={handleFollowUpClick}
+                      />
                     ))}
                     {(isLoading || isSearching) && (
                       <div className="flex gap-3 mb-4">

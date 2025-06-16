@@ -3,7 +3,7 @@ import React, { useMemo } from 'react';
 import { Card } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Bot, User, Plus, Sparkles, Table } from 'lucide-react';
+import { Bot, User, Plus, Sparkles, Table, MessageCircle } from 'lucide-react';
 import { Message } from '@/hooks/useChat';
 import { ParsedTask, parseAIRecommendations } from '@/utils/taskParser';
 import { format } from 'date-fns';
@@ -13,7 +13,66 @@ import { Table as TableComponent, TableBody, TableCell, TableHead, TableHeader, 
 
 interface MessageBubbleProps {
   message: Message;
+  onFollowUpClick?: (prompt: string) => void;
 }
+
+// Generate contextual follow-up questions based on AI response content
+const generateFollowUpQuestions = (content: string): string[] => {
+  const followUps: string[] = [];
+  const lowerContent = content.toLowerCase();
+
+  // Water parameter related follow-ups
+  if (lowerContent.includes('water') || lowerContent.includes('parameter') || lowerContent.includes('test')) {
+    followUps.push("What's the ideal testing schedule for these parameters?");
+    followUps.push("How do I correct these water parameters if they're off?");
+    followUps.push("What equipment do you recommend for maintaining stable water chemistry?");
+  }
+
+  // Fish/livestock related follow-ups
+  if (lowerContent.includes('fish') || lowerContent.includes('coral') || lowerContent.includes('livestock')) {
+    followUps.push("What are the compatibility requirements for these species?");
+    followUps.push("What should I feed them and how often?");
+    followUps.push("How do I know if they're healthy and thriving?");
+  }
+
+  // Equipment related follow-ups
+  if (lowerContent.includes('equipment') || lowerContent.includes('filter') || lowerContent.includes('skimmer') || lowerContent.includes('lighting')) {
+    followUps.push("What's the maintenance schedule for this equipment?");
+    followUps.push("How do I know when it needs upgrading or replacement?");
+    followUps.push("What are some alternative equipment options?");
+  }
+
+  // Problem/issue related follow-ups
+  if (lowerContent.includes('problem') || lowerContent.includes('issue') || lowerContent.includes('sick') || lowerContent.includes('algae')) {
+    followUps.push("What should I do if this problem persists?");
+    followUps.push("How can I prevent this from happening again?");
+    followUps.push("Are there any warning signs I should watch for?");
+  }
+
+  // Setup/planning related follow-ups
+  if (lowerContent.includes('setup') || lowerContent.includes('plan') || lowerContent.includes('new') || lowerContent.includes('beginner')) {
+    followUps.push("What's the typical timeline for this setup process?");
+    followUps.push("What are the most common mistakes to avoid?");
+    followUps.push("How much should I budget for this project?");
+  }
+
+  // Maintenance related follow-ups
+  if (lowerContent.includes('maintenance') || lowerContent.includes('clean') || lowerContent.includes('change')) {
+    followUps.push("How often should I perform these maintenance tasks?");
+    followUps.push("What tools do I need for proper maintenance?");
+    followUps.push("Can you create a maintenance schedule for me?");
+  }
+
+  // Generic follow-ups if no specific context
+  if (followUps.length === 0) {
+    followUps.push("Can you explain this in more detail?");
+    followUps.push("What are the next steps I should take?");
+    followUps.push("Are there any risks or precautions I should know about?");
+  }
+
+  // Return max 3 follow-ups
+  return followUps.slice(0, 3);
+};
 
 // Component to render markdown-style content with enhanced table and checkbox support
 const MarkdownContent: React.FC<{ content: string; onAddTask: (task: ParsedTask) => void }> = ({ content, onAddTask }) => {
@@ -169,13 +228,16 @@ const MarkdownContent: React.FC<{ content: string; onAddTask: (task: ParsedTask)
   );
 };
 
-export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
+export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onFollowUpClick }) => {
   const isUser = message.role === 'user';
   const { toast } = useToast();
   const { createTask } = useTasks();
   
   // Parse AI responses for actionable tasks
   const parsedTasks = !isUser ? parseAIRecommendations(message.content) : [];
+  
+  // Generate follow-up questions for AI responses
+  const followUpQuestions = !isUser ? generateFollowUpQuestions(message.content) : [];
 
   const addToPlanner = async (task: ParsedTask) => {
     try {
@@ -252,6 +314,30 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
             </div>
           )}
         </Card>
+        
+        {/* Follow-up questions for AI responses */}
+        {!isUser && followUpQuestions.length > 0 && onFollowUpClick && (
+          <div className="mt-3 w-full">
+            <p className="text-xs font-medium mb-2 flex items-center gap-1 text-muted-foreground">
+              <MessageCircle className="h-3 w-3" />
+              Follow-up questions:
+            </p>
+            <div className="space-y-1">
+              {followUpQuestions.map((question, idx) => (
+                <Button
+                  key={idx}
+                  variant="ghost"
+                  size="sm"
+                  className="h-auto p-2 text-xs text-left justify-start w-full bg-background/50 hover:bg-background border border-border/30 hover:border-border"
+                  onClick={() => onFollowUpClick(question)}
+                >
+                  {question}
+                </Button>
+              ))}
+            </div>
+          </div>
+        )}
+        
         <span className="text-xs text-muted-foreground mt-1">
           {format(new Date(message.created_at), 'HH:mm')}
         </span>
