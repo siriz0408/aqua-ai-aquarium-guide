@@ -7,7 +7,9 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
+import { Combobox } from '@/components/ui/combobox';
 import { Trash2, Edit, Settings } from 'lucide-react';
+import { equipmentOptions, equipmentCategories } from '@/data/equipmentOptions';
 
 interface EquipmentManagerProps {
   equipment: any[];
@@ -21,19 +23,7 @@ export const EquipmentManager: React.FC<EquipmentManagerProps> = ({
   tankType
 }) => {
   const [editingId, setEditingId] = React.useState<string | null>(null);
-
-  const equipmentCategories = [
-    'Lighting',
-    'Filtration',
-    'Circulation',
-    'Heating',
-    'Cooling',
-    'Testing',
-    'Supplementation',
-    'Automation',
-    'Substrate',
-    'Other'
-  ];
+  const [selectedEquipment, setSelectedEquipment] = React.useState('');
 
   const updateEquipment = (id: string, field: string, value: string) => {
     const updated = equipment.map(item =>
@@ -61,6 +51,31 @@ export const EquipmentManager: React.FC<EquipmentManagerProps> = ({
     setEditingId(newEquipment.id);
   };
 
+  const addSelectedEquipment = () => {
+    if (!selectedEquipment) return;
+    
+    const equipmentData = equipmentOptions.find(opt => opt.value === selectedEquipment);
+    if (!equipmentData) return;
+
+    const newEquipment = {
+      id: Date.now().toString(),
+      name: equipmentData.label,
+      type: equipmentData.category,
+      model: '',
+      imageUrl: '',
+      maintenanceTips: equipmentData.description || '',
+      upgradeNotes: ''
+    };
+    
+    onUpdateEquipment([...equipment, newEquipment]);
+    setSelectedEquipment('');
+  };
+
+  const equipmentComboOptions = equipmentOptions.map(opt => ({
+    value: opt.value,
+    label: `${opt.label} (${opt.category})`
+  }));
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
@@ -70,8 +85,42 @@ export const EquipmentManager: React.FC<EquipmentManagerProps> = ({
             Manage your tank's equipment and get maintenance recommendations
           </p>
         </div>
-        <Button onClick={addNewEquipment} size="sm">
-          Add Equipment
+      </div>
+
+      {/* Quick Add Equipment */}
+      <Card className="bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
+        <CardContent className="p-4">
+          <div className="space-y-3">
+            <Label className="text-sm font-medium">Quick Add Equipment</Label>
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <Combobox
+                  options={equipmentComboOptions}
+                  value={selectedEquipment}
+                  onValueChange={setSelectedEquipment}
+                  placeholder="Search equipment..."
+                  searchPlaceholder="Type to search equipment..."
+                  emptyText="No equipment found."
+                />
+              </div>
+              <Button 
+                onClick={addSelectedEquipment} 
+                disabled={!selectedEquipment}
+                size="sm"
+              >
+                Add
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Select from common equipment or add custom equipment below
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="flex justify-end">
+        <Button onClick={addNewEquipment} variant="outline" size="sm">
+          Add Custom Equipment
         </Button>
       </div>
 

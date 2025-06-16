@@ -7,7 +7,9 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
+import { Combobox } from '@/components/ui/combobox';
 import { Trash2, Edit, Fish, AlertTriangle } from 'lucide-react';
+import { livestockOptions, livestockCategories } from '@/data/livestockOptions';
 
 interface LivestockManagerProps {
   livestock: any[];
@@ -23,15 +25,7 @@ export const LivestockManager: React.FC<LivestockManagerProps> = ({
   gallons
 }) => {
   const [editingId, setEditingId] = React.useState<string | null>(null);
-
-  const livestockCategories = [
-    'Fish',
-    'Coral',
-    'Invertebrate',
-    'Cleanup Crew',
-    'Anemone',
-    'Other'
-  ];
+  const [selectedLivestock, setSelectedLivestock] = React.useState('');
 
   const careLevels = ['Beginner', 'Intermediate', 'Advanced', 'Expert'];
 
@@ -59,6 +53,26 @@ export const LivestockManager: React.FC<LivestockManagerProps> = ({
     };
     onUpdateLivestock([...livestock, newLivestock]);
     setEditingId(newLivestock.id);
+  };
+
+  const addSelectedLivestock = () => {
+    if (!selectedLivestock) return;
+    
+    const livestockData = livestockOptions.find(opt => opt.value === selectedLivestock);
+    if (!livestockData) return;
+
+    const newLivestock = {
+      id: Date.now().toString(),
+      name: livestockData.label,
+      species: livestockData.label,
+      careLevel: livestockData.careLevel,
+      compatibility: livestockData.compatibility,
+      imageUrl: '',
+      healthNotes: ''
+    };
+    
+    onUpdateLivestock([...livestock, newLivestock]);
+    setSelectedLivestock('');
   };
 
   const getStockingWarnings = () => {
@@ -91,6 +105,12 @@ export const LivestockManager: React.FC<LivestockManagerProps> = ({
 
   const warnings = getStockingWarnings();
 
+  // Group livestock options by category for better display
+  const livestockComboOptions = livestockOptions.map(opt => ({
+    value: opt.value,
+    label: `${opt.label} (${opt.category} - ${opt.careLevel})`
+  }));
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
@@ -100,8 +120,42 @@ export const LivestockManager: React.FC<LivestockManagerProps> = ({
             Manage your tank's inhabitants and monitor compatibility
           </p>
         </div>
-        <Button onClick={addNewLivestock} size="sm">
-          Add Livestock
+      </div>
+
+      {/* Quick Add Livestock */}
+      <Card className="bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
+        <CardContent className="p-4">
+          <div className="space-y-3">
+            <Label className="text-sm font-medium">Quick Add Livestock</Label>
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <Combobox
+                  options={livestockComboOptions}
+                  value={selectedLivestock}
+                  onValueChange={setSelectedLivestock}
+                  placeholder="Search fish, corals, invertebrates..."
+                  searchPlaceholder="Type to search livestock..."
+                  emptyText="No livestock found."
+                />
+              </div>
+              <Button 
+                onClick={addSelectedLivestock} 
+                disabled={!selectedLivestock}
+                size="sm"
+              >
+                Add
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Select from popular species or add custom livestock below
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="flex justify-end">
+        <Button onClick={addNewLivestock} variant="outline" size="sm">
+          Add Custom Livestock
         </Button>
       </div>
 
