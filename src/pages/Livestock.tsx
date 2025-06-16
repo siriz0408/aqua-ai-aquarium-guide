@@ -6,11 +6,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Combobox } from '@/components/ui/combobox';
 import { useAquarium } from '@/contexts/AquariumContext';
 import { useToast } from '@/hooks/use-toast';
-import { Upload, Save } from 'lucide-react';
+import { Upload, Save, ArrowLeft } from 'lucide-react';
 import { livestockOptions, livestockCategories } from '@/data/livestockOptions';
 
 const Livestock = () => {
@@ -21,6 +20,7 @@ const Livestock = () => {
   
   const tank = tankId ? getTank(tankId) : undefined;
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedLivestock, setSelectedLivestock] = useState('');
   const [livestock, setLivestock] = useState({
     name: '',
@@ -38,10 +38,20 @@ const Livestock = () => {
     );
   }
 
-  const livestockComboOptions = livestockOptions.map(opt => ({
+  // Filter livestock options by selected category
+  const filteredLivestockOptions = selectedCategory 
+    ? livestockOptions.filter(opt => opt.category === selectedCategory)
+    : [];
+
+  const livestockComboOptions = filteredLivestockOptions.map(opt => ({
     value: opt.value,
-    label: `${opt.label} (${opt.category} - ${opt.careLevel})`
+    label: `${opt.label} (${opt.careLevel})`
   }));
+
+  const handleCategorySelect = (category: string) => {
+    setSelectedCategory(category);
+    setSelectedLivestock('');
+  };
 
   const handleLivestockSelect = (value: string) => {
     setSelectedLivestock(value);
@@ -52,6 +62,15 @@ const Livestock = () => {
         species: selectedOption.label
       });
     }
+  };
+
+  const resetSelection = () => {
+    setSelectedCategory('');
+    setSelectedLivestock('');
+    setLivestock({
+      name: '',
+      species: '',
+    });
   };
 
   const mockAnalyzeLivestock = async () => {
@@ -110,6 +129,17 @@ const Livestock = () => {
     navigate(`/tank/${tankId}`);
   };
 
+  const getCategoryEmoji = (category: string) => {
+    switch (category) {
+      case 'Fish': return '🐠';
+      case 'Coral': return '🪸';
+      case 'Invertebrate': return '🦐';
+      case 'Cleanup Crew': return '🐌';
+      case 'Plant': return '🌱';
+      default: return '🐠';
+    }
+  };
+
   return (
     <Layout title="Add Livestock" showBackButton>
       <div className="space-y-6 pb-20">
@@ -117,29 +147,106 @@ const Livestock = () => {
           <CardHeader>
             <CardTitle>Livestock Identification</CardTitle>
             <CardDescription>
-              Select from common species or upload a photo for AI identification
+              Select category first, then choose specific species or upload a photo for AI identification
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* Quick Select Livestock */}
-            <Card className="bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
-              <CardContent className="p-4">
-                <div className="space-y-3">
-                  <Label className="text-sm font-medium">Quick Select Livestock</Label>
-                  <Combobox
-                    options={livestockComboOptions}
-                    value={selectedLivestock}
-                    onValueChange={handleLivestockSelect}
-                    placeholder="Search fish, corals, invertebrates..."
-                    searchPlaceholder="Type to search livestock..."
-                    emptyText="No livestock found."
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Select from popular aquarium species or enter details manually below
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+            {/* Category Selection */}
+            {!selectedCategory ? (
+              <Card className="bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
+                <CardContent className="p-4">
+                  <div className="space-y-4">
+                    <Label className="text-sm font-medium">Step 1: Select Livestock Category</Label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {livestockCategories.map(category => {
+                        const categoryCount = livestockOptions.filter(opt => opt.category === category).length;
+                        return (
+                          <Button
+                            key={category}
+                            variant="outline"
+                            className="h-auto p-4 justify-start text-left"
+                            onClick={() => handleCategorySelect(category)}
+                          >
+                            <div className="flex items-center gap-3">
+                              <span className="text-2xl">{getCategoryEmoji(category)}</span>
+                              <div>
+                                <div className="font-medium">{category}</div>
+                                <div className="text-xs text-muted-foreground">{categoryCount} species</div>
+                              </div>
+                            </div>
+                          </Button>
+                        );
+                      })}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Choose a category to see specific species options
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              /* Species Selection within Category */
+              <Card className="bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800">
+                <CardContent className="p-4">
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2">
+                      <Button variant="ghost" size="sm" onClick={resetSelection}>
+                        <ArrowLeft className="h-4 w-4" />
+                      </Button>
+                      <div>
+                        <Label className="text-sm font-medium">
+                          Step 2: Select {selectedCategory}
+                        </Label>
+                        <p className="text-xs text-muted-foreground">
+                          {filteredLivestockOptions.length} species available
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex gap-2">
+                      <div className="flex-1">
+                        <Combobox
+                          options={livestockComboOptions}
+                          value={selectedLivestock}
+                          onValueChange={handleLivestockSelect}
+                          placeholder={`Search ${selectedCategory.toLowerCase()}...`}
+                          searchPlaceholder={`Type to search ${selectedCategory.toLowerCase()}...`}
+                          emptyText={`No ${selectedCategory.toLowerCase()} found.`}
+                        />
+                      </div>
+                      <Button 
+                        onClick={() => {
+                          if (selectedLivestock) {
+                            handleLivestockSelect(selectedLivestock);
+                          }
+                        }}
+                        disabled={!selectedLivestock}
+                        size="sm"
+                      >
+                        Select
+                      </Button>
+                    </div>
+                    
+                    <div className="text-center">
+                      <span className="text-xs text-muted-foreground">or</span>
+                    </div>
+                    
+                    <Button 
+                      variant="outline" 
+                      className="w-full"
+                      onClick={() => {
+                        setLivestock({
+                          name: `Custom ${selectedCategory}`,
+                          species: ''
+                        });
+                      }}
+                    >
+                      Add Custom {selectedCategory}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Photo Upload Simulation */}
             <div className="border-2 border-dashed border-border rounded-lg p-8 text-center">

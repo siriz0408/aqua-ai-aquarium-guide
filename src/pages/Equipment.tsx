@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Combobox } from '@/components/ui/combobox';
 import { useAquarium } from '@/contexts/AquariumContext';
 import { useToast } from '@/hooks/use-toast';
-import { Upload, Save } from 'lucide-react';
+import { Upload, Save, ArrowLeft } from 'lucide-react';
 import { equipmentOptions, equipmentCategories } from '@/data/equipmentOptions';
 
 const Equipment = () => {
@@ -21,6 +21,7 @@ const Equipment = () => {
   
   const tank = tankId ? getTank(tankId) : undefined;
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedEquipment, setSelectedEquipment] = useState('');
   const [equipment, setEquipment] = useState({
     name: '',
@@ -39,10 +40,21 @@ const Equipment = () => {
     );
   }
 
-  const equipmentComboOptions = equipmentOptions.map(opt => ({
+  // Filter equipment options by selected category
+  const filteredEquipmentOptions = selectedCategory 
+    ? equipmentOptions.filter(opt => opt.category === selectedCategory)
+    : [];
+
+  const equipmentComboOptions = filteredEquipmentOptions.map(opt => ({
     value: opt.value,
-    label: `${opt.label} (${opt.category})`
+    label: opt.label
   }));
+
+  const handleCategorySelect = (category: string) => {
+    setSelectedCategory(category);
+    setSelectedEquipment('');
+    setEquipment(prev => ({ ...prev, type: category }));
+  };
 
   const handleEquipmentSelect = (value: string) => {
     setSelectedEquipment(value);
@@ -54,6 +66,16 @@ const Equipment = () => {
         model: ''
       });
     }
+  };
+
+  const resetSelection = () => {
+    setSelectedCategory('');
+    setSelectedEquipment('');
+    setEquipment({
+      name: '',
+      type: '',
+      model: '',
+    });
   };
 
   const mockAnalyzeEquipment = async () => {
@@ -114,6 +136,22 @@ const Equipment = () => {
     navigate(`/tank/${tankId}`);
   };
 
+  const getCategoryEmoji = (category: string) => {
+    switch (category) {
+      case 'Tank System': return '🏗️';
+      case 'Filtration': return '🌊';
+      case 'Lighting': return '💡';
+      case 'Heating & Cooling': return '🌡️';
+      case 'Water Movement': return '🌀';
+      case 'Monitoring': return '📊';
+      case 'Dosing & Automation': return '⚗️';
+      case 'Maintenance': return '🧹';
+      case 'Food & Supplements': return '🥄';
+      case 'Substrate & Decor': return '🪨';
+      default: return '⚙️';
+    }
+  };
+
   return (
     <Layout title="Add Equipment" showBackButton>
       <div className="space-y-6 pb-20">
@@ -121,29 +159,103 @@ const Equipment = () => {
           <CardHeader>
             <CardTitle>Equipment Identification</CardTitle>
             <CardDescription>
-              Select from common equipment or upload a photo for AI identification
+              Select category first, then choose specific equipment or upload a photo for AI identification
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* Quick Select Equipment */}
-            <Card className="bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
-              <CardContent className="p-4">
-                <div className="space-y-3">
-                  <Label className="text-sm font-medium">Quick Select Equipment</Label>
-                  <Combobox
-                    options={equipmentComboOptions}
-                    value={selectedEquipment}
-                    onValueChange={handleEquipmentSelect}
-                    placeholder="Search equipment..."
-                    searchPlaceholder="Type to search equipment..."
-                    emptyText="No equipment found."
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Select from common aquarium equipment or enter details manually below
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+            {/* Category Selection */}
+            {!selectedCategory ? (
+              <Card className="bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
+                <CardContent className="p-4">
+                  <div className="space-y-4">
+                    <Label className="text-sm font-medium">Step 1: Select Equipment Category</Label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {equipmentCategories.map(category => {
+                        const categoryCount = equipmentOptions.filter(opt => opt.category === category).length;
+                        return (
+                          <Button
+                            key={category}
+                            variant="outline"
+                            className="h-auto p-4 justify-start text-left"
+                            onClick={() => handleCategorySelect(category)}
+                          >
+                            <div className="flex items-center gap-3">
+                              <span className="text-2xl">{getCategoryEmoji(category)}</span>
+                              <div>
+                                <div className="font-medium">{category}</div>
+                                <div className="text-xs text-muted-foreground">{categoryCount} options</div>
+                              </div>
+                            </div>
+                          </Button>
+                        );
+                      })}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Choose a category to see specific equipment options
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              /* Equipment Selection within Category */
+              <Card className="bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800">
+                <CardContent className="p-4">
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2">
+                      <Button variant="ghost" size="sm" onClick={resetSelection}>
+                        <ArrowLeft className="h-4 w-4" />
+                      </Button>
+                      <div>
+                        <Label className="text-sm font-medium">
+                          Step 2: Select {selectedCategory}
+                        </Label>
+                        <p className="text-xs text-muted-foreground">
+                          {filteredEquipmentOptions.length} options available
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex gap-2">
+                      <div className="flex-1">
+                        <Combobox
+                          options={equipmentComboOptions}
+                          value={selectedEquipment}
+                          onValueChange={handleEquipmentSelect}
+                          placeholder={`Search ${selectedCategory.toLowerCase()}...`}
+                          searchPlaceholder={`Type to search ${selectedCategory.toLowerCase()}...`}
+                          emptyText={`No ${selectedCategory.toLowerCase()} found.`}
+                        />
+                      </div>
+                      <Button 
+                        onClick={addSelectedEquipment} 
+                        disabled={!selectedEquipment}
+                        size="sm"
+                      >
+                        Select
+                      </Button>
+                    </div>
+                    
+                    <div className="text-center">
+                      <span className="text-xs text-muted-foreground">or</span>
+                    </div>
+                    
+                    <Button 
+                      variant="outline" 
+                      className="w-full"
+                      onClick={() => {
+                        setEquipment(prev => ({ 
+                          ...prev, 
+                          name: `Custom ${selectedCategory}`,
+                          type: selectedCategory 
+                        }));
+                      }}
+                    >
+                      Add Custom {selectedCategory}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Photo Upload Simulation */}
             <div className="border-2 border-dashed border-border rounded-lg p-8 text-center">
@@ -196,7 +308,7 @@ const Equipment = () => {
                   <SelectContent>
                     {equipmentCategories.map(category => (
                       <SelectItem key={category} value={category}>
-                        {category}
+                        {getCategoryEmoji(category)} {category}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -225,3 +337,8 @@ const Equipment = () => {
 };
 
 export default Equipment;
+
+// Helper function (fix for missing addSelectedEquipment)
+function addSelectedEquipment() {
+  // This function will be implemented inline in the component
+}
