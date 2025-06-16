@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -61,7 +60,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, disabled = 
     // Auto-resize textarea
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 120) + 'px';
+      textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 150) + 'px';
     }
   };
 
@@ -192,7 +191,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, disabled = 
             onKeyDown={handleKeyDown}
             placeholder="Ask AquaBot anything about marine aquariums..."
             disabled={disabled || isUploading}
-            className="min-h-[44px] max-h-[120px] resize-none pr-12"
+            className="min-h-[60px] max-h-[150px] resize-none pr-12 text-base"
             rows={1}
           />
           <div className="absolute right-2 top-2 flex gap-1">
@@ -230,7 +229,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, disabled = 
         <Button
           type="submit"
           disabled={(!message.trim() && attachments.length === 0) || disabled || isUploading}
-          className="h-[44px] w-[44px] p-0"
+          className="h-[60px] w-[60px] p-0"
         >
           <Send className="h-4 w-4" />
         </Button>

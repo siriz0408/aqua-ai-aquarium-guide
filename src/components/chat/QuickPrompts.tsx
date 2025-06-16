@@ -15,48 +15,54 @@ const quickPrompts = [
     title: 'Help Me Plan',
     icon: ClipboardList,
     prompt: 'I need help planning my marine aquarium setup. Can you guide me through the essential equipment, tank cycling process, and stocking recommendations based on my tank size and experience level?',
-    color: 'from-blue-500 to-blue-600',
-    hoverColor: 'hover:from-blue-600 hover:to-blue-700'
+    color: 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700',
+    textColor: 'text-slate-700 dark:text-slate-300',
+    iconBg: 'bg-slate-200 dark:bg-slate-700'
   },
   {
     id: 'diagnose',
     title: 'Diagnose Issue',
     icon: Stethoscope,
     prompt: 'I\'m experiencing issues with my marine aquarium. Can you help me diagnose the problem? Please ask me about symptoms, water parameters, recent changes, and fish behavior to identify potential causes.',
-    color: 'from-red-500 to-red-600',
-    hoverColor: 'hover:from-red-600 hover:to-red-700'
+    color: 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700',
+    textColor: 'text-slate-700 dark:text-slate-300',
+    iconBg: 'bg-slate-200 dark:bg-slate-700'
   },
   {
     id: 'recommendations',
     title: 'Get Recommendations',
     icon: Lightbulb,
     prompt: 'Can you provide recommendations to improve my marine aquarium? Please suggest equipment upgrades, livestock additions, maintenance improvements, or water chemistry optimizations.',
-    color: 'from-green-500 to-green-600',
-    hoverColor: 'hover:from-green-600 hover:to-green-700'
+    color: 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700',
+    textColor: 'text-slate-700 dark:text-slate-300',
+    iconBg: 'bg-slate-200 dark:bg-slate-700'
   },
   {
     id: 'water-quality',
     title: 'Water Quality Help',
     icon: Droplets,
     prompt: 'I need help with water quality management. Can you explain ideal parameters for marine aquariums and help me understand testing, water changes, and maintaining stable chemistry?',
-    color: 'from-cyan-500 to-cyan-600',
-    hoverColor: 'hover:from-cyan-600 hover:to-cyan-700'
+    color: 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700',
+    textColor: 'text-slate-700 dark:text-slate-300',
+    iconBg: 'bg-slate-200 dark:bg-slate-700'
   },
   {
     id: 'fish-compatibility',
     title: 'Fish Compatibility',
     icon: Fish,
     prompt: 'I want to add new fish to my marine aquarium. Can you help me check compatibility with my existing livestock and recommend suitable tank mates based on my tank setup?',
-    color: 'from-purple-500 to-purple-600',
-    hoverColor: 'hover:from-purple-600 hover:to-purple-700'
+    color: 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700',
+    textColor: 'text-slate-700 dark:text-slate-300',
+    iconBg: 'bg-slate-200 dark:bg-slate-700'
   },
   {
     id: 'emergency',
     title: 'Emergency Help',
     icon: AlertTriangle,
     prompt: 'I have an emergency situation with my marine aquarium! Please provide immediate guidance for urgent issues like equipment failure, sudden fish illness, or water parameter crashes.',
-    color: 'from-orange-500 to-orange-600',
-    hoverColor: 'hover:from-orange-600 hover:to-orange-700'
+    color: 'bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/30',
+    textColor: 'text-red-700 dark:text-red-300',
+    iconBg: 'bg-red-100 dark:bg-red-800/50'
   }
 ];
 
@@ -79,16 +85,15 @@ export const QuickPrompts: React.FC<QuickPromptsProps> = ({ onPromptSelect, disa
               variant="ghost"
               className={`
                 h-auto p-4 flex flex-col items-center gap-3 text-center
-                bg-gradient-to-br ${prompt.color} text-white border-none
-                ${prompt.hoverColor} hover:text-white
-                transition-all duration-200 hover:scale-105 hover:shadow-lg
+                ${prompt.color} ${prompt.textColor} border border-border/50
+                transition-all duration-200 hover:scale-[1.02] hover:shadow-sm
                 disabled:opacity-50 disabled:hover:scale-100 disabled:hover:shadow-none
                 group
               `}
               onClick={() => onPromptSelect(prompt.prompt)}
               disabled={disabled}
             >
-              <div className="h-8 w-8 rounded-lg bg-white/20 flex items-center justify-center group-hover:bg-white/30 transition-colors">
+              <div className={`h-8 w-8 rounded-lg ${prompt.iconBg} flex items-center justify-center transition-colors`}>
                 <IconComponent className="h-4 w-4" />
               </div>
               <span className="text-sm font-medium leading-tight">{prompt.title}</span>
