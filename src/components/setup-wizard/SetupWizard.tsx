@@ -1,6 +1,8 @@
 
 import React, { useState } from 'react';
-import WizardStep from './WizardStep';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import TankSpecsStep from './TankSpecsStep';
 import BudgetTimelineStep from './BudgetTimelineStep';
 
@@ -9,134 +11,125 @@ interface SetupWizardProps {
 }
 
 const SetupWizard: React.FC<SetupWizardProps> = ({ onPlanGenerated }) => {
-  const [currentStep, setCurrentStep] = useState<number>(1);
-  const [tankSpecs, setTankSpecs] = useState({
-    length: '',
-    width: '',
-    height: '',
-    tankType: '',
-    experience: '',
-    location: '',
-    goals: ''
+  const [currentStep, setCurrentStep] = useState<number>(0);
+  const [formData, setFormData] = useState({
+    tankSpecs: {
+      size: '',
+      type: '',
+      experience: '',
+      goals: ''
+    },
+    budgetTimeline: {
+      budget: '',
+      timeline: '',
+      hasEquipment: false,
+      priorityFeatures: [] as string[]
+    }
   });
-  
-  const [budgetTimeline, setBudgetTimeline] = useState({
-    totalBudget: '',
-    setupBudget: '',
-    timeline: '',
-    priority: '',
-    monthlyBudget: ''
-  });
-
-  const handleSpecChange = (key: keyof typeof tankSpecs, value: string) => {
-    setTankSpecs(prev => ({ ...prev, [key]: value }));
-  };
-
-  const handleBudgetChange = (key: keyof typeof budgetTimeline, value: string) => {
-    setBudgetTimeline(prev => ({ ...prev, [key]: value }));
-  };
-
-  const isTankSpecsValid = () => {
-    return tankSpecs.length && tankSpecs.width && tankSpecs.height && 
-           tankSpecs.tankType && tankSpecs.experience && tankSpecs.goals;
-  };
-
-  const isBudgetValid = () => {
-    return budgetTimeline.totalBudget && budgetTimeline.setupBudget && 
-           budgetTimeline.timeline && budgetTimeline.priority;
-  };
-
-  const generatePlan = () => {
-    const planData = {
-      tankSpecs,
-      budgetTimeline,
-      timestamp: new Date().toISOString()
-    };
-    onPlanGenerated(planData);
-  };
-
-  const goToStep = (step: number) => {
-    setCurrentStep(step);
-  };
 
   const steps = [
     {
-      number: 1,
-      title: "Tank Specifications",
-      description: "Define your tank size, type, and goals"
+      title: 'Tank Specifications',
+      description: 'Tell us about your tank setup',
+      component: TankSpecsStep
     },
     {
-      number: 2,
-      title: "Budget & Timeline",
-      description: "Set your budget and timeline preferences"
+      title: 'Budget & Timeline',
+      description: 'Set your budget and timeline preferences',
+      component: BudgetTimelineStep
     }
   ];
 
+  const handleNext = () => {
+    if (currentStep < steps.length - 1) {
+      setCurrentStep(currentStep + 1);
+    } else {
+      // Generate plan
+      onPlanGenerated(formData);
+    }
+  };
+
+  const handlePrevious = () => {
+    if (currentStep > 0) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
+
+  const updateFormData = (stepData: any) => {
+    setFormData(prev => ({
+      ...prev,
+      ...stepData
+    }));
+  };
+
+  const isStepValid = () => {
+    switch (currentStep) {
+      case 0:
+        return formData.tankSpecs.size && formData.tankSpecs.type && formData.tankSpecs.experience;
+      case 1:
+        return formData.budgetTimeline.budget && formData.budgetTimeline.timeline;
+      default:
+        return false;
+    }
+  };
+
+  const CurrentStepComponent = steps[currentStep].component;
+
   return (
     <div className="space-y-6">
-      {/* Progress Steps */}
-      <div className="grid grid-cols-2 gap-4">
-        {steps.map((step) => (
-          <div
-            key={step.number}
-            className={`p-4 rounded-lg border-2 transition-all ${
-              currentStep === step.number
-                ? 'border-primary bg-primary/5'
-                : currentStep > step.number
-                ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
-                : 'border-muted bg-muted/20'
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <div className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium ${
-                currentStep > step.number
-                  ? 'bg-green-500 text-white'
-                  : currentStep === step.number
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-muted text-muted-foreground'
-              }`}>
-                {currentStep > step.number ? '✓' : step.number}
-              </div>
-              <div>
-                <h4 className="font-medium text-sm">{step.title}</h4>
-                <p className="text-xs text-muted-foreground">{step.description}</p>
-              </div>
+      {/* Progress indicator */}
+      <div className="flex items-center justify-between mb-8">
+        {steps.map((step, index) => (
+          <div key={index} className="flex items-center">
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+              index <= currentStep 
+                ? 'bg-primary text-primary-foreground' 
+                : 'bg-muted text-muted-foreground'
+            }`}>
+              {index + 1}
             </div>
+            {index < steps.length - 1 && (
+              <div className={`w-12 h-0.5 mx-2 ${
+                index < currentStep ? 'bg-primary' : 'bg-muted'
+              }`} />
+            )}
           </div>
         ))}
       </div>
 
-      {/* Step Content */}
-      <WizardStep
-        title={steps[0].title}
-        description={steps[0].description}
-        stepNumber={1}
-        isActive={currentStep === 1}
-        isCompleted={currentStep > 1}
-      >
-        <TankSpecsStep
-          specs={tankSpecs}
-          onSpecChange={handleSpecChange}
-          onNext={() => goToStep(2)}
-          isValid={isTankSpecsValid()}
-        />
-      </WizardStep>
+      {/* Current step */}
+      <Card>
+        <CardHeader>
+          <CardTitle>{steps[currentStep].title}</CardTitle>
+          <CardDescription>{steps[currentStep].description}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <CurrentStepComponent
+            data={currentStep === 0 ? formData.tankSpecs : formData.budgetTimeline}
+            onUpdate={updateFormData}
+          />
+        </CardContent>
+      </Card>
 
-      <WizardStep
-        title={steps[1].title}
-        description={steps[1].description}
-        stepNumber={2}
-        isActive={currentStep === 2}
-        isCompleted={currentStep > 2}
-      >
-        <BudgetTimelineStep
-          budget={budgetTimeline}
-          onBudgetChange={handleBudgetChange}
-          onNext={generatePlan}
-          onPrev={() => goToStep(1)}
-          isValid={isBudgetValid()}
-        />
-      </WizardStep>
+      {/* Navigation */}
+      <div className="flex justify-between">
+        <Button
+          variant="outline"
+          onClick={handlePrevious}
+          disabled={currentStep === 0}
+        >
+          <ChevronLeft className="mr-2 h-4 w-4" />
+          Previous
+        </Button>
+        
+        <Button
+          onClick={handleNext}
+          disabled={!isStepValid()}
+        >
+          {currentStep === steps.length - 1 ? 'Generate Plan' : 'Next'}
+          {currentStep < steps.length - 1 && <ChevronRight className="ml-2 h-4 w-4" />}
+        </Button>
+      </div>
     </div>
   );
 };

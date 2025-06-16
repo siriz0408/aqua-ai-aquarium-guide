@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Layout } from '@/components/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,30 @@ const SetupPlanner = () => {
   const { toast } = useToast();
   const [isGenerating, setIsGenerating] = useState(false);
   const [setupPlan, setSetupPlan] = useState<any>(null);
+
+  // Check if we should load a saved plan for viewing
+  useEffect(() => {
+    const viewPlan = sessionStorage.getItem('viewPlan');
+    if (viewPlan) {
+      const savedPlan = JSON.parse(viewPlan);
+      // Convert the saved plan format to the display format
+      const planForDisplay = {
+        tankSize: savedPlan.tank_specs?.size || 'Unknown',
+        estimatedGallons: savedPlan.tank_specs?.gallons || 'Unknown',
+        equipment: savedPlan.equipment || [],
+        compatibleLivestock: savedPlan.compatible_livestock || [],
+        timeline: savedPlan.timeline || [],
+        totalEstimate: savedPlan.total_estimate || 'N/A',
+        monthlyMaintenance: savedPlan.monthly_maintenance || 'N/A',
+        recommendations: savedPlan.recommendations || {},
+        // Include original data for saving
+        tankSpecs: savedPlan.tank_specs,
+        budgetTimeline: savedPlan.budget_timeline,
+      };
+      setSetupPlan(planForDisplay);
+      sessionStorage.removeItem('viewPlan');
+    }
+  }, []);
 
   const handlePlanGeneration = async (planData: any) => {
     setIsGenerating(true);

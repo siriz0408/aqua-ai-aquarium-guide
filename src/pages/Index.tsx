@@ -12,6 +12,7 @@ import { useNavigate } from 'react-router-dom';
 import { MessageCircle, Plus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import TaskRecommendations from '@/components/TaskRecommendations';
+import SavedPlans from '@/components/SavedPlans';
 
 const Index = () => {
   const { tanks, addTank } = useAquarium();
@@ -87,6 +88,18 @@ const Index = () => {
               <p className="text-sm text-muted-foreground">Plan your tank</p>
             </CardContent>
           </Card>
+        </div>
+
+        {/* My Plans Section */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-2xl font-bold">My Plans</h3>
+            <Button onClick={() => navigate('/setup-planner')} variant="outline">
+              <Plus className="mr-2 h-4 w-4" />
+              New Plan
+            </Button>
+          </div>
+          <SavedPlans />
         </div>
 
         {/* My Tanks Section */}
