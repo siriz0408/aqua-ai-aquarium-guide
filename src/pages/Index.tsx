@@ -7,15 +7,26 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { useAquarium, Tank } from '@/contexts/AquariumContext';
 import { useNavigate } from 'react-router-dom';
-import { MessageCircle, Plus } from 'lucide-react';
+import { MessageCircle, Plus, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import TaskRecommendations from '@/components/TaskRecommendations';
 import SavedPlans from '@/components/SavedPlans';
 
 const Index = () => {
-  const { tanks, addTank } = useAquarium();
+  const { tanks, addTank, deleteTank } = useAquarium();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isAddingTank, setIsAddingTank] = useState(false);
@@ -48,6 +59,14 @@ const Index = () => {
 
     setNewTank({ name: '', size: '', type: 'FOWLR' });
     setIsAddingTank(false);
+  };
+
+  const handleDeleteTank = (tankId: string, tankName: string) => {
+    deleteTank(tankId);
+    toast({
+      title: "Tank deleted",
+      description: `${tankName} has been removed from your collection.`,
+    });
   };
 
   return (
@@ -181,20 +200,45 @@ const Index = () => {
                 <Card 
                   key={tank.id} 
                   className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-[1.01] active:scale-95"
-                  onClick={() => navigate(`/tank/${tank.id}`)}
                 >
                   <CardHeader className="pb-2 sm:pb-3">
                     <div className="flex items-start justify-between">
-                      <div className="min-w-0 flex-1">
+                      <div className="min-w-0 flex-1" onClick={() => navigate(`/tank/${tank.id}`)}>
                         <CardTitle className="text-base sm:text-lg truncate">{tank.name}</CardTitle>
                         <CardDescription className="text-sm">{tank.size} • {tank.type}</CardDescription>
                       </div>
-                      <div className="text-xl sm:text-2xl flex-shrink-0 ml-2">
-                        {tank.type === 'Reef' ? '🪸' : tank.type === 'FOWLR' ? '🐠' : '🌊'}
+                      <div className="flex items-center gap-2 ml-2">
+                        <div className="text-xl sm:text-2xl flex-shrink-0">
+                          {tank.type === 'Reef' ? '🪸' : tank.type === 'FOWLR' ? '🐠' : '🌊'}
+                        </div>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete Tank</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to delete "{tank.name}"? This action cannot be undone and will remove all associated data including equipment, livestock, and water parameters.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction 
+                                onClick={() => handleDeleteTank(tank.id, tank.name)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                Delete Tank
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </div>
                     </div>
                   </CardHeader>
-                  <CardContent className="pt-0">
+                  <CardContent className="pt-0" onClick={() => navigate(`/tank/${tank.id}`)}>
                     <div className="grid grid-cols-3 gap-2 sm:gap-4 text-center">
                       <div>
                         <p className="text-lg sm:text-2xl font-bold text-primary">{tank.livestock.length}</p>
