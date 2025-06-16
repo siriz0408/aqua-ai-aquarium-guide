@@ -12,31 +12,32 @@ interface SetupWizardProps {
 
 const SetupWizard: React.FC<SetupWizardProps> = ({ onPlanGenerated }) => {
   const [currentStep, setCurrentStep] = useState<number>(0);
-  const [formData, setFormData] = useState({
-    tankSpecs: {
-      size: '',
-      type: '',
-      experience: '',
-      goals: ''
-    },
-    budgetTimeline: {
-      budget: '',
-      timeline: '',
-      hasEquipment: false,
-      priorityFeatures: [] as string[]
-    }
+  const [tankSpecs, setTankSpecs] = useState({
+    length: '',
+    width: '',
+    height: '',
+    tankType: '',
+    experience: '',
+    location: '',
+    goals: ''
+  });
+  
+  const [budgetTimeline, setBudgetTimeline] = useState({
+    totalBudget: '',
+    setupBudget: '',
+    timeline: '',
+    priority: '',
+    monthlyBudget: ''
   });
 
   const steps = [
     {
       title: 'Tank Specifications',
-      description: 'Tell us about your tank setup',
-      component: TankSpecsStep
+      description: 'Tell us about your tank setup'
     },
     {
       title: 'Budget & Timeline',
-      description: 'Set your budget and timeline preferences',
-      component: BudgetTimelineStep
+      description: 'Set your budget and timeline preferences'
     }
   ];
 
@@ -44,7 +45,11 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onPlanGenerated }) => {
     if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
     } else {
-      // Generate plan
+      // Generate plan with the collected data
+      const formData = {
+        tankSpecs,
+        budgetTimeline
+      };
       onPlanGenerated(formData);
     }
   };
@@ -55,25 +60,30 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onPlanGenerated }) => {
     }
   };
 
-  const updateFormData = (stepData: any) => {
-    setFormData(prev => ({
+  const handleTankSpecChange = (key: string, value: string) => {
+    setTankSpecs(prev => ({
       ...prev,
-      ...stepData
+      [key]: value
+    }));
+  };
+
+  const handleBudgetChange = (key: string, value: string) => {
+    setBudgetTimeline(prev => ({
+      ...prev,
+      [key]: value
     }));
   };
 
   const isStepValid = () => {
     switch (currentStep) {
       case 0:
-        return formData.tankSpecs.size && formData.tankSpecs.type && formData.tankSpecs.experience;
+        return tankSpecs.length && tankSpecs.width && tankSpecs.height && tankSpecs.tankType && tankSpecs.experience && tankSpecs.goals;
       case 1:
-        return formData.budgetTimeline.budget && formData.budgetTimeline.timeline;
+        return budgetTimeline.totalBudget && budgetTimeline.setupBudget && budgetTimeline.timeline && budgetTimeline.priority;
       default:
         return false;
     }
   };
-
-  const CurrentStepComponent = steps[currentStep].component;
 
   return (
     <div className="space-y-6">
@@ -104,32 +114,48 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onPlanGenerated }) => {
           <CardDescription>{steps[currentStep].description}</CardDescription>
         </CardHeader>
         <CardContent>
-          <CurrentStepComponent
-            data={currentStep === 0 ? formData.tankSpecs : formData.budgetTimeline}
-            onUpdate={updateFormData}
-          />
+          {currentStep === 0 && (
+            <TankSpecsStep
+              specs={tankSpecs}
+              onSpecChange={handleTankSpecChange}
+              onNext={handleNext}
+              isValid={isStepValid()}
+            />
+          )}
+          
+          {currentStep === 1 && (
+            <BudgetTimelineStep
+              budget={budgetTimeline}
+              onBudgetChange={handleBudgetChange}
+              onNext={handleNext}
+              onPrev={handlePrevious}
+              isValid={isStepValid()}
+            />
+          )}
         </CardContent>
       </Card>
 
-      {/* Navigation */}
-      <div className="flex justify-between">
-        <Button
-          variant="outline"
-          onClick={handlePrevious}
-          disabled={currentStep === 0}
-        >
-          <ChevronLeft className="mr-2 h-4 w-4" />
-          Previous
-        </Button>
-        
-        <Button
-          onClick={handleNext}
-          disabled={!isStepValid()}
-        >
-          {currentStep === steps.length - 1 ? 'Generate Plan' : 'Next'}
-          {currentStep < steps.length - 1 && <ChevronRight className="ml-2 h-4 w-4" />}
-        </Button>
-      </div>
+      {/* Navigation - only show for first step since other steps handle their own navigation */}
+      {currentStep === 0 && (
+        <div className="flex justify-between">
+          <Button
+            variant="outline"
+            onClick={handlePrevious}
+            disabled={currentStep === 0}
+          >
+            <ChevronLeft className="mr-2 h-4 w-4" />
+            Previous
+          </Button>
+          
+          <Button
+            onClick={handleNext}
+            disabled={!isStepValid()}
+          >
+            {currentStep === steps.length - 1 ? 'Generate Plan' : 'Next'}
+            {currentStep < steps.length - 1 && <ChevronRight className="ml-2 h-4 w-4" />}
+          </Button>
+        </div>
+      )}
     </div>
   );
 };
