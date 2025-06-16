@@ -37,18 +37,17 @@ const Auth = () => {
     try {
       if (isSignUp) {
         if (!fullName.trim()) {
+          toast({
+            title: "Full name required",
+            description: "Please enter your full name to create an account.",
+            variant: "destructive",
+          });
           return;
         }
         await signUp(email, password, fullName);
       } else {
         const { error } = await signIn(email, password);
         if (!error) {
-          // Set session persistence based on "stay logged in" option
-          if (!stayLoggedIn) {
-            // Set session to expire when browser closes
-            localStorage.removeItem('sb-fkkzklaigpjtwldsctvj-auth-token');
-            sessionStorage.setItem('sb-fkkzklaigpjtwldsctvj-auth-token', 'session');
-          }
           navigate('/');
         }
       }
