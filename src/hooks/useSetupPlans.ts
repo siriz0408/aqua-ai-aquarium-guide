@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -19,8 +19,43 @@ interface SetupPlan {
 
 export const useSetupPlans = () => {
   const [isLoading, setIsLoading] = useState(false);
+  const [plans, setPlans] = useState<any[]>([]);
   const { user } = useAuth();
   const { toast } = useToast();
+
+  // Load plans when user changes
+  useEffect(() => {
+    if (user) {
+      loadPlans();
+    } else {
+      setPlans([]);
+    }
+  }, [user]);
+
+  const loadPlans = async () => {
+    if (!user) return;
+
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('setup_plans')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setPlans(data || []);
+    } catch (error: any) {
+      console.error('Error fetching setup plans:', error);
+      toast({
+        title: "Error loading plans",
+        description: error.message || "Failed to load setup plans",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const saveSetupPlan = async (setupPlan: any, planName: string, planId?: string) => {
     if (!user) {
@@ -67,6 +102,8 @@ export const useSetupPlans = () => {
             title: "Setup plan updated!",
             description: `Your plan "${planName}" has been updated successfully`,
           });
+          // Reload plans to get updated data
+          loadPlans();
         }
       } else {
         // Create new plan
@@ -87,6 +124,8 @@ export const useSetupPlans = () => {
             title: "Setup plan saved!",
             description: `Your plan "${planName}" has been saved successfully`,
           });
+          // Reload plans to include new plan
+          loadPlans();
         }
       }
 
@@ -118,7 +157,9 @@ export const useSetupPlans = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data || [];
+      const planData = data || [];
+      setPlans(planData);
+      return planData;
     } catch (error: any) {
       console.error('Error fetching setup plans:', error);
       toast({
@@ -151,6 +192,8 @@ export const useSetupPlans = () => {
         description: "Setup plan has been deleted successfully",
       });
 
+      // Reload plans to remove deleted plan
+      loadPlans();
       return true;
     } catch (error: any) {
       console.error('Error deleting setup plan:', error);
@@ -166,6 +209,7 @@ export const useSetupPlans = () => {
   };
 
   return {
+    plans,
     saveSetupPlan,
     getUserSetupPlans,
     deleteSetupPlan,

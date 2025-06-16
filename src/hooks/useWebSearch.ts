@@ -37,7 +37,7 @@ export const useWebSearch = () => {
         description: "Failed to search web data. Please try again.",
         variant: "destructive",
       });
-      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+      return { content: '', success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     } finally {
       setIsSearching(false);
     }
