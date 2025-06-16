@@ -25,7 +25,7 @@ export const ConversationList: React.FC<ConversationListProps> = ({
   isLoading
 }) => {
   return (
-    <div className="w-80 border-r border-border bg-background">
+    <div className="flex flex-col h-full">
       <div className="p-4 border-b border-border">
         <Button
           onClick={onNewConversation}
@@ -37,7 +37,7 @@ export const ConversationList: React.FC<ConversationListProps> = ({
         </Button>
       </div>
       
-      <ScrollArea className="h-[calc(100vh-8rem)]">
+      <ScrollArea className="flex-1">
         <div className="p-2 space-y-2">
           {conversations.length === 0 && !isLoading && (
             <div className="text-center text-muted-foreground py-8">
@@ -50,7 +50,7 @@ export const ConversationList: React.FC<ConversationListProps> = ({
           {conversations.map((conversation) => (
             <Card
               key={conversation.id}
-              className={`p-3 cursor-pointer transition-colors hover:bg-muted/50 ${
+              className={`p-3 cursor-pointer transition-colors hover:bg-muted/50 group ${
                 currentConversationId === conversation.id ? 'bg-muted' : ''
               }`}
               onClick={() => onSelectConversation(conversation.id)}
@@ -67,7 +67,7 @@ export const ConversationList: React.FC<ConversationListProps> = ({
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 hover:bg-destructive hover:text-destructive-foreground"
+                  className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 hover:bg-destructive hover:text-destructive-foreground transition-opacity"
                   onClick={(e) => {
                     e.stopPropagation();
                     onDeleteConversation(conversation.id);
