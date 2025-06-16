@@ -123,7 +123,7 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onPlanGenerated }) => {
         description={steps[1].description}
         stepNumber={2}
         isActive={currentStep === 2}
-        isCompleted={false}
+        isCompleted={currentStep > 2}
       >
         <BudgetTimelineStep
           budget={budgetTimeline}
