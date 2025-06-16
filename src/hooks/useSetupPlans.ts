@@ -22,7 +22,7 @@ export const useSetupPlans = () => {
   const { user } = useAuth();
   const { toast } = useToast();
 
-  const saveSetupPlan = async (setupPlan: any, planName: string) => {
+  const saveSetupPlan = async (setupPlan: any, planName: string, planId?: string) => {
     if (!user) {
       toast({
         title: "Authentication required",
@@ -47,22 +47,50 @@ export const useSetupPlans = () => {
         recommendations: setupPlan.recommendations || {},
       };
 
-      const { data, error } = await supabase
-        .from('setup_plans')
-        .insert([{
-          ...planData,
-          user_id: user.id,
-        }])
-        .select()
-        .single();
+      let data, error;
+
+      if (planId) {
+        // Update existing plan
+        const result = await supabase
+          .from('setup_plans')
+          .update(planData)
+          .eq('id', planId)
+          .eq('user_id', user.id)
+          .select()
+          .single();
+        
+        data = result.data;
+        error = result.error;
+
+        if (!error) {
+          toast({
+            title: "Setup plan updated!",
+            description: `Your plan "${planName}" has been updated successfully`,
+          });
+        }
+      } else {
+        // Create new plan
+        const result = await supabase
+          .from('setup_plans')
+          .insert([{
+            ...planData,
+            user_id: user.id,
+          }])
+          .select()
+          .single();
+
+        data = result.data;
+        error = result.error;
+
+        if (!error) {
+          toast({
+            title: "Setup plan saved!",
+            description: `Your plan "${planName}" has been saved successfully`,
+          });
+        }
+      }
 
       if (error) throw error;
-
-      toast({
-        title: "Setup plan saved!",
-        description: `Your plan "${planName}" has been saved successfully`,
-      });
-
       return data;
     } catch (error: any) {
       console.error('Error saving setup plan:', error);

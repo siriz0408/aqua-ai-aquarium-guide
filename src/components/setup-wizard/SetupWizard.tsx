@@ -77,9 +77,9 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onPlanGenerated }) => {
   const isStepValid = () => {
     switch (currentStep) {
       case 0:
-        return tankSpecs.length && tankSpecs.width && tankSpecs.height && tankSpecs.tankType && tankSpecs.experience && tankSpecs.goals;
+        return !!(tankSpecs.length && tankSpecs.width && tankSpecs.height && tankSpecs.tankType && tankSpecs.experience && tankSpecs.goals);
       case 1:
-        return budgetTimeline.totalBudget && budgetTimeline.setupBudget && budgetTimeline.timeline && budgetTimeline.priority;
+        return !!(budgetTimeline.totalBudget && budgetTimeline.setupBudget && budgetTimeline.timeline && budgetTimeline.priority);
       default:
         return false;
     }

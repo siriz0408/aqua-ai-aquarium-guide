@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useSetupPlans } from '@/hooks/useSetupPlans';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, DollarSign, Trash2, Eye } from 'lucide-react';
+import { Calendar, DollarSign, Trash2, Eye, Edit } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
@@ -39,6 +39,16 @@ const SavedPlans = () => {
     if (success) {
       setPlans(plans.filter(plan => plan.id !== planId));
     }
+  };
+
+  const handleViewPlan = (plan: any) => {
+    sessionStorage.setItem('viewPlan', JSON.stringify(plan));
+    navigate('/setup-planner');
+  };
+
+  const handleEditPlan = (plan: any) => {
+    sessionStorage.setItem('editPlan', JSON.stringify(plan));
+    navigate('/setup-planner');
   };
 
   const formatDate = (dateString: string) => {
@@ -99,14 +109,18 @@ const SavedPlans = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => {
-                    // Store the plan in sessionStorage and navigate to setup planner
-                    sessionStorage.setItem('viewPlan', JSON.stringify(plan));
-                    navigate('/setup-planner');
-                  }}
+                  onClick={() => handleViewPlan(plan)}
                 >
                   <Eye className="h-4 w-4 mr-1" />
                   View
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleEditPlan(plan)}
+                >
+                  <Edit className="h-4 w-4 mr-1" />
+                  Edit
                 </Button>
                 <AlertDialog>
                   <AlertDialogTrigger asChild>

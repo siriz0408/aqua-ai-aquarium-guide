@@ -38,7 +38,9 @@ const EnhancedPlanDisplay: React.FC<EnhancedPlanDisplayProps> = ({ setupPlan, on
 
   const getInsights = () => {
     const totalCost = calculateTotalCost();
-    const budgetNumber = parseInt(setupPlan.setupBudget.replace(/[\$,]/g, ''));
+    // Safely extract budget number - handle both setupPlan.setupBudget and setupPlan.budgetTimeline.setupBudget
+    const setupBudget = setupPlan.setupBudget || setupPlan.budgetTimeline?.setupBudget || setupPlan.totalEstimate || '$0';
+    const budgetNumber = parseInt(setupBudget.toString().replace(/[\$,]/g, '')) || 0;
     const essentialItems = setupPlan.equipment.filter((item: any) => item.priority === 'Essential').length;
     const selectedEssentials = setupPlan.equipment.filter((item: any) => 
       item.priority === 'Essential' && selectedItems.includes(item.item)
@@ -47,7 +49,7 @@ const EnhancedPlanDisplay: React.FC<EnhancedPlanDisplayProps> = ({ setupPlan, on
     return {
       budgetStatus: totalCost > budgetNumber ? 'over' : totalCost > budgetNumber * 0.9 ? 'close' : 'good',
       budgetDifference: Math.abs(totalCost - budgetNumber),
-      essentialCoverage: Math.round((selectedEssentials / essentialItems) * 100),
+      essentialCoverage: essentialItems > 0 ? Math.round((selectedEssentials / essentialItems) * 100) : 100,
       totalCost,
       itemCount: selectedItems.length
     };
