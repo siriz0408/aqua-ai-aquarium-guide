@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAquarium } from '@/contexts/AquariumContext';
-import { Plus, Upload } from 'lucide-react';
+import { Plus, Upload, Edit } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 const TankDetails = () => {
@@ -34,14 +34,25 @@ const TankDetails = () => {
       title={tank.name} 
       showBackButton
       actions={
-        <Button 
-          size="sm" 
-          onClick={() => navigate(`/tank/${tankId}/log-parameters`)}
-          className="ocean-gradient text-white"
-        >
-          <Plus className="mr-1 h-3 w-3" />
-          Log Test
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            variant="outline"
+            size="sm" 
+            onClick={() => navigate(`/tank/${tankId}/edit`)}
+            className="gap-1"
+          >
+            <Edit className="h-3 w-3" />
+            Edit
+          </Button>
+          <Button 
+            size="sm" 
+            onClick={() => navigate(`/tank/${tankId}/log-parameters`)}
+            className="ocean-gradient text-white gap-1"
+          >
+            <Plus className="h-3 w-3" />
+            Log Test
+          </Button>
+        </div>
       }
     >
       <div className="space-y-6 pb-20">
