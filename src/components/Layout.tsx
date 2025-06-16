@@ -2,7 +2,8 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/contexts/ThemeContext';
-import { ArrowUp, MessageCircle, Plus, Save, Upload } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { ArrowUp, MessageCircle, Plus, Save, LogOut } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 interface LayoutProps {
@@ -14,11 +15,17 @@ interface LayoutProps {
 
 export function Layout({ children, title, showBackButton = false, actions }: LayoutProps) {
   const { theme, setTheme } = useTheme();
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
   const toggleTheme = () => {
     setTheme(theme === 'dark' ? 'light' : 'dark');
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/auth');
   };
 
   return (
@@ -57,6 +64,17 @@ export function Layout({ children, title, showBackButton = false, actions }: Lay
             >
               {theme === 'dark' ? '☀️' : '🌙'}
             </Button>
+            {user && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleSignOut}
+                className="h-8 w-8 p-0"
+                title="Sign Out"
+              >
+                <LogOut className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         </div>
       </header>
@@ -66,54 +84,56 @@ export function Layout({ children, title, showBackButton = false, actions }: Lay
         {children}
       </main>
 
-      {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur border-t border-border/40 supports-[backdrop-filter]:bg-background/60">
-        <div className="container px-4">
-          <div className="flex items-center justify-around py-2">
-            <Button
-              variant={location.pathname === '/' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => navigate('/')}
-              className="flex flex-col gap-1 h-12 text-xs"
-            >
-              <div className="h-5 w-5 rounded-full ocean-gradient flex items-center justify-center">
-                <span className="text-white text-xs">🏠</span>
-              </div>
-              Home
-            </Button>
-            
-            <Button
-              variant={location.pathname === '/aquabot' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => navigate('/aquabot')}
-              className="flex flex-col gap-1 h-12 text-xs"
-            >
-              <MessageCircle className="h-4 w-4" />
-              AquaBot
-            </Button>
-            
-            <Button
-              variant={location.pathname === '/setup-planner' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => navigate('/setup-planner')}
-              className="flex flex-col gap-1 h-12 text-xs"
-            >
-              <Plus className="h-4 w-4" />
-              Planner
-            </Button>
-            
-            <Button
-              variant={location.pathname === '/reminders' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => navigate('/reminders')}
-              className="flex flex-col gap-1 h-12 text-xs"
-            >
-              <Save className="h-4 w-4" />
-              Reminders
-            </Button>
+      {/* Bottom Navigation - Only show when user is authenticated */}
+      {user && (
+        <nav className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur border-t border-border/40 supports-[backdrop-filter]:bg-background/60">
+          <div className="container px-4">
+            <div className="flex items-center justify-around py-2">
+              <Button
+                variant={location.pathname === '/' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => navigate('/')}
+                className="flex flex-col gap-1 h-12 text-xs"
+              >
+                <div className="h-5 w-5 rounded-full ocean-gradient flex items-center justify-center">
+                  <span className="text-white text-xs">🏠</span>
+                </div>
+                Home
+              </Button>
+              
+              <Button
+                variant={location.pathname === '/aquabot' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => navigate('/aquabot')}
+                className="flex flex-col gap-1 h-12 text-xs"
+              >
+                <MessageCircle className="h-4 w-4" />
+                AquaBot
+              </Button>
+              
+              <Button
+                variant={location.pathname === '/setup-planner' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => navigate('/setup-planner')}
+                className="flex flex-col gap-1 h-12 text-xs"
+              >
+                <Plus className="h-4 w-4" />
+                Planner
+              </Button>
+              
+              <Button
+                variant={location.pathname === '/reminders' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => navigate('/reminders')}
+                className="flex flex-col gap-1 h-12 text-xs"
+              >
+                <Save className="h-4 w-4" />
+                Reminders
+              </Button>
+            </div>
           </div>
-        </div>
-      </nav>
+        </nav>
+      )}
     </div>
   );
 }

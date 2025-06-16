@@ -6,6 +6,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { AquariumProvider } from "@/contexts/AquariumContext";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import TankDetails from "./pages/TankDetails";
 import LogParameters from "./pages/LogParameters";
@@ -14,6 +16,7 @@ import Livestock from "./pages/Livestock";
 import SetupPlanner from "./pages/SetupPlanner";
 import AquaBot from "./pages/AquaBot";
 import Reminders from "./pages/Reminders";
+import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -21,27 +24,62 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
-      <AquariumProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-cyan-50 dark:from-slate-900 dark:via-blue-900 dark:to-cyan-900">
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/tank/:tankId" element={<TankDetails />} />
-                <Route path="/tank/:tankId/log-parameters" element={<LogParameters />} />
-                <Route path="/tank/:tankId/equipment" element={<Equipment />} />
-                <Route path="/tank/:tankId/livestock" element={<Livestock />} />
-                <Route path="/setup-planner" element={<SetupPlanner />} />
-                <Route path="/aquabot" element={<AquaBot />} />
-                <Route path="/reminders" element={<Reminders />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </div>
-          </BrowserRouter>
-        </TooltipProvider>
-      </AquariumProvider>
+      <AuthProvider>
+        <AquariumProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-cyan-50 dark:from-slate-900 dark:via-blue-900 dark:to-cyan-900">
+                <Routes>
+                  <Route path="/auth" element={<Auth />} />
+                  <Route path="/" element={
+                    <ProtectedRoute>
+                      <Index />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/tank/:tankId" element={
+                    <ProtectedRoute>
+                      <TankDetails />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/tank/:tankId/log-parameters" element={
+                    <ProtectedRoute>
+                      <LogParameters />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/tank/:tankId/equipment" element={
+                    <ProtectedRoute>
+                      <Equipment />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/tank/:tankId/livestock" element={
+                    <ProtectedRoute>
+                      <Livestock />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/setup-planner" element={
+                    <ProtectedRoute>
+                      <SetupPlanner />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/aquabot" element={
+                    <ProtectedRoute>
+                      <AquaBot />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/reminders" element={
+                    <ProtectedRoute>
+                      <Reminders />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </div>
+            </BrowserRouter>
+          </TooltipProvider>
+        </AquariumProvider>
+      </AuthProvider>
     </ThemeProvider>
   </QueryClientProvider>
 );
