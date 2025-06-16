@@ -219,7 +219,7 @@ const Auth = () => {
                   <Checkbox
                     id="stayLoggedIn"
                     checked={stayLoggedIn}
-                    onCheckedChange={setStayLoggedIn}
+                    onCheckedChange={(checked) => setStayLoggedIn(checked === true)}
                     disabled={loading || googleLoading}
                   />
                   <Label 
