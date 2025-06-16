@@ -11,6 +11,7 @@ import { useAquarium, Tank } from '@/contexts/AquariumContext';
 import { useNavigate } from 'react-router-dom';
 import { MessageCircle, Plus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import TaskRecommendations from '@/components/TaskRecommendations';
 
 const Index = () => {
   const { tanks, addTank } = useAquarium();
@@ -65,6 +66,9 @@ const Index = () => {
             </Button>
           </div>
         </div>
+
+        {/* AI Recommendations Section */}
+        <TaskRecommendations />
 
         {/* Quick Actions */}
         <div className="grid grid-cols-2 gap-4">

@@ -243,6 +243,102 @@ export type Database = {
         }
         Relationships: []
       }
+      task_lists: {
+        Row: {
+          color: string | null
+          created_at: string
+          description: string | null
+          id: string
+          list_type: string
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          list_type?: string
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          list_type?: string
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      tasks: {
+        Row: {
+          conversation_id: string | null
+          created_at: string
+          description: string | null
+          due_date: string | null
+          frequency: string | null
+          id: string
+          list_id: string | null
+          priority: string
+          status: string
+          task_type: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          conversation_id?: string | null
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          frequency?: string | null
+          id?: string
+          list_id?: string | null
+          priority?: string
+          status?: string
+          task_type?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string | null
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          frequency?: string | null
+          id?: string
+          list_id?: string | null
+          priority?: string
+          status?: string
+          task_type?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasks_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_list_id_fkey"
+            columns: ["list_id"]
+            isOneToOne: false
+            referencedRelation: "task_lists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_profile_setup: {
         Row: {
           completed: boolean

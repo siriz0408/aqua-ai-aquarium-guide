@@ -8,6 +8,7 @@ import { Message } from '@/hooks/useChat';
 import { ParsedTask, parseAIRecommendations } from '@/utils/taskParser';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
+import { useTasks } from '@/hooks/useTasks';
 
 interface MessageBubbleProps {
   message: Message;
@@ -41,13 +42,21 @@ const MarkdownContent: React.FC<{ content: string }> = ({ content }) => {
 export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
   const isUser = message.role === 'user';
   const { toast } = useToast();
+  const { createTask } = useTasks();
   
   // Parse AI responses for actionable tasks
   const parsedTasks = !isUser ? parseAIRecommendations(message.content) : [];
 
   const addToPlanner = async (task: ParsedTask) => {
     try {
-      // For now, just show a success message since planner integration would need backend
+      createTask({
+        title: task.title,
+        description: task.description || '',
+        task_type: task.category,
+        priority: task.priority as 'low' | 'medium' | 'high' | 'urgent',
+        conversation_id: message.conversation_id,
+      });
+      
       toast({
         title: "Task added",
         description: `"${task.title}" added to your maintenance planner`,
