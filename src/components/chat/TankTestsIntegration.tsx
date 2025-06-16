@@ -1,315 +1,231 @@
 
 import React, { useState } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, TestTube, Calendar, Droplets, Activity } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 import { useAquarium } from '@/contexts/AquariumContext';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
-import { useToast } from '@/hooks/use-toast';
-import { format } from 'date-fns';
+import { TestTube2, Send, Fish, Settings, Droplets } from 'lucide-react';
 
 interface TankTestsIntegrationProps {
-  onSendTestData: (testData: string) => void;
+  onSendTestData: (data: string) => void;
   disabled?: boolean;
 }
 
-interface WaterTestLog {
-  id: string;
-  aquarium_id: string;
-  test_date: string;
-  ph?: number;
-  salinity?: number;
-  temperature?: number;
-  ammonia?: number;
-  nitrite?: number;
-  nitrate?: number;
-  alkalinity?: number;
-  calcium?: number;
-  magnesium?: number;
-  phosphate?: number;
-  notes?: string;
-  created_at: string;
-}
-
-export const TankTestsIntegration: React.FC<TankTestsIntegrationProps> = ({ 
-  onSendTestData, 
-  disabled = false 
+export const TankTestsIntegration: React.FC<TankTestsIntegrationProps> = ({
+  onSendTestData,
+  disabled = false,
 }) => {
-  const [testLogs, setTestLogs] = useState<WaterTestLog[]>([]);
-  const [selectedTest, setSelectedTest] = useState<string>('');
+  const { tanks } = useAquarium();
+  const [selectedTankId, setSelectedTankId] = useState<string>('');
+  const [includeParameters, setIncludeParameters] = useState(true);
+  const [includeEquipment, setIncludeEquipment] = useState(true);
+  const [includeLivestock, setIncludeLivestock] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
-  const [showTests, setShowTests] = useState(false);
-  const { tanks, isLoading: tanksLoading } = useAquarium();
-  const { user } = useAuth();
-  const { toast } = useToast();
 
-  const loadTestLogs = async () => {
-    if (!user) {
-      toast({
-        title: "Authentication required",
-        description: "Please sign in to view your test logs",
-        variant: "destructive",
-      });
-      return;
+  const selectedTank = selectedTankId ? tanks.find(tank => tank.id === selectedTankId) : null;
+
+  const formatTankData = () => {
+    if (!selectedTank) return '';
+
+    let tankData = `**Tank Analysis Request for: ${selectedTank.name}**\n`;
+    tankData += `Tank Size: ${selectedTank.size}\n`;
+    tankData += `Tank Type: ${selectedTank.type}\n\n`;
+
+    // Add water parameters if selected
+    if (includeParameters && selectedTank.parameters.length > 0) {
+      tankData += `**🧪 Latest Water Parameters:**\n`;
+      const latestTest = selectedTank.parameters[selectedTank.parameters.length - 1];
+      tankData += `Date: ${new Date(latestTest.date).toLocaleDateString()}\n`;
+      tankData += `• pH: ${latestTest.ph}\n`;
+      tankData += `• Salinity: ${latestTest.salinity}\n`;
+      tankData += `• Temperature: ${latestTest.temperature}°F\n`;
+      tankData += `• Ammonia: ${latestTest.ammonia} ppm\n`;
+      tankData += `• Nitrite: ${latestTest.nitrite} ppm\n`;
+      tankData += `• Nitrate: ${latestTest.nitrate} ppm\n`;
+      if (latestTest.kh > 0) tankData += `• KH (Alkalinity): ${latestTest.kh} dKH\n`;
+      if (latestTest.calcium > 0) tankData += `• Calcium: ${latestTest.calcium} ppm\n`;
+      if (latestTest.magnesium > 0) tankData += `• Magnesium: ${latestTest.magnesium} ppm\n`;
+      if (latestTest.aiInsights) tankData += `Previous AI Insights: ${latestTest.aiInsights}\n`;
+      tankData += '\n';
     }
 
-    if (tanksLoading) {
-      toast({
-        title: "Loading tanks...",
-        description: "Please wait while we load your tank data",
+    // Add equipment if selected
+    if (includeEquipment && selectedTank.equipment.length > 0) {
+      tankData += `**⚙️ Current Equipment Setup:**\n`;
+      selectedTank.equipment.forEach((item, index) => {
+        tankData += `${index + 1}. ${item.name} (${item.type})`;
+        if (item.model) tankData += ` - Model: ${item.model}`;
+        tankData += '\n';
+        if (item.maintenanceTips) {
+          tankData += `   Maintenance: ${item.maintenanceTips}\n`;
+        }
+        if (item.upgradeNotes) {
+          tankData += `   Upgrade Notes: ${item.upgradeNotes}\n`;
+        }
       });
-      return;
+      tankData += '\n';
     }
+
+    // Add livestock if selected
+    if (includeLivestock && selectedTank.livestock.length > 0) {
+      tankData += `**🐠 Current Livestock:**\n`;
+      selectedTank.livestock.forEach((animal, index) => {
+        tankData += `${index + 1}. ${animal.name}`;
+        if (animal.species) tankData += ` (${animal.species})`;
+        tankData += ` - Care Level: ${animal.careLevel}`;
+        if (animal.compatibility) tankData += ` - ${animal.compatibility}`;
+        tankData += '\n';
+        if (animal.healthNotes) {
+          tankData += `   Health Notes: ${animal.healthNotes}\n`;
+        }
+      });
+      tankData += '\n';
+    }
+
+    tankData += `**Request:** Please analyze my tank data and provide specific recommendations for improvements, maintenance tasks, or any concerns you notice. Focus on actionable advice I can implement.`;
+
+    return tankData;
+  };
+
+  const handleSendData = async () => {
+    if (!selectedTank) return;
 
     setIsLoading(true);
     try {
-      console.log('Available tanks:', tanks);
-      
-      // Get valid tank IDs (UUIDs from Supabase or skip local timestamp IDs)
-      const validTankIds = tanks
-        .filter(tank => tank && tank.id && typeof tank.id === 'string')
-        .map(tank => tank.id)
-        .filter(id => {
-          // Check if it's a valid UUID format (from Supabase)
-          const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-          return uuidRegex.test(id);
-        });
-      
-      console.log('Valid tank IDs:', validTankIds);
-      
-      if (validTankIds.length === 0) {
-        // Show interface even if no valid UUIDs, but display helpful message
-        setShowTests(true);
-        setTestLogs([]);
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from('water_test_logs')
-        .select('*')
-        .in('aquarium_id', validTankIds)
-        .order('test_date', { ascending: false })
-        .limit(20);
-
-      if (error) throw error;
-
-      console.log('Loaded test logs:', data);
-      setTestLogs(data || []);
-      setShowTests(true);
-    } catch (error: any) {
-      console.error('Error loading test logs:', error);
-      toast({
-        title: "Error loading tests",
-        description: error.message || "Failed to load test logs",
-        variant: "destructive",
-      });
-      setShowTests(true); // Still show interface
+      const formattedData = formatTankData();
+      await onSendTestData(formattedData);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const formatTestData = (test: WaterTestLog) => {
-    const tankName = tanks.find(t => t.id === test.aquarium_id)?.name || 'Unknown Tank';
+  const getDataSummary = () => {
+    if (!selectedTank) return null;
     
-    const parameters = [];
-    if (test.ph) parameters.push(`pH: ${test.ph}`);
-    if (test.salinity) parameters.push(`Salinity: ${test.salinity}`);
-    if (test.temperature) parameters.push(`Temperature: ${test.temperature}°F`);
-    if (test.ammonia !== undefined) parameters.push(`Ammonia: ${test.ammonia} ppm`);
-    if (test.nitrite !== undefined) parameters.push(`Nitrite: ${test.nitrite} ppm`);
-    if (test.nitrate !== undefined) parameters.push(`Nitrate: ${test.nitrate} ppm`);
-    if (test.alkalinity) parameters.push(`Alkalinity: ${test.alkalinity} dKH`);
-    if (test.calcium) parameters.push(`Calcium: ${test.calcium} ppm`);
-    if (test.magnesium) parameters.push(`Magnesium: ${test.magnesium} ppm`);
-    if (test.phosphate !== undefined) parameters.push(`Phosphate: ${test.phosphate} ppm`);
-
-    return `I need help analyzing my water test results from ${tankName} (tested on ${format(new Date(test.test_date), 'MMM dd, yyyy')}):
-
-${parameters.join('\n')}
-
-${test.notes ? `\nAdditional notes: ${test.notes}` : ''}
-
-Please provide step-by-step recommendations to improve my water quality and address any issues. I'd like actionable tasks I can follow to optimize my tank parameters.`;
+    const items = [];
+    if (includeParameters && selectedTank.parameters.length > 0) {
+      items.push(`${selectedTank.parameters.length} test results`);
+    }
+    if (includeEquipment && selectedTank.equipment.length > 0) {
+      items.push(`${selectedTank.equipment.length} equipment items`);
+    }
+    if (includeLivestock && selectedTank.livestock.length > 0) {
+      items.push(`${selectedTank.livestock.length} livestock`);
+    }
+    
+    return items.length > 0 ? items.join(', ') : 'No data selected';
   };
 
-  const handleSendTestData = () => {
-    const test = testLogs.find(t => t.id === selectedTest);
-    if (!test) return;
-
-    const testDataMessage = formatTestData(test);
-    onSendTestData(testDataMessage);
-    
-    // Reset selection
-    setSelectedTest('');
-    setShowTests(false);
-  };
-
-  const getParameterStatus = (value: number | undefined, ideal: { min: number; max: number }) => {
-    if (value === undefined) return 'unknown';
-    if (value < ideal.min || value > ideal.max) return 'warning';
-    return 'good';
-  };
-
-  const renderTestPreview = (test: WaterTestLog) => {
-    const tankName = tanks.find(t => t.id === test.aquarium_id)?.name || 'Unknown Tank';
-    
+  if (tanks.length === 0) {
     return (
-      <div key={test.id} className="border rounded-lg p-3 space-y-2">
-        <div className="flex justify-between items-start">
-          <div>
-            <p className="font-medium text-sm">{tankName}</p>
-            <p className="text-xs text-muted-foreground">
-              {format(new Date(test.test_date), 'MMM dd, yyyy')}
-            </p>
-          </div>
-          <div className="flex gap-1">
-            {test.ph && (
-              <Badge 
-                variant={getParameterStatus(test.ph, { min: 8.1, max: 8.4 }) === 'good' ? 'default' : 'destructive'}
-                className="text-xs"
-              >
-                pH {test.ph}
-              </Badge>
-            )}
-            {test.ammonia !== undefined && (
-              <Badge 
-                variant={test.ammonia === 0 ? 'default' : 'destructive'}
-                className="text-xs"
-              >
-                NH₃ {test.ammonia}
-              </Badge>
-            )}
-          </div>
-        </div>
-        
-        <div className="grid grid-cols-2 gap-2 text-xs">
-          {test.salinity && <span>Salinity: {test.salinity}</span>}
-          {test.temperature && <span>Temp: {test.temperature}°F</span>}
-          {test.nitrate !== undefined && <span>NO₃: {test.nitrate} ppm</span>}
-          {test.calcium && <span>Ca: {test.calcium} ppm</span>}
-        </div>
-      </div>
+      <Card>
+        <CardContent className="p-6 text-center">
+          <TestTube2 className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+          <p className="text-sm text-muted-foreground">
+            No tanks found. Add a tank to share your data with AquaBot.
+          </p>
+        </CardContent>
+      </Card>
     );
-  };
-
-  const hasValidTanks = tanks.some(tank => {
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    return uuidRegex.test(tank.id);
-  });
+  }
 
   return (
-    <Card className="mb-4">
+    <Card>
       <CardHeader>
-        <CardTitle className="text-lg flex items-center gap-2">
-          <TestTube className="h-5 w-5" />
-          Tank Test Analysis
+        <CardTitle className="flex items-center gap-2">
+          <TestTube2 className="h-5 w-5" />
+          Share Tank Data
         </CardTitle>
+        <CardDescription>
+          Send your complete tank information to AquaBot for personalized analysis and recommendations
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {!showTests ? (
-          <div className="text-center space-y-4">
-            <div className="flex items-center justify-center">
-              <div className="text-center space-y-2">
-                <Droplets className="h-12 w-12 mx-auto text-blue-500" />
-                <p className="text-sm text-muted-foreground">
-                  Load your recent water test results to get AI-powered analysis and step-by-step recommendations
-                </p>
-                {!user && (
-                  <p className="text-xs text-orange-600">
-                    Sign in to sync your test data across devices
-                  </p>
-                )}
-                {user && !hasValidTanks && (
-                  <p className="text-xs text-orange-600">
-                    Add tanks through the main app to start logging test results
-                  </p>
-                )}
+        <div>
+          <Label htmlFor="tank-select">Select Tank</Label>
+          <Select value={selectedTankId} onValueChange={setSelectedTankId}>
+            <SelectTrigger>
+              <SelectValue placeholder="Choose a tank..." />
+            </SelectTrigger>
+            <SelectContent>
+              {tanks.map((tank) => (
+                <SelectItem key={tank.id} value={tank.id}>
+                  {tank.name} ({tank.size})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {selectedTank && (
+          <>
+            <div className="space-y-3">
+              <Label>Include in Analysis:</Label>
+              
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="parameters"
+                  checked={includeParameters}
+                  onCheckedChange={(checked) => setIncludeParameters(checked as boolean)}
+                />
+                <Label htmlFor="parameters" className="flex items-center gap-2">
+                  <Droplets className="h-4 w-4" />
+                  Water Parameters
+                  {selectedTank.parameters.length > 0 && (
+                    <Badge variant="secondary">{selectedTank.parameters.length} tests</Badge>
+                  )}
+                </Label>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="equipment"
+                  checked={includeEquipment}
+                  onCheckedChange={(checked) => setIncludeEquipment(checked as boolean)}
+                />
+                <Label htmlFor="equipment" className="flex items-center gap-2">
+                  <Settings className="h-4 w-4" />
+                  Equipment Setup
+                  {selectedTank.equipment.length > 0 && (
+                    <Badge variant="secondary">{selectedTank.equipment.length} items</Badge>
+                  )}
+                </Label>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="livestock"
+                  checked={includeLivestock}
+                  onCheckedChange={(checked) => setIncludeLivestock(checked as boolean)}
+                />
+                <Label htmlFor="livestock" className="flex items-center gap-2">
+                  <Fish className="h-4 w-4" />
+                  Livestock
+                  {selectedTank.livestock.length > 0 && (
+                    <Badge variant="secondary">{selectedTank.livestock.length} animals</Badge>
+                  )}
+                </Label>
               </div>
             </div>
-            
-            <Button
-              onClick={loadTestLogs}
-              disabled={disabled || isLoading || tanksLoading}
+
+            <div className="p-3 bg-muted rounded-lg">
+              <p className="text-sm text-muted-foreground">
+                <strong>Will send:</strong> {getDataSummary()}
+              </p>
+            </div>
+
+            <Button 
+              onClick={handleSendData}
+              disabled={disabled || isLoading || (!includeParameters && !includeEquipment && !includeLivestock)}
               className="w-full"
-              variant="outline"
             >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Loading Tests...
-                </>
-              ) : tanksLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Loading Tanks...
-                </>
-              ) : (
-                <>
-                  <Activity className="mr-2 h-4 w-4" />
-                  Load Recent Test Results
-                </>
-              )}
+              <Send className="mr-2 h-4 w-4" />
+              {isLoading ? 'Sending...' : 'Send Tank Data to AquaBot'}
             </Button>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-medium">Select a test to analyze:</p>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowTests(false)}
-              >
-                Back
-              </Button>
-            </div>
-
-            {testLogs.length === 0 ? (
-              <div className="text-center py-6">
-                <Calendar className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                <p className="text-sm text-muted-foreground">No test results found</p>
-                <p className="text-xs text-muted-foreground">
-                  {!hasValidTanks 
-                    ? "Add tanks through the main app and log some water tests" 
-                    : "Add some water test logs to get AI recommendations"
-                  }
-                </p>
-              </div>
-            ) : (
-              <>
-                <ScrollArea className="h-64 w-full">
-                  <div className="space-y-2">
-                    {testLogs.map(test => (
-                      <div
-                        key={test.id}
-                        className={`cursor-pointer transition-colors ${
-                          selectedTest === test.id
-                            ? 'ring-2 ring-primary'
-                            : ''
-                        }`}
-                        onClick={() => setSelectedTest(test.id)}
-                      >
-                        {renderTestPreview(test)}
-                      </div>
-                    ))}
-                  </div>
-                </ScrollArea>
-
-                <Button
-                  onClick={handleSendTestData}
-                  disabled={!selectedTest || disabled}
-                  className="w-full"
-                >
-                  <TestTube className="mr-2 h-4 w-4" />
-                  Analyze Selected Test Results
-                </Button>
-              </>
-            )}
-          </div>
+          </>
         )}
       </CardContent>
     </Card>
