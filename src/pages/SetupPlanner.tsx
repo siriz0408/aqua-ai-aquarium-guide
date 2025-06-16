@@ -7,7 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { RotateCcw, Sparkles } from 'lucide-react';
 import SetupWizard from '@/components/setup-wizard/SetupWizard';
 import PlanGenerationLoading from '@/components/setup-wizard/PlanGenerationLoading';
-import SetupPlanDisplay from '@/components/setup-wizard/SetupPlanDisplay';
+import EnhancedPlanDisplay from '@/components/setup-wizard/EnhancedPlanDisplay';
 import { generateSetupPlan } from '@/components/setup-wizard/PlanGenerationLogic';
 
 const SetupPlanner = () => {
@@ -35,6 +35,14 @@ const SetupPlanner = () => {
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  const handlePlanUpdate = (updatedPlan: any) => {
+    setSetupPlan(updatedPlan);
+    toast({
+      title: "Plan updated",
+      description: "Your changes have been saved",
+    });
   };
 
   const resetPlan = () => {
@@ -78,9 +86,10 @@ const SetupPlanner = () => {
         </Card>
 
         {setupPlan && (
-          <div className="space-y-4">
-            <SetupPlanDisplay setupPlan={setupPlan} />
-          </div>
+          <EnhancedPlanDisplay 
+            setupPlan={setupPlan} 
+            onPlanUpdate={handlePlanUpdate}
+          />
         )}
       </div>
     </Layout>
