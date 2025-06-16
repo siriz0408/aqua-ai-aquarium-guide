@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import { Layout } from '@/components/Layout';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -52,16 +51,8 @@ const AquaBot = () => {
   }, [isMobile]);
 
   const handleSendMessage = async (message: string, attachments?: FileAttachment[]) => {
-    // For now, we'll just send the message text
-    // In production, you'd handle attachments by uploading them first
-    let messageWithAttachments = message;
-    
-    if (attachments && attachments.length > 0) {
-      const attachmentText = attachments.map(a => `[Attached: ${a.name}]`).join('\n');
-      messageWithAttachments = `${message}\n\n${attachmentText}`;
-    }
-    
-    await sendMessage(messageWithAttachments, !currentConversationId);
+    console.log('Handling send message with attachments:', attachments?.length || 0);
+    await sendMessage(message, !currentConversationId, attachments);
   };
 
   return (

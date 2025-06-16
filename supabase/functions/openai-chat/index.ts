@@ -13,7 +13,7 @@ serve(async (req) => {
   }
 
   try {
-    const { message, conversationId, isNewConversation } = await req.json()
+    const { message, conversationId, isNewConversation, attachments } = await req.json()
     
     const authHeader = req.headers.get('Authorization')!
     const supabase = createClient(
@@ -89,8 +89,38 @@ serve(async (req) => {
       console.error('Error fetching message history:', historyError)
     }
 
-    // Prepare messages for OpenAI
-    const messages = [
+    // Prepare the user message content
+    let userMessageContent: any[] = [{ type: 'text', text: message }]
+    
+    // Add images if attachments are provided
+    if (attachments && attachments.length > 0) {
+      for (const attachment of attachments) {
+        if (attachment.type.startsWith('image/')) {
+          console.log('Processing image attachment:', attachment.name)
+          
+          // Convert blob URL to base64
+          try {
+            const response = await fetch(attachment.url)
+            const arrayBuffer = await response.arrayBuffer()
+            const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)))
+            const dataUrl = `data:${attachment.type};base64,${base64}`
+            
+            userMessageContent.push({
+              type: 'image_url',
+              image_url: {
+                url: dataUrl,
+                detail: 'high'
+              }
+            })
+          } catch (error) {
+            console.error('Error processing image:', error)
+          }
+        }
+      }
+    }
+
+    // Prepare messages for OpenAI - only include text from history, current message with images
+    const openAIMessages = [
       {
         role: 'system',
         content: `You are AquaBot, an expert marine aquarium assistant. You help users with:
@@ -99,13 +129,32 @@ serve(async (req) => {
         - Equipment recommendations
         - Troubleshooting aquarium problems
         - Setup planning and maintenance
+        - Fish and coral identification from images
         
-        Always provide helpful, accurate advice based on marine aquarium best practices. Be friendly and encouraging while being precise with your recommendations.`
-      },
-      ...(messageHistory || []).slice(-10) // Last 10 messages for context
+        When analyzing images, provide detailed information about the species, care requirements, compatibility, and any visible health issues. Always provide helpful, accurate advice based on marine aquarium best practices. Be friendly and encouraging while being precise with your recommendations.`
+      }
     ]
 
-    // Call OpenAI API with updated model
+    // Add conversation history (text only)
+    if (messageHistory && messageHistory.length > 0) {
+      const recentHistory = messageHistory.slice(-10)
+      for (const msg of recentHistory.slice(0, -1)) { // Exclude the current message
+        openAIMessages.push({
+          role: msg.role,
+          content: msg.content
+        })
+      }
+    }
+
+    // Add current message with potential images
+    openAIMessages.push({
+      role: 'user',
+      content: userMessageContent
+    })
+
+    console.log('Sending to OpenAI with', userMessageContent.length, 'content items')
+
+    // Call OpenAI API with vision support
     const openAIResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -113,8 +162,8 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4.1-2025-04-14',
-        messages: messages,
+        model: 'gpt-4-vision-preview',
+        messages: openAIMessages,
         max_tokens: 1000,
         temperature: 0.7,
       }),

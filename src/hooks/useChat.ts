@@ -20,6 +20,14 @@ export interface Conversation {
   last_message_at: string;
 }
 
+interface FileAttachment {
+  name: string;
+  url: string;
+  type: string;
+  size: number;
+  preview?: string;
+}
+
 export const useChat = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -72,12 +80,19 @@ export const useChat = () => {
 
   // Send message mutation
   const sendMessageMutation = useMutation({
-    mutationFn: async ({ message, isNewConversation }: { message: string; isNewConversation?: boolean }) => {
+    mutationFn: async ({ message, isNewConversation, attachments }: { 
+      message: string; 
+      isNewConversation?: boolean;
+      attachments?: FileAttachment[];
+    }) => {
+      console.log('Sending message with attachments:', attachments?.length || 0);
+      
       const { data, error } = await supabase.functions.invoke('openai-chat', {
         body: {
           message,
           conversationId: currentConversationId,
-          isNewConversation: isNewConversation || !currentConversationId
+          isNewConversation: isNewConversation || !currentConversationId,
+          attachments: attachments || []
         }
       });
 
@@ -141,10 +156,10 @@ export const useChat = () => {
     },
   });
 
-  const sendMessage = async (message: string, isNewConversation?: boolean) => {
+  const sendMessage = async (message: string, isNewConversation?: boolean, attachments?: FileAttachment[]) => {
     setIsLoading(true);
     try {
-      await sendMessageMutation.mutateAsync({ message, isNewConversation });
+      await sendMessageMutation.mutateAsync({ message, isNewConversation, attachments });
     } finally {
       setIsLoading(false);
     }
