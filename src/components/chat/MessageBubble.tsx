@@ -13,6 +13,31 @@ interface MessageBubbleProps {
   message: Message;
 }
 
+// Component to render markdown-style content
+const MarkdownContent: React.FC<{ content: string }> = ({ content }) => {
+  // Convert markdown-style formatting to HTML
+  const formatContent = (text: string) => {
+    return text
+      // Bold text **text** or __text__
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/__(.*?)__/g, '<strong>$1</strong>')
+      // Checkboxes ☐ or [ ]
+      .replace(/☐\s*(.*?)$/gm, '<label class="flex items-center gap-2 my-1"><input type="checkbox" class="rounded border-border" /> <span>$1</span></label>')
+      .replace(/\[\s*\]\s*(.*?)$/gm, '<label class="flex items-center gap-2 my-1"><input type="checkbox" class="rounded border-border" /> <span>$1</span></label>')
+      // Bullet points • or -
+      .replace(/^[•\-]\s*(.*?)$/gm, '<li class="ml-4">$1</li>')
+      // Line breaks
+      .replace(/\n/g, '<br />');
+  };
+
+  return (
+    <div 
+      className="prose prose-sm max-w-none dark:prose-invert [&_strong]:font-semibold [&_li]:list-disc [&_li]:ml-4 [&_input]:w-4 [&_input]:h-4"
+      dangerouslySetInnerHTML={{ __html: formatContent(content) }}
+    />
+  );
+};
+
 export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
   const isUser = message.role === 'user';
   const { toast } = useToast();
@@ -46,9 +71,13 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
       
       <div className={`flex-1 max-w-[80%] ${isUser ? 'items-end' : 'items-start'} flex flex-col`}>
         <Card className={`p-3 ${isUser ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
-          <div className="prose prose-sm max-w-none dark:prose-invert">
-            <p className="whitespace-pre-wrap m-0">{message.content}</p>
-          </div>
+          {isUser ? (
+            <div className="prose prose-sm max-w-none dark:prose-invert">
+              <p className="whitespace-pre-wrap m-0">{message.content}</p>
+            </div>
+          ) : (
+            <MarkdownContent content={message.content} />
+          )}
           
           {/* Task suggestions for AI messages */}
           {!isUser && parsedTasks.length > 0 && (
