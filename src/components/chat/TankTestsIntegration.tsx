@@ -59,27 +59,40 @@ export const TankTestsIntegration: React.FC<TankTestsIntegrationProps> = ({
 
     setIsLoading(true);
     try {
-      // Get all aquarium IDs for the user
-      const userTankIds = tanks.map(tank => tank.id);
+      console.log('Available tanks:', tanks);
       
-      if (userTankIds.length === 0) {
+      // Filter tanks to get only valid UUID strings
+      const validTankIds = tanks
+        .filter(tank => tank && tank.id && typeof tank.id === 'string')
+        .map(tank => tank.id)
+        .filter(id => {
+          // Check if it's a valid UUID format (basic validation)
+          const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+          return uuidRegex.test(id);
+        });
+      
+      console.log('Valid tank IDs:', validTankIds);
+      
+      if (validTankIds.length === 0) {
         toast({
           title: "No tanks found",
           description: "Please add a tank first to view test logs",
           variant: "destructive",
         });
+        setShowTests(true); // Still show the interface
         return;
       }
 
       const { data, error } = await supabase
         .from('water_test_logs')
         .select('*')
-        .in('aquarium_id', userTankIds)
+        .in('aquarium_id', validTankIds)
         .order('test_date', { ascending: false })
         .limit(20);
 
       if (error) throw error;
 
+      console.log('Loaded test logs:', data);
       setTestLogs(data || []);
       setShowTests(true);
     } catch (error: any) {
