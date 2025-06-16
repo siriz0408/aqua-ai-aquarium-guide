@@ -11,7 +11,7 @@ import { ConversationList } from '@/components/chat/ConversationList';
 import { MessageBubble } from '@/components/chat/MessageBubble';
 import { ChatInput } from '@/components/chat/ChatInput';
 import { QuickPrompts } from '@/components/chat/QuickPrompts';
-import { PlanIntegration } from '@/components/chat/PlanIntegration';
+import { TankTestsIntegration } from '@/components/chat/TankTestsIntegration';
 import { Badge } from '@/components/ui/badge';
 
 interface FileAttachment {
@@ -79,8 +79,8 @@ const AquaBot = () => {
     await handleSendMessage(prompt);
   };
 
-  const handlePlanIntegration = async (planData: string, action: 'checklist' | 'reminders') => {
-    await handleSendMessage(planData);
+  const handleTestAnalysis = async (testData: string) => {
+    await handleSendMessage(testData);
   };
 
   return (
@@ -187,8 +187,8 @@ const AquaBot = () => {
                       onPromptSelect={handleQuickPrompt}
                       disabled={isLoading || isSearching}
                     />
-                    <PlanIntegration 
-                      onSendPlanData={handlePlanIntegration}
+                    <TankTestsIntegration 
+                      onSendTestData={handleTestAnalysis}
                       disabled={isLoading || isSearching}
                     />
                     <div className="flex items-center justify-center h-32 text-muted-foreground">
@@ -238,8 +238,8 @@ const AquaBot = () => {
                   disabled={isLoading || isSearching}
                 />
                 
-                <PlanIntegration 
-                  onSendPlanData={handlePlanIntegration}
+                <TankTestsIntegration 
+                  onSendTestData={handleTestAnalysis}
                   disabled={isLoading || isSearching}
                 />
               </div>
