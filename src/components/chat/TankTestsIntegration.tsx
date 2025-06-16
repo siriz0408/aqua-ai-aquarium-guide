@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -122,8 +121,8 @@ export const TankTestsIntegration: React.FC<TankTestsIntegrationProps> = ({
   if (tanks.length === 0) {
     return (
       <Card>
-        <CardContent className="p-6 text-center">
-          <TestTube2 className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+        <CardContent className="p-4 sm:p-6 text-center">
+          <TestTube2 className="h-6 w-6 sm:h-8 sm:w-8 text-muted-foreground mx-auto mb-2" />
           <p className="text-sm text-muted-foreground">
             No tanks found. Add a tank to share your data with AquaBot.
           </p>
@@ -134,20 +133,20 @@ export const TankTestsIntegration: React.FC<TankTestsIntegrationProps> = ({
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <TestTube2 className="h-5 w-5" />
+      <CardHeader className="pb-3 sm:pb-4">
+        <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+          <TestTube2 className="h-4 w-4 sm:h-5 sm:w-5" />
           Share Tank Data
         </CardTitle>
-        <CardDescription>
+        <CardDescription className="text-sm">
           Send your complete tank information to AquaBot for personalized analysis and recommendations
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-3 sm:space-y-4 p-4 sm:p-6 pt-0">
         <div>
-          <Label htmlFor="tank-select">Select Tank</Label>
+          <Label htmlFor="tank-select" className="text-sm font-medium">Select Tank</Label>
           <Select value={selectedTankId} onValueChange={setSelectedTankId}>
-            <SelectTrigger>
+            <SelectTrigger className="mt-1">
               <SelectValue placeholder="Choose a tank..." />
             </SelectTrigger>
             <SelectContent>
@@ -163,51 +162,71 @@ export const TankTestsIntegration: React.FC<TankTestsIntegrationProps> = ({
         {selectedTank && (
           <>
             <div className="space-y-3">
-              <Label>Include in Analysis:</Label>
+              <Label className="text-sm font-medium">Include in Analysis:</Label>
               
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="parameters"
-                  checked={includeParameters}
-                  onCheckedChange={(checked) => setIncludeParameters(checked as boolean)}
-                />
-                <Label htmlFor="parameters" className="flex items-center gap-2">
-                  <Droplets className="h-4 w-4" />
-                  Water Parameters
-                  {selectedTank.parameters.length > 0 && (
-                    <Badge variant="secondary">{selectedTank.parameters.length} tests</Badge>
-                  )}
-                </Label>
-              </div>
+              <div className="space-y-3">
+                <div className="flex items-start space-x-3">
+                  <Checkbox
+                    id="parameters"
+                    checked={includeParameters}
+                    onCheckedChange={(checked) => setIncludeParameters(checked as boolean)}
+                    className="mt-0.5"
+                  />
+                  <Label 
+                    htmlFor="parameters" 
+                    className="flex items-center gap-2 text-sm leading-5 cursor-pointer flex-1"
+                  >
+                    <Droplets className="h-4 w-4 flex-shrink-0" />
+                    <span className="flex-1">Water Parameters</span>
+                    {selectedTank.parameters.length > 0 && (
+                      <Badge variant="secondary" className="text-xs">
+                        {selectedTank.parameters.length} tests
+                      </Badge>
+                    )}
+                  </Label>
+                </div>
 
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="equipment"
-                  checked={includeEquipment}
-                  onCheckedChange={(checked) => setIncludeEquipment(checked as boolean)}
-                />
-                <Label htmlFor="equipment" className="flex items-center gap-2">
-                  <Settings className="h-4 w-4" />
-                  Equipment Setup
-                  {selectedTank.equipment.length > 0 && (
-                    <Badge variant="secondary">{selectedTank.equipment.length} items</Badge>
-                  )}
-                </Label>
-              </div>
+                <div className="flex items-start space-x-3">
+                  <Checkbox
+                    id="equipment"
+                    checked={includeEquipment}
+                    onCheckedChange={(checked) => setIncludeEquipment(checked as boolean)}
+                    className="mt-0.5"
+                  />
+                  <Label 
+                    htmlFor="equipment" 
+                    className="flex items-center gap-2 text-sm leading-5 cursor-pointer flex-1"
+                  >
+                    <Settings className="h-4 w-4 flex-shrink-0" />
+                    <span className="flex-1">Equipment Setup</span>
+                    {selectedTank.equipment.length > 0 && (
+                      <Badge variant="secondary" className="text-xs">
+                        {selectedTank.equipment.length} items
+                      </Badge>
+                    )}
+                  </Label>
+                </div>
 
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="livestock"
-                  checked={includeLivestock}
-                  onCheckedChange={(checked) => setIncludeLivestock(checked as boolean)}
-                />
-                <Label htmlFor="livestock" className="flex items-center gap-2">
-                  <Fish className="h-4 w-4" />
-                  Livestock
-                  {selectedTank.livestock.length > 0 && (
-                    <Badge variant="secondary">{selectedTank.livestock.length} animals</Badge>
-                  )}
-                </Label>
+                <div className="flex items-start space-x-3">
+                  <Checkbox
+                    id="livestock"
+                    checked={includeLivestock}
+                    onCheckedChange={(checked) => setIncludeLivestock(checked as boolean)}
+                    className="mt-0.5"
+                  />
+                  <Label 
+                    htmlFor="livestock" 
+                    className="flex items-center gap-2 text-sm leading-5 cursor-pointer flex-1"
+                  >
+                    <Fish className="h-4 w-4 flex-shrink-0" />
+                    <span className="flex-1">Livestock</span>
+                    {selectedTank.livestock.length > 0 && (
+                      <Badge variant="secondary" className="text-xs">
+                        {selectedTank.livestock.length} animals
+                      </Badge>
+                    )}
+                  </Label>
+                </div>
               </div>
             </div>
 
@@ -220,7 +239,8 @@ export const TankTestsIntegration: React.FC<TankTestsIntegrationProps> = ({
             <Button 
               onClick={handleSendData}
               disabled={disabled || isLoading || (!includeParameters && !includeEquipment && !includeLivestock)}
-              className="w-full"
+              className="w-full h-11 text-sm"
+              size="sm"
             >
               <Send className="mr-2 h-4 w-4" />
               {isLoading ? 'Sending...' : 'Send Tank Data to AquaBot'}

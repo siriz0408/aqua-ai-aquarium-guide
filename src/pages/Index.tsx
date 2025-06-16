@@ -52,15 +52,16 @@ const Index = () => {
 
   return (
     <Layout title="AquaAI">
-      <div className="space-y-6 pb-20">
-        {/* Welcome Section */}
-        <div className="text-center space-y-4">
-          <div className="ocean-gradient rounded-2xl p-8 text-white">
-            <h2 className="text-3xl font-bold mb-2">Welcome to AquaAI</h2>
-            <p className="text-blue-100 mb-6">Your AI-powered saltwater aquarium assistant</p>
+      <div className="space-y-4 sm:space-y-6 pb-16 sm:pb-20">
+        {/* Welcome Section - Enhanced for mobile */}
+        <div className="text-center space-y-3 sm:space-y-4">
+          <div className="ocean-gradient rounded-xl sm:rounded-2xl p-6 sm:p-8 text-white">
+            <h2 className="text-2xl sm:text-3xl font-bold mb-2">Welcome to AquaAI</h2>
+            <p className="text-blue-100 text-sm sm:text-base mb-4 sm:mb-6">Your AI-powered saltwater aquarium assistant</p>
             <Button
               onClick={() => navigate('/aquabot')}
-              className="bg-white/20 hover:bg-white/30 text-white border border-white/30"
+              className="bg-white/20 hover:bg-white/30 text-white border border-white/30 text-sm sm:text-base"
+              size="sm"
             >
               <MessageCircle className="mr-2 h-4 w-4" />
               Ask AquaBot
@@ -71,49 +72,49 @@ const Index = () => {
         {/* AI Recommendations Section */}
         <TaskRecommendations />
 
-        {/* Quick Actions */}
-        <div className="grid grid-cols-2 gap-4">
-          <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/aquabot')}>
-            <CardContent className="p-4 text-center">
-              <MessageCircle className="h-8 w-8 mx-auto mb-2 text-primary" />
-              <p className="font-medium">Chat with AI</p>
-              <p className="text-sm text-muted-foreground">Get instant help</p>
+        {/* Quick Actions - Mobile optimized grid */}
+        <div className="grid grid-cols-2 gap-3 sm:gap-4">
+          <Card className="cursor-pointer hover:shadow-lg transition-all duration-200 active:scale-95" onClick={() => navigate('/aquabot')}>
+            <CardContent className="p-3 sm:p-4 text-center">
+              <MessageCircle className="h-6 w-6 sm:h-8 sm:w-8 mx-auto mb-2 text-primary" />
+              <p className="font-medium text-sm sm:text-base">Chat with AI</p>
+              <p className="text-xs sm:text-sm text-muted-foreground">Get instant help</p>
             </CardContent>
           </Card>
           
-          <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/setup-planner')}>
-            <CardContent className="p-4 text-center">
-              <Plus className="h-8 w-8 mx-auto mb-2 text-accent" />
-              <p className="font-medium">Setup Planner</p>
-              <p className="text-sm text-muted-foreground">Plan your tank</p>
+          <Card className="cursor-pointer hover:shadow-lg transition-all duration-200 active:scale-95" onClick={() => navigate('/setup-planner')}>
+            <CardContent className="p-3 sm:p-4 text-center">
+              <Plus className="h-6 w-6 sm:h-8 sm:w-8 mx-auto mb-2 text-accent" />
+              <p className="font-medium text-sm sm:text-base">Setup Planner</p>
+              <p className="text-xs sm:text-sm text-muted-foreground">Plan your tank</p>
             </CardContent>
           </Card>
         </div>
 
         {/* My Plans Section */}
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-2xl font-bold">My Plans</h3>
-            <Button onClick={() => navigate('/setup-planner')} variant="outline">
-              <Plus className="mr-2 h-4 w-4" />
-              New Plan
+            <h3 className="text-xl sm:text-2xl font-bold">My Plans</h3>
+            <Button onClick={() => navigate('/setup-planner')} variant="outline" size="sm">
+              <Plus className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="text-xs sm:text-sm">New Plan</span>
             </Button>
           </div>
           <SavedPlans />
         </div>
 
         {/* My Tanks Section */}
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-2xl font-bold">My Tanks</h3>
+            <h3 className="text-xl sm:text-2xl font-bold">My Tanks</h3>
             <Dialog open={isAddingTank} onOpenChange={setIsAddingTank}>
               <DialogTrigger asChild>
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add Tank
+                <Button size="sm">
+                  <Plus className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="text-xs sm:text-sm">Add Tank</span>
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="w-[95vw] max-w-md">
                 <DialogHeader>
                   <DialogTitle>Add New Tank</DialogTitle>
                   <DialogDescription>
@@ -161,50 +162,50 @@ const Index = () => {
           </div>
 
           {tanks.length === 0 ? (
-            <Card className="p-8 text-center">
-              <div className="space-y-4">
-                <div className="text-6xl">🐠</div>
+            <Card className="p-6 sm:p-8 text-center">
+              <div className="space-y-3 sm:space-y-4">
+                <div className="text-4xl sm:text-6xl">🐠</div>
                 <div>
-                  <h4 className="text-lg font-medium">No tanks yet</h4>
-                  <p className="text-muted-foreground">Add your first aquarium to get started</p>
+                  <h4 className="text-base sm:text-lg font-medium">No tanks yet</h4>
+                  <p className="text-sm sm:text-base text-muted-foreground">Add your first aquarium to get started</p>
                 </div>
-                <Button onClick={() => setIsAddingTank(true)}>
+                <Button onClick={() => setIsAddingTank(true)} size="sm">
                   <Plus className="mr-2 h-4 w-4" />
                   Add Your First Tank
                 </Button>
               </div>
             </Card>
           ) : (
-            <div className="grid gap-4">
+            <div className="grid gap-3 sm:gap-4">
               {tanks.map((tank) => (
                 <Card 
                   key={tank.id} 
-                  className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-[1.02]"
+                  className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-[1.01] active:scale-95"
                   onClick={() => navigate(`/tank/${tank.id}`)}
                 >
-                  <CardHeader className="pb-3">
+                  <CardHeader className="pb-2 sm:pb-3">
                     <div className="flex items-start justify-between">
-                      <div>
-                        <CardTitle className="text-lg">{tank.name}</CardTitle>
-                        <CardDescription>{tank.size} • {tank.type}</CardDescription>
+                      <div className="min-w-0 flex-1">
+                        <CardTitle className="text-base sm:text-lg truncate">{tank.name}</CardTitle>
+                        <CardDescription className="text-sm">{tank.size} • {tank.type}</CardDescription>
                       </div>
-                      <div className="text-2xl">
+                      <div className="text-xl sm:text-2xl flex-shrink-0 ml-2">
                         {tank.type === 'Reef' ? '🪸' : tank.type === 'FOWLR' ? '🐠' : '🌊'}
                       </div>
                     </div>
                   </CardHeader>
                   <CardContent className="pt-0">
-                    <div className="grid grid-cols-3 gap-4 text-center">
+                    <div className="grid grid-cols-3 gap-2 sm:gap-4 text-center">
                       <div>
-                        <p className="text-2xl font-bold text-primary">{tank.livestock.length}</p>
+                        <p className="text-lg sm:text-2xl font-bold text-primary">{tank.livestock.length}</p>
                         <p className="text-xs text-muted-foreground">Livestock</p>
                       </div>
                       <div>
-                        <p className="text-2xl font-bold text-accent">{tank.equipment.length}</p>
+                        <p className="text-lg sm:text-2xl font-bold text-accent">{tank.equipment.length}</p>
                         <p className="text-xs text-muted-foreground">Equipment</p>
                       </div>
                       <div>
-                        <p className="text-2xl font-bold text-green-600">{tank.parameters.length}</p>
+                        <p className="text-lg sm:text-2xl font-bold text-green-600">{tank.parameters.length}</p>
                         <p className="text-xs text-muted-foreground">Test Logs</p>
                       </div>
                     </div>

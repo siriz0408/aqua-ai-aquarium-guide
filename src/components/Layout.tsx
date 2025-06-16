@@ -3,7 +3,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { ArrowUp, MessageCircle, Plus, Save, LogOut } from 'lucide-react';
+import { ArrowUp, MessageCircle, Plus, Save, LogOut, Home } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 interface LayoutProps {
@@ -29,32 +29,32 @@ export function Layout({ children, title, showBackButton = false, actions }: Lay
   };
 
   return (
-    <div className="min-h-screen">
-      {/* Header */}
+    <div className="min-h-screen flex flex-col">
+      {/* Header - Optimized for mobile */}
       <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-16 items-center px-4">
-          <div className="flex items-center gap-4">
+        <div className="container flex h-14 sm:h-16 items-center px-3 sm:px-4">
+          <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
             {showBackButton && (
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => navigate(-1)}
-                className="h-8 w-8 p-0"
+                className="h-8 w-8 p-0 flex-shrink-0"
               >
                 <ArrowUp className="h-4 w-4 rotate-[-90deg]" />
               </Button>
             )}
-            <div className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-full ocean-gradient flex items-center justify-center">
-                <span className="text-white font-bold text-sm">🐠</span>
+            <div className="flex items-center gap-2 min-w-0 flex-1">
+              <div className="h-6 w-6 sm:h-8 sm:w-8 rounded-full ocean-gradient flex items-center justify-center flex-shrink-0">
+                <span className="text-white font-bold text-xs sm:text-sm">🐠</span>
               </div>
-              <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
+              <h1 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent truncate">
                 {title}
               </h1>
             </div>
           </div>
           
-          <div className="ml-auto flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
             {actions}
             <Button
               variant="ghost"
@@ -79,56 +79,54 @@ export function Layout({ children, title, showBackButton = false, actions }: Lay
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="container mx-auto px-4 py-6">
+      {/* Main Content with better mobile spacing */}
+      <main className="flex-1 container mx-auto px-3 sm:px-4 py-4 sm:py-6">
         {children}
       </main>
 
-      {/* Bottom Navigation - Only show when user is authenticated */}
+      {/* Bottom Navigation - Enhanced for mobile */}
       {user && (
-        <nav className="fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur border-t border-border/40 supports-[backdrop-filter]:bg-background/60">
-          <div className="container px-4">
-            <div className="flex items-center justify-around py-2">
+        <nav className="sticky bottom-0 left-0 right-0 bg-background/95 backdrop-blur border-t border-border/40 supports-[backdrop-filter]:bg-background/60 safe-area-inset-bottom">
+          <div className="container px-2 sm:px-4">
+            <div className="flex items-center justify-around py-1 sm:py-2">
               <Button
                 variant={location.pathname === '/' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => navigate('/')}
-                className="flex flex-col gap-1 h-12 text-xs"
+                className="flex flex-col gap-0.5 sm:gap-1 h-10 sm:h-12 text-xs min-w-0 px-2 sm:px-3"
               >
-                <div className="h-5 w-5 rounded-full ocean-gradient flex items-center justify-center">
-                  <span className="text-white text-xs">🏠</span>
-                </div>
-                Home
+                <Home className="h-4 w-4 flex-shrink-0" />
+                <span className="truncate">Home</span>
               </Button>
               
               <Button
                 variant={location.pathname === '/aquabot' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => navigate('/aquabot')}
-                className="flex flex-col gap-1 h-12 text-xs"
+                className="flex flex-col gap-0.5 sm:gap-1 h-10 sm:h-12 text-xs min-w-0 px-2 sm:px-3"
               >
-                <MessageCircle className="h-4 w-4" />
-                AquaBot
+                <MessageCircle className="h-4 w-4 flex-shrink-0" />
+                <span className="truncate">AquaBot</span>
               </Button>
               
               <Button
                 variant={location.pathname === '/setup-planner' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => navigate('/setup-planner')}
-                className="flex flex-col gap-1 h-12 text-xs"
+                className="flex flex-col gap-0.5 sm:gap-1 h-10 sm:h-12 text-xs min-w-0 px-2 sm:px-3"
               >
-                <Plus className="h-4 w-4" />
-                Planner
+                <Plus className="h-4 w-4 flex-shrink-0" />
+                <span className="truncate">Planner</span>
               </Button>
               
               <Button
                 variant={location.pathname === '/reminders' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => navigate('/reminders')}
-                className="flex flex-col gap-1 h-12 text-xs"
+                className="flex flex-col gap-0.5 sm:gap-1 h-10 sm:h-12 text-xs min-w-0 px-2 sm:px-3"
               >
-                <Save className="h-4 w-4" />
-                Reminders
+                <Save className="h-4 w-4 flex-shrink-0" />
+                <span className="truncate">Tasks</span>
               </Button>
             </div>
           </div>
