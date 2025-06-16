@@ -25,6 +25,7 @@ export const LivestockManager: React.FC<LivestockManagerProps> = ({
   gallons
 }) => {
   const [editingId, setEditingId] = React.useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = React.useState('');
   const [selectedLivestock, setSelectedLivestock] = React.useState('');
 
   const careLevels = ['Beginner', 'Intermediate', 'Advanced', 'Expert'];
@@ -105,11 +106,30 @@ export const LivestockManager: React.FC<LivestockManagerProps> = ({
 
   const warnings = getStockingWarnings();
 
-  // Group livestock options by category for better display
-  const livestockComboOptions = livestockOptions.map(opt => ({
+  // Filter livestock options by selected category
+  const filteredLivestockOptions = selectedCategory 
+    ? livestockOptions.filter(opt => opt.category === selectedCategory)
+    : livestockOptions;
+
+  const livestockComboOptions = filteredLivestockOptions.map(opt => ({
     value: opt.value,
-    label: `${opt.label} (${opt.category} - ${opt.careLevel})`
+    label: `${opt.label} (${opt.careLevel})`
   }));
+
+  // Reset selected livestock when category changes
+  React.useEffect(() => {
+    setSelectedLivestock('');
+  }, [selectedCategory]);
+
+  const getCategoryEmoji = (category: string) => {
+    switch (category) {
+      case 'Fish': return '🐠';
+      case 'Coral': return '🪸';
+      case 'Invertebrate': return '🦐';
+      case 'Cleanup Crew': return '🐌';
+      default: return '🐠';
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -122,20 +142,40 @@ export const LivestockManager: React.FC<LivestockManagerProps> = ({
         </div>
       </div>
 
-      {/* Quick Add Livestock */}
+      {/* Quick Add Livestock with Category Selection */}
       <Card className="bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
         <CardContent className="p-4">
           <div className="space-y-3">
             <Label className="text-sm font-medium">Quick Add Livestock</Label>
+            
+            {/* Category Selection */}
+            <div>
+              <Label className="text-xs text-muted-foreground">Select Category</Label>
+              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose livestock type..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All Categories</SelectItem>
+                  {livestockCategories.map(category => (
+                    <SelectItem key={category} value={category}>
+                      {getCategoryEmoji(category)} {category}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Species Selection */}
             <div className="flex gap-2">
               <div className="flex-1">
                 <Combobox
                   options={livestockComboOptions}
                   value={selectedLivestock}
                   onValueChange={setSelectedLivestock}
-                  placeholder="Search fish, corals, invertebrates..."
-                  searchPlaceholder="Type to search livestock..."
-                  emptyText="No livestock found."
+                  placeholder={selectedCategory ? `Search ${selectedCategory.toLowerCase()}...` : "Search all livestock..."}
+                  searchPlaceholder={selectedCategory ? `Type to search ${selectedCategory.toLowerCase()}...` : "Type to search livestock..."}
+                  emptyText={selectedCategory ? `No ${selectedCategory.toLowerCase()} found.` : "No livestock found."}
                 />
               </div>
               <Button 
@@ -146,8 +186,12 @@ export const LivestockManager: React.FC<LivestockManagerProps> = ({
                 Add
               </Button>
             </div>
+            
             <p className="text-xs text-muted-foreground">
-              Select from popular species or add custom livestock below
+              {selectedCategory 
+                ? `Browse ${filteredLivestockOptions.length} ${selectedCategory.toLowerCase()} options or add custom livestock below`
+                : `Browse ${livestockOptions.length} livestock options or add custom livestock below`
+              }
             </p>
           </div>
         </CardContent>
