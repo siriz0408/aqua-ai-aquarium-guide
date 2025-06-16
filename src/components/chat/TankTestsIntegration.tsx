@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, TestTube, Calendar, Droplets, Activity } from 'lucide-react';
 import { useAquarium } from '@/contexts/AquariumContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -43,7 +42,7 @@ export const TankTestsIntegration: React.FC<TankTestsIntegrationProps> = ({
   const [selectedTest, setSelectedTest] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [showTests, setShowTests] = useState(false);
-  const { tanks } = useAquarium();
+  const { tanks, isLoading: tanksLoading } = useAquarium();
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -57,16 +56,24 @@ export const TankTestsIntegration: React.FC<TankTestsIntegrationProps> = ({
       return;
     }
 
+    if (tanksLoading) {
+      toast({
+        title: "Loading tanks...",
+        description: "Please wait while we load your tank data",
+      });
+      return;
+    }
+
     setIsLoading(true);
     try {
       console.log('Available tanks:', tanks);
       
-      // Filter tanks to get only valid UUID strings
+      // Get valid tank IDs (UUIDs from Supabase or skip local timestamp IDs)
       const validTankIds = tanks
         .filter(tank => tank && tank.id && typeof tank.id === 'string')
         .map(tank => tank.id)
         .filter(id => {
-          // Check if it's a valid UUID format (basic validation)
+          // Check if it's a valid UUID format (from Supabase)
           const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
           return uuidRegex.test(id);
         });
@@ -74,12 +81,9 @@ export const TankTestsIntegration: React.FC<TankTestsIntegrationProps> = ({
       console.log('Valid tank IDs:', validTankIds);
       
       if (validTankIds.length === 0) {
-        toast({
-          title: "No tanks found",
-          description: "Please add a tank first to view test logs",
-          variant: "destructive",
-        });
-        setShowTests(true); // Still show the interface
+        // Show interface even if no valid UUIDs, but display helpful message
+        setShowTests(true);
+        setTestLogs([]);
         return;
       }
 
@@ -102,6 +106,7 @@ export const TankTestsIntegration: React.FC<TankTestsIntegrationProps> = ({
         description: error.message || "Failed to load test logs",
         variant: "destructive",
       });
+      setShowTests(true); // Still show interface
     } finally {
       setIsLoading(false);
     }
@@ -191,6 +196,11 @@ Please provide step-by-step recommendations to improve my water quality and addr
     );
   };
 
+  const hasValidTanks = tanks.some(tank => {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(tank.id);
+  });
+
   return (
     <Card className="mb-4">
       <CardHeader>
@@ -208,12 +218,22 @@ Please provide step-by-step recommendations to improve my water quality and addr
                 <p className="text-sm text-muted-foreground">
                   Load your recent water test results to get AI-powered analysis and step-by-step recommendations
                 </p>
+                {!user && (
+                  <p className="text-xs text-orange-600">
+                    Sign in to sync your test data across devices
+                  </p>
+                )}
+                {user && !hasValidTanks && (
+                  <p className="text-xs text-orange-600">
+                    Add tanks through the main app to start logging test results
+                  </p>
+                )}
               </div>
             </div>
             
             <Button
               onClick={loadTestLogs}
-              disabled={disabled || isLoading}
+              disabled={disabled || isLoading || tanksLoading}
               className="w-full"
               variant="outline"
             >
@@ -221,6 +241,11 @@ Please provide step-by-step recommendations to improve my water quality and addr
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Loading Tests...
+                </>
+              ) : tanksLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Loading Tanks...
                 </>
               ) : (
                 <>
@@ -248,7 +273,10 @@ Please provide step-by-step recommendations to improve my water quality and addr
                 <Calendar className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
                 <p className="text-sm text-muted-foreground">No test results found</p>
                 <p className="text-xs text-muted-foreground">
-                  Add some water test logs to get AI recommendations
+                  {!hasValidTanks 
+                    ? "Add tanks through the main app and log some water tests" 
+                    : "Add some water test logs to get AI recommendations"
+                  }
                 </p>
               </div>
             ) : (

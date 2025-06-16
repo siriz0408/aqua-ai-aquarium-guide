@@ -111,11 +111,11 @@ const LogParameters = () => {
         aiInsights,
       };
 
-      addParameters(tankId!, newParameters);
+      await addParameters(tankId!, newParameters);
       
       toast({
         title: "Parameters logged successfully!",
-        description: "AI analysis complete. Check the insights in your tank details.",
+        description: "AI analysis complete. Your test data has been saved.",
       });
       
       navigate(`/tank/${tankId}`);
