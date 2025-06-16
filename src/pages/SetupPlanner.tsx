@@ -1,55 +1,44 @@
-
 import React, { useState } from 'react';
 import { Layout } from '@/components/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Plus } from 'lucide-react';
+import { RotateCcw, Sparkles } from 'lucide-react';
+import SetupWizard from '@/components/setup-wizard/SetupWizard';
 
 const SetupPlanner = () => {
   const { toast } = useToast();
   const [isGenerating, setIsGenerating] = useState(false);
   const [setupPlan, setSetupPlan] = useState<any>(null);
-  const [formData, setFormData] = useState({
-    livestock: '',
-    length: '',
-    width: '',
-    height: '',
-    budget: '',
-  });
 
-  const generateSetupPlan = async () => {
-    if (!formData.livestock || !formData.length || !formData.budget) {
-      toast({
-        title: "Please fill in required fields",
-        description: "Livestock goals, tank dimensions, and budget are required",
-        variant: "destructive",
-      });
-      return;
-    }
-
+  const generateSetupPlan = async (planData: any) => {
     setIsGenerating(true);
     
-    // Simulate AI generation
-    await new Promise(resolve => setTimeout(resolve, 3000));
+    // Simulate AI generation with more realistic delay
+    await new Promise(resolve => setTimeout(resolve, 4000));
+    
+    const gallons = Math.round((parseInt(planData.tankSpecs.length) * 
+                               parseInt(planData.tankSpecs.width || '18') * 
+                               parseInt(planData.tankSpecs.height || '20')) / 231);
     
     const mockPlan = {
-      tankSize: `${formData.length}"L x ${formData.width || '18'}"W x ${formData.height || '20'}"H`,
-      estimatedGallons: Math.round((parseInt(formData.length) * parseInt(formData.width || '18') * parseInt(formData.height || '20')) / 231),
+      tankSize: `${planData.tankSpecs.length}"L x ${planData.tankSpecs.width || '18'}"W x ${planData.tankSpecs.height || '20'}"H`,
+      estimatedGallons: gallons,
+      tankType: planData.tankSpecs.tankType,
+      experience: planData.tankSpecs.experience,
+      totalBudget: planData.budgetTimeline.totalBudget,
+      setupBudget: planData.budgetTimeline.setupBudget,
       equipment: [
-        { item: 'Tank + Stand', price: '$600-800', priority: 'Essential' },
-        { item: 'Protein Skimmer', price: '$200-400', priority: 'Essential' },
-        { item: 'Return Pump', price: '$100-200', priority: 'Essential' },
-        { item: 'Heater (200W)', price: '$30-50', priority: 'Essential' },
-        { item: 'LED Lighting', price: '$300-600', priority: 'Essential' },
-        { item: 'Live Rock (50lbs)', price: '$200-300', priority: 'Essential' },
-        { item: 'Salt Mix', price: '$40-60', priority: 'Essential' },
-        { item: 'Test Kits', price: '$80-120', priority: 'Essential' },
-        { item: 'Powerheads (2x)', price: '$100-200', priority: 'Recommended' },
-        { item: 'Auto Top Off', price: '$150-250', priority: 'Recommended' },
+        { item: 'Tank + Stand', price: '$600-800', priority: 'Essential', category: 'Tank System' },
+        { item: 'Protein Skimmer', price: '$200-400', priority: 'Essential', category: 'Filtration' },
+        { item: 'Return Pump', price: '$100-200', priority: 'Essential', category: 'Circulation' },
+        { item: 'Heater (200W)', price: '$30-50', priority: 'Essential', category: 'Climate' },
+        { item: 'LED Lighting', price: '$300-600', priority: 'Essential', category: 'Lighting' },
+        { item: 'Live Rock (50lbs)', price: '$200-300', priority: 'Essential', category: 'Biologics' },
+        { item: 'Salt Mix', price: '$40-60', priority: 'Essential', category: 'Water' },
+        { item: 'Test Kits', price: '$80-120', priority: 'Essential', category: 'Monitoring' },
+        { item: 'Powerheads (2x)', price: '$100-200', priority: 'Recommended', category: 'Circulation' },
+        { item: 'Auto Top Off', price: '$150-250', priority: 'Recommended', category: 'Automation' },
       ],
       compatibleLivestock: [
         'Ocellaris Clownfish (pair)',
@@ -68,7 +57,13 @@ const SetupPlanner = () => {
         'Month 3+: Begin adding corals (if reef tank)',
       ],
       totalEstimate: `$1,400 - $2,200`,
-      monthlyMaintenance: '$30-50 (salt, test reagents, food)',
+      monthlyMaintenance: planData.budgetTimeline.monthlyBudget ? 
+        `$${planData.budgetTimeline.monthlyBudget}` : '$30-50',
+      recommendations: {
+        beginner: planData.tankSpecs.experience === 'beginner',
+        reef: planData.tankSpecs.tankType.includes('reef'),
+        budget: planData.budgetTimeline.priority === 'budget'
+      }
     };
     
     setSetupPlan(mockPlan);
@@ -76,12 +71,16 @@ const SetupPlanner = () => {
     
     toast({
       title: "Setup plan generated!",
-      description: "Your custom aquarium plan is ready",
+      description: "Your custom aquarium plan is ready with step-by-step guidance",
     });
   };
 
-  const updateFormData = (key: string, value: string) => {
-    setFormData(prev => ({ ...prev, [key]: value }));
+  const resetPlan = () => {
+    setSetupPlan(null);
+    toast({
+      title: "Plan reset",
+      description: "Start over with new specifications",
+    });
   };
 
   return (
@@ -89,83 +88,38 @@ const SetupPlanner = () => {
       <div className="space-y-6 pb-20">
         <Card>
           <CardHeader>
-            <CardTitle>Custom Tank Setup Generator</CardTitle>
-            <CardDescription>
-              Get AI-powered recommendations for your perfect saltwater aquarium
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="space-y-4">
+            <div className="flex items-center justify-between">
               <div>
-                <Label htmlFor="livestock">Desired Livestock *</Label>
-                <Textarea
-                  id="livestock"
-                  placeholder="e.g., Clownfish, angelfish, some corals for a beginner reef tank"
-                  value={formData.livestock}
-                  onChange={(e) => updateFormData('livestock', e.target.value)}
-                />
+                <CardTitle className="flex items-center gap-2">
+                  <Sparkles className="h-5 w-5 text-primary" />
+                  Enhanced Setup Planner
+                </CardTitle>
+                <CardDescription>
+                  Step-by-step guidance for your perfect saltwater aquarium setup
+                </CardDescription>
               </div>
-              
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <Label htmlFor="length">Length (inches) *</Label>
-                  <Input
-                    id="length"
-                    type="number"
-                    placeholder="48"
-                    value={formData.length}
-                    onChange={(e) => updateFormData('length', e.target.value)}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="width">Width (inches)</Label>
-                  <Input
-                    id="width"
-                    type="number"
-                    placeholder="18"
-                    value={formData.width}
-                    onChange={(e) => updateFormData('width', e.target.value)}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="height">Height (inches)</Label>
-                  <Input
-                    id="height"
-                    type="number"
-                    placeholder="20"
-                    value={formData.height}
-                    onChange={(e) => updateFormData('height', e.target.value)}
-                  />
-                </div>
-              </div>
-              
-              <div>
-                <Label htmlFor="budget">Budget (USD) *</Label>
-                <Input
-                  id="budget"
-                  type="number"
-                  placeholder="2000"
-                  value={formData.budget}
-                  onChange={(e) => updateFormData('budget', e.target.value)}
-                />
-              </div>
+              {setupPlan && (
+                <Button variant="outline" onClick={resetPlan}>
+                  <RotateCcw className="mr-2 h-4 w-4" />
+                  Start Over
+                </Button>
+              )}
             </div>
-
-            <Button 
-              onClick={generateSetupPlan} 
-              disabled={isGenerating}
-              className="w-full ocean-gradient text-white"
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              {isGenerating ? 'Generating Plan...' : 'Generate Setup Plan'}
-            </Button>
+          </CardHeader>
+          <CardContent>
+            {!setupPlan && !isGenerating && (
+              <SetupWizard onPlanGenerated={generateSetupPlan} />
+            )}
 
             {isGenerating && (
-              <div className="text-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                <div className="flex items-center justify-center space-x-2">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
-                  <span className="text-sm">AI is creating your custom setup plan...</span>
+              <div className="text-center p-8 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                <div className="flex items-center justify-center space-x-2 mb-4">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                  <span className="text-lg font-medium">Generating Your Custom Plan...</span>
                 </div>
+                <p className="text-sm text-muted-foreground">
+                  Analyzing your specifications and creating personalized recommendations
+                </p>
               </div>
             )}
           </CardContent>
