@@ -18,6 +18,16 @@ interface ChatInputProps {
   disabled?: boolean;
 }
 
+// Helper function to convert file to base64
+const convertFileToBase64 = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+};
+
 export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, disabled = false }) => {
   const [message, setMessage] = useState('');
   const [attachments, setAttachments] = useState<FileAttachment[]>([]);
@@ -84,16 +94,15 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, disabled = 
       }
 
       try {
-        // For demo purposes, create a local URL
-        // In production, you would upload to a service like Cloudinary
-        const url = URL.createObjectURL(file);
+        // Convert file to base64 data URL
+        const base64Url = await convertFileToBase64(file);
         
         const attachment: FileAttachment = {
           name: file.name,
-          url: url,
+          url: base64Url, // Now this is a proper data URL that can be sent to the edge function
           type: file.type,
           size: file.size,
-          preview: file.type.startsWith('image/') ? url : undefined
+          preview: file.type.startsWith('image/') ? base64Url : undefined
         };
         
         setAttachments(prev => [...prev, attachment]);
@@ -122,10 +131,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, disabled = 
   const removeAttachment = (index: number) => {
     setAttachments(prev => {
       const newAttachments = [...prev];
-      // Clean up object URL
-      if (newAttachments[index].url.startsWith('blob:')) {
-        URL.revokeObjectURL(newAttachments[index].url);
-      }
       newAttachments.splice(index, 1);
       return newAttachments;
     });

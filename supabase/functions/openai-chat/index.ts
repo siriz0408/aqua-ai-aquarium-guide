@@ -101,13 +101,9 @@ serve(async (req) => {
           console.log('Processing image attachment:', attachment.name)
           
           try {
-            // For blob URLs, we need to handle them differently
-            if (attachment.url.startsWith('blob:')) {
-              console.log('Skipping blob URL processing - using fallback message')
-              // Add a text message indicating an image was attached
-              userMessageContent[0].text += `\n\n[Image attached: ${attachment.name}]`
-            } else {
-              // Handle data URLs or regular URLs
+            // Now the attachment.url should be a proper data URL from the frontend
+            if (attachment.url.startsWith('data:image/')) {
+              console.log('Adding image to OpenAI request')
               userMessageContent.push({
                 type: 'image_url',
                 image_url: {
@@ -115,6 +111,9 @@ serve(async (req) => {
                   detail: 'high'
                 }
               })
+            } else {
+              console.log('Invalid image URL format, adding fallback message')
+              userMessageContent[0].text += `\n\n[Image attached: ${attachment.name}]`
             }
           } catch (error) {
             console.error('Error processing image:', error)
@@ -136,7 +135,7 @@ serve(async (req) => {
         - Setup planning and maintenance
         - Fish and coral identification from images
         
-        When users attach images (even if you can't see them due to technical limitations), acknowledge the attachment and ask them to describe what they're seeing or provide details about the fish/coral/equipment in the image. Always provide helpful, accurate advice based on marine aquarium best practices. Be friendly and encouraging while being precise with your recommendations.`
+        When analyzing images, provide detailed information about the species, care requirements, compatibility, and any visible health issues. Always provide helpful, accurate advice based on marine aquarium best practices. Be friendly and encouraging while being precise with your recommendations.`
       }
     ]
 
