@@ -1,8 +1,10 @@
+
 import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Send, Paperclip, X, FileText, Loader2 } from 'lucide-react';
+import { Send, Paperclip, X, FileText, Loader2, Plus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { TankDataAttachment } from './TankDataAttachment';
 
 interface FileAttachment {
   name: string;
@@ -31,6 +33,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, disabled = 
   const [message, setMessage] = useState('');
   const [attachments, setAttachments] = useState<FileAttachment[]>([]);
   const [isUploading, setIsUploading] = useState(false);
+  const [showTankDataModal, setShowTankDataModal] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -135,6 +138,28 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, disabled = 
     });
   };
 
+  const handleTankDataAttach = (tankData: string) => {
+    // If there's existing message content, append the tank data
+    if (message.trim()) {
+      setMessage(prev => prev + '\n\n' + tankData);
+    } else {
+      setMessage(tankData);
+    }
+    
+    // Auto-resize textarea after adding content
+    setTimeout(() => {
+      if (textareaRef.current) {
+        textareaRef.current.style.height = 'auto';
+        textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 150) + 'px';
+      }
+    }, 0);
+
+    toast({
+      title: "Tank data attached",
+      description: "Tank information has been added to your message",
+    });
+  };
+
   return (
     <div className="border-t border-border p-4">
       {/* File attachments preview */}
@@ -191,7 +216,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, disabled = 
             onKeyDown={handleKeyDown}
             placeholder="Ask AquaBot anything about marine aquariums..."
             disabled={disabled || isUploading}
-            className="min-h-[60px] max-h-[150px] resize-none pr-12 text-base"
+            className="min-h-[60px] max-h-[150px] resize-none pr-20 text-base"
             rows={1}
           />
           <div className="absolute right-2 top-2 flex gap-1">
@@ -207,9 +232,21 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, disabled = 
               type="button"
               variant="ghost"
               size="sm"
+              className="h-8 w-8 p-0"
+              disabled={disabled || isUploading}
+              onClick={() => setShowTankDataModal(true)}
+              title="Attach tank data"
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
               className="h-8 w-8 p-0 relative"
               disabled={disabled || isUploading}
               onClick={() => fileInputRef.current?.click()}
+              title="Attach files"
             >
               {isUploading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -234,6 +271,13 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, disabled = 
           <Send className="h-4 w-4" />
         </Button>
       </form>
+
+      <TankDataAttachment
+        isOpen={showTankDataModal}
+        onClose={() => setShowTankDataModal(false)}
+        onAttachData={handleTankDataAttach}
+        disabled={disabled || isUploading}
+      />
     </div>
   );
 };
