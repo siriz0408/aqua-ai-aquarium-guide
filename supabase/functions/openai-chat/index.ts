@@ -29,7 +29,15 @@ serve(async (req) => {
     // Get the current user
     const { data: { user }, error: userError } = await supabase.auth.getUser()
     if (userError || !user) {
+      console.error('User authentication error:', userError)
       return new Response('Unauthorized', { status: 401, headers: corsHeaders })
+    }
+
+    // Check if OpenAI API key is available
+    const openAIApiKey = Deno.env.get('OPENAI_API_KEY')
+    if (!openAIApiKey) {
+      console.error('OPENAI_API_KEY not found in environment variables')
+      return new Response('OpenAI API key not configured', { status: 500, headers: corsHeaders })
     }
 
     let currentConversationId = conversationId
@@ -97,15 +105,15 @@ serve(async (req) => {
       ...(messageHistory || []).slice(-10) // Last 10 messages for context
     ]
 
-    // Call OpenAI API
+    // Call OpenAI API with updated model
     const openAIResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${Deno.env.get('OPENAI_API_KEY')}`,
+        'Authorization': `Bearer ${openAIApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'gpt-4.1-2025-04-14',
         messages: messages,
         max_tokens: 1000,
         temperature: 0.7,
@@ -122,6 +130,7 @@ serve(async (req) => {
     const assistantMessage = openAIData.choices[0]?.message?.content
 
     if (!assistantMessage) {
+      console.error('No response from OpenAI')
       return new Response('No response from AI', { status: 500, headers: corsHeaders })
     }
 
