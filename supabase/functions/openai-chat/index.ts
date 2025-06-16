@@ -94,32 +94,37 @@ serve(async (req) => {
     
     // Add images if attachments are provided
     if (attachments && attachments.length > 0) {
+      console.log('Processing attachments:', attachments.length)
+      
       for (const attachment of attachments) {
         if (attachment.type.startsWith('image/')) {
           console.log('Processing image attachment:', attachment.name)
           
-          // Convert blob URL to base64
           try {
-            const response = await fetch(attachment.url)
-            const arrayBuffer = await response.arrayBuffer()
-            const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)))
-            const dataUrl = `data:${attachment.type};base64,${base64}`
-            
-            userMessageContent.push({
-              type: 'image_url',
-              image_url: {
-                url: dataUrl,
-                detail: 'high'
-              }
-            })
+            // For blob URLs, we need to handle them differently
+            if (attachment.url.startsWith('blob:')) {
+              console.log('Skipping blob URL processing - using fallback message')
+              // Add a text message indicating an image was attached
+              userMessageContent[0].text += `\n\n[Image attached: ${attachment.name}]`
+            } else {
+              // Handle data URLs or regular URLs
+              userMessageContent.push({
+                type: 'image_url',
+                image_url: {
+                  url: attachment.url,
+                  detail: 'high'
+                }
+              })
+            }
           } catch (error) {
             console.error('Error processing image:', error)
+            userMessageContent[0].text += `\n\n[Image attachment failed to process: ${attachment.name}]`
           }
         }
       }
     }
 
-    // Prepare messages for OpenAI - only include text from history, current message with images
+    // Prepare messages for OpenAI
     const openAIMessages = [
       {
         role: 'system',
@@ -131,7 +136,7 @@ serve(async (req) => {
         - Setup planning and maintenance
         - Fish and coral identification from images
         
-        When analyzing images, provide detailed information about the species, care requirements, compatibility, and any visible health issues. Always provide helpful, accurate advice based on marine aquarium best practices. Be friendly and encouraging while being precise with your recommendations.`
+        When users attach images (even if you can't see them due to technical limitations), acknowledge the attachment and ask them to describe what they're seeing or provide details about the fish/coral/equipment in the image. Always provide helpful, accurate advice based on marine aquarium best practices. Be friendly and encouraging while being precise with your recommendations.`
       }
     ]
 
@@ -146,15 +151,24 @@ serve(async (req) => {
       }
     }
 
-    // Add current message with potential images
-    openAIMessages.push({
-      role: 'user',
-      content: userMessageContent
-    })
+    // Add current message
+    if (userMessageContent.length === 1) {
+      // Text only
+      openAIMessages.push({
+        role: 'user',
+        content: userMessageContent[0].text
+      })
+    } else {
+      // Text with images
+      openAIMessages.push({
+        role: 'user',
+        content: userMessageContent
+      })
+    }
 
-    console.log('Sending to OpenAI with', userMessageContent.length, 'content items')
+    console.log('Sending to OpenAI with model gpt-4o')
 
-    // Call OpenAI API with vision support
+    // Call OpenAI API with the current model
     const openAIResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -162,7 +176,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4-vision-preview',
+        model: 'gpt-4o',
         messages: openAIMessages,
         max_tokens: 1000,
         temperature: 0.7,
