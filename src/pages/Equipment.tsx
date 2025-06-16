@@ -6,9 +6,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Combobox } from '@/components/ui/combobox';
 import { useAquarium } from '@/contexts/AquariumContext';
 import { useToast } from '@/hooks/use-toast';
 import { Upload, Save } from 'lucide-react';
+import { equipmentOptions, equipmentCategories } from '@/data/equipmentOptions';
 
 const Equipment = () => {
   const { tankId } = useParams<{ tankId: string }>();
@@ -18,6 +21,7 @@ const Equipment = () => {
   
   const tank = tankId ? getTank(tankId) : undefined;
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [selectedEquipment, setSelectedEquipment] = useState('');
   const [equipment, setEquipment] = useState({
     name: '',
     type: '',
@@ -35,6 +39,23 @@ const Equipment = () => {
     );
   }
 
+  const equipmentComboOptions = equipmentOptions.map(opt => ({
+    value: opt.value,
+    label: `${opt.label} (${opt.category})`
+  }));
+
+  const handleEquipmentSelect = (value: string) => {
+    setSelectedEquipment(value);
+    const selectedOption = equipmentOptions.find(opt => opt.value === value);
+    if (selectedOption) {
+      setEquipment({
+        name: selectedOption.label,
+        type: selectedOption.category,
+        model: ''
+      });
+    }
+  };
+
   const mockAnalyzeEquipment = async () => {
     setIsAnalyzing(true);
     
@@ -44,7 +65,7 @@ const Equipment = () => {
     // Mock AI identification
     const mockResults = {
       name: 'Protein Skimmer',
-      type: 'Filtration Equipment',
+      type: 'Filtration',
       model: 'Reef Octopus Classic 150',
       maintenanceTips: 'Clean collection cup weekly, adjust air flow for dry foam, replace airline tubing every 6 months.',
       upgradeNotes: 'Consider upgrading to a larger model if adding more fish load to the tank.',
@@ -100,10 +121,30 @@ const Equipment = () => {
           <CardHeader>
             <CardTitle>Equipment Identification</CardTitle>
             <CardDescription>
-              Upload a photo for AI identification or enter details manually
+              Select from common equipment or upload a photo for AI identification
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
+            {/* Quick Select Equipment */}
+            <Card className="bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
+              <CardContent className="p-4">
+                <div className="space-y-3">
+                  <Label className="text-sm font-medium">Quick Select Equipment</Label>
+                  <Combobox
+                    options={equipmentComboOptions}
+                    value={selectedEquipment}
+                    onValueChange={handleEquipmentSelect}
+                    placeholder="Search equipment..."
+                    searchPlaceholder="Type to search equipment..."
+                    emptyText="No equipment found."
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Select from common aquarium equipment or enter details manually below
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Photo Upload Simulation */}
             <div className="border-2 border-dashed border-border rounded-lg p-8 text-center">
               <Upload className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
@@ -144,13 +185,22 @@ const Equipment = () => {
                 />
               </div>
               <div>
-                <Label htmlFor="type">Type</Label>
-                <Input
-                  id="type"
-                  placeholder="e.g., Filtration, Lighting, Powerhead"
+                <Label htmlFor="type">Category</Label>
+                <Select
                   value={equipment.type}
-                  onChange={(e) => setEquipment(prev => ({ ...prev, type: e.target.value }))}
-                />
+                  onValueChange={(value) => setEquipment(prev => ({ ...prev, type: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {equipmentCategories.map(category => (
+                      <SelectItem key={category} value={category}>
+                        {category}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <Label htmlFor="model">Model (Optional)</Label>

@@ -17,6 +17,21 @@ import { LivestockManager } from './LivestockManager';
 import { Save, AlertCircle, Lightbulb } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
+// Common tank sizes
+const commonTankSizes = [
+  { label: '10 Gallon (20"×10"×12")', value: '20x10x12', gallons: 10 },
+  { label: '20 Gallon Long (30"×12"×12")', value: '30x12x12', gallons: 20 },
+  { label: '29 Gallon (30"×12"×18")', value: '30x12x18', gallons: 29 },
+  { label: '40 Gallon Breeder (36"×18"×16")', value: '36x18x16', gallons: 40 },
+  { label: '55 Gallon (48"×13"×21")', value: '48x13x21', gallons: 55 },
+  { label: '75 Gallon (48"×18"×21")', value: '48x18x21', gallons: 75 },
+  { label: '90 Gallon (48"×18"×24")', value: '48x18x24', gallons: 90 },
+  { label: '120 Gallon (48"×24"×24")', value: '48x24x24', gallons: 120 },
+  { label: '150 Gallon (72"×18"×28")', value: '72x18x28', gallons: 150 },
+  { label: '180 Gallon (72"×24"×24")', value: '72x24x24', gallons: 180 },
+  { label: 'Custom Size', value: 'custom', gallons: 0 }
+];
+
 const TankEditForm = () => {
   const { tankId } = useParams<{ tankId: string }>();
   const navigate = useNavigate();
@@ -38,12 +53,14 @@ const TankEditForm = () => {
     lighting: '',
     filtration: '',
     heatingCooling: '',
-    notes: ''
+    notes: '',
+    selectedSize: ''
   });
 
   const [equipment, setEquipment] = useState<any[]>([]);
   const [livestock, setLivestock] = useState<any[]>([]);
   const [showRecommendations, setShowRecommendations] = useState(true);
+  const [showCustomSize, setShowCustomSize] = useState(false);
 
   useEffect(() => {
     if (tank) {
@@ -59,7 +76,8 @@ const TankEditForm = () => {
         lighting: '',
         filtration: '',
         heatingCooling: '',
-        notes: ''
+        notes: '',
+        selectedSize: ''
       });
       setEquipment(tank.equipment || []);
       setLivestock(tank.livestock || []);
@@ -70,10 +88,43 @@ const TankEditForm = () => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  const handleSizeSelect = (value: string) => {
+    setFormData(prev => ({ ...prev, selectedSize: value }));
+    
+    if (value === 'custom') {
+      setShowCustomSize(true);
+      setFormData(prev => ({ ...prev, length: '', width: '', height: '', gallons: '' }));
+    } else {
+      setShowCustomSize(false);
+      const selectedTank = commonTankSizes.find(tank => tank.value === value);
+      if (selectedTank) {
+        const [length, width, height] = selectedTank.value.split('x');
+        setFormData(prev => ({
+          ...prev,
+          length,
+          width,
+          height,
+          gallons: selectedTank.gallons.toString(),
+          size: selectedTank.label
+        }));
+      }
+    }
+  };
+
   const handleSave = () => {
+    let tankSize = formData.size;
+    
+    // Generate size string if custom dimensions are provided
+    if (showCustomSize && formData.length && formData.width && formData.height) {
+      tankSize = `${formData.length}×${formData.width}×${formData.height} inches`;
+      if (formData.gallons) {
+        tankSize += ` (~${formData.gallons} gal)`;
+      }
+    }
+
     const tankData = {
       name: formData.name,
-      size: formData.size || `${formData.length}x${formData.width}x${formData.height} inches (~${formData.gallons} gal)`,
+      size: tankSize,
       type: formData.type,
       equipment,
       livestock,
@@ -170,47 +221,74 @@ const TankEditForm = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {/* Tank Size Selection */}
+            <div className="space-y-4">
               <div>
-                <Label htmlFor="length">Length (inches)</Label>
-                <Input
-                  id="length"
-                  type="number"
-                  value={formData.length}
-                  onChange={(e) => handleInputChange('length', e.target.value)}
-                  placeholder="48"
-                />
+                <Label htmlFor="tank-size">Tank Size</Label>
+                <Select value={formData.selectedSize} onValueChange={handleSizeSelect}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a common tank size or custom" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {commonTankSizes.map(tankSize => (
+                      <SelectItem key={tankSize.value} value={tankSize.value}>
+                        {tankSize.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-              <div>
-                <Label htmlFor="width">Width (inches)</Label>
-                <Input
-                  id="width"
-                  type="number"
-                  value={formData.width}
-                  onChange={(e) => handleInputChange('width', e.target.value)}
-                  placeholder="24"
-                />
-              </div>
-              <div>
-                <Label htmlFor="height">Height (inches)</Label>
-                <Input
-                  id="height"
-                  type="number"
-                  value={formData.height}
-                  onChange={(e) => handleInputChange('height', e.target.value)}
-                  placeholder="20"
-                />
-              </div>
-              <div>
-                <Label htmlFor="gallons">Gallons</Label>
-                <Input
-                  id="gallons"
-                  type="number"
-                  value={formData.gallons}
-                  onChange={(e) => handleInputChange('gallons', e.target.value)}
-                  placeholder="75"
-                />
-              </div>
+
+              {showCustomSize && (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div>
+                    <Label htmlFor="length">Length (inches)</Label>
+                    <Input
+                      id="length"
+                      type="number"
+                      value={formData.length}
+                      onChange={(e) => handleInputChange('length', e.target.value)}
+                      placeholder="48"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="width">Width (inches)</Label>
+                    <Input
+                      id="width"
+                      type="number"
+                      value={formData.width}
+                      onChange={(e) => handleInputChange('width', e.target.value)}
+                      placeholder="24"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="height">Height (inches)</Label>
+                    <Input
+                      id="height"
+                      type="number"
+                      value={formData.height}
+                      onChange={(e) => handleInputChange('height', e.target.value)}
+                      placeholder="20"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="gallons">Gallons</Label>
+                    <Input
+                      id="gallons"
+                      type="number"
+                      value={formData.gallons}
+                      onChange={(e) => handleInputChange('gallons', e.target.value)}
+                      placeholder="75"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {formData.gallons && (
+                <div className="text-sm text-muted-foreground">
+                  Tank Volume: {formData.gallons} gallons
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -6,9 +6,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Combobox } from '@/components/ui/combobox';
 import { useAquarium } from '@/contexts/AquariumContext';
 import { useToast } from '@/hooks/use-toast';
 import { Upload, Save } from 'lucide-react';
+import { livestockOptions, livestockCategories } from '@/data/livestockOptions';
 
 const Livestock = () => {
   const { tankId } = useParams<{ tankId: string }>();
@@ -18,6 +21,7 @@ const Livestock = () => {
   
   const tank = tankId ? getTank(tankId) : undefined;
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [selectedLivestock, setSelectedLivestock] = useState('');
   const [livestock, setLivestock] = useState({
     name: '',
     species: '',
@@ -33,6 +37,22 @@ const Livestock = () => {
       </Layout>
     );
   }
+
+  const livestockComboOptions = livestockOptions.map(opt => ({
+    value: opt.value,
+    label: `${opt.label} (${opt.category} - ${opt.careLevel})`
+  }));
+
+  const handleLivestockSelect = (value: string) => {
+    setSelectedLivestock(value);
+    const selectedOption = livestockOptions.find(opt => opt.value === value);
+    if (selectedOption) {
+      setLivestock({
+        name: selectedOption.label,
+        species: selectedOption.label
+      });
+    }
+  };
 
   const mockAnalyzeLivestock = async () => {
     setIsAnalyzing(true);
@@ -72,11 +92,12 @@ const Livestock = () => {
       return;
     }
 
+    const selectedOption = livestockOptions.find(opt => opt.value === selectedLivestock);
     const mockResults = {
       name: livestock.name,
       species: livestock.species,
-      careLevel: 'Easy',
-      compatibility: 'Peaceful, reef safe, good beginner fish. Compatible with most community fish.',
+      careLevel: selectedOption?.careLevel || 'Beginner',
+      compatibility: selectedOption?.compatibility || 'Peaceful, reef safe, good beginner fish. Compatible with most community fish.',
     };
 
     addLivestock(tankId!, mockResults);
@@ -96,10 +117,30 @@ const Livestock = () => {
           <CardHeader>
             <CardTitle>Livestock Identification</CardTitle>
             <CardDescription>
-              Upload a photo for AI species identification or enter details manually
+              Select from common species or upload a photo for AI identification
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
+            {/* Quick Select Livestock */}
+            <Card className="bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
+              <CardContent className="p-4">
+                <div className="space-y-3">
+                  <Label className="text-sm font-medium">Quick Select Livestock</Label>
+                  <Combobox
+                    options={livestockComboOptions}
+                    value={selectedLivestock}
+                    onValueChange={handleLivestockSelect}
+                    placeholder="Search fish, corals, invertebrates..."
+                    searchPlaceholder="Type to search livestock..."
+                    emptyText="No livestock found."
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Select from popular aquarium species or enter details manually below
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Photo Upload Simulation */}
             <div className="border-2 border-dashed border-border rounded-lg p-8 text-center">
               <Upload className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
