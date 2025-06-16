@@ -1,17 +1,34 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, Clock, AlertTriangle, Eye, ChevronRight } from 'lucide-react';
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
+import { CheckCircle, Clock, AlertTriangle, Eye, ChevronRight, ChevronUp, ChevronDown, Info, Check } from 'lucide-react';
 import { Task } from '@/hooks/useTasks';
 
 interface TaskActionButtonProps {
   task: Task;
   onClick: () => void;
+  onResolve?: (taskId: string) => void;
+  onMoveUp?: (taskId: string) => void;
+  onMoveDown?: (taskId: string) => void;
+  canMoveUp?: boolean;
+  canMoveDown?: boolean;
   className?: string;
 }
 
-const TaskActionButton: React.FC<TaskActionButtonProps> = ({ task, onClick, className = '' }) => {
+const TaskActionButton: React.FC<TaskActionButtonProps> = ({ 
+  task, 
+  onClick, 
+  onResolve,
+  onMoveUp,
+  onMoveDown,
+  canMoveUp = true,
+  canMoveDown = true,
+  className = '' 
+}) => {
+  const [isHovered, setIsHovered] = useState(false);
+
   const getPriorityIcon = (priority: string) => {
     switch (priority) {
       case 'urgent':
@@ -64,16 +81,30 @@ const TaskActionButton: React.FC<TaskActionButtonProps> = ({ task, onClick, clas
     }
   };
 
+  const handleQuickAction = (e: React.MouseEvent, action: () => void) => {
+    e.stopPropagation();
+    action();
+  };
+
+  const getTaskSummary = () => {
+    const urgencyText = task.priority === 'urgent' ? '🚨 Urgent: ' : '';
+    const dueText = task.due_date ? ` (Due: ${new Date(task.due_date).toLocaleDateString()})` : '';
+    return `${urgencyText}${task.title}${dueText}`;
+  };
+
   return (
     <div 
       className={`group cursor-pointer transition-all duration-200 ${className}`}
       onClick={onClick}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
       <div className={`
         flex items-center justify-between p-3 rounded-lg border-2 
         ${getBorderColor(task.priority)} 
         ${getBackgroundColor(task.priority)}
         group-hover:shadow-md transition-all duration-200
+        ${isHovered ? 'scale-[1.02]' : ''}
       `}>
         <div className="flex-1 min-w-0 mr-3">
           <div className="flex items-start justify-between mb-1">
@@ -99,19 +130,95 @@ const TaskActionButton: React.FC<TaskActionButtonProps> = ({ task, onClick, clas
           </div>
         </div>
         
-        <div className="flex items-center gap-2 shrink-0">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-            onClick={(e) => {
-              e.stopPropagation();
-              onClick();
-            }}
-          >
-            <Eye className="h-4 w-4" />
-          </Button>
-          <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
+        <div className="flex items-center gap-1 shrink-0">
+          {/* Quick Actions - Show on hover */}
+          <div className={`flex items-center gap-1 transition-all duration-200 ${
+            isHovered ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-2'
+          }`}>
+            {/* Quick Summary */}
+            <HoverCard>
+              <HoverCardTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 w-7 p-0 hover:bg-blue-100 dark:hover:bg-blue-900/30"
+                  onClick={(e) => handleQuickAction(e, () => {})}
+                >
+                  <Info className="h-3 w-3 text-blue-600" />
+                </Button>
+              </HoverCardTrigger>
+              <HoverCardContent className="w-80 p-3">
+                <div className="space-y-2">
+                  <h4 className="font-medium text-sm">{task.title}</h4>
+                  <p className="text-xs text-muted-foreground">
+                    {task.description || 'No description provided'}
+                  </p>
+                  <div className="flex items-center gap-2 text-xs">
+                    <Badge variant={getPriorityColor(task.priority)} className="text-xs">
+                      {task.priority}
+                    </Badge>
+                    <span className="text-muted-foreground">•</span>
+                    <span className="text-muted-foreground capitalize">{task.task_type}</span>
+                  </div>
+                </div>
+              </HoverCardContent>
+            </HoverCard>
+
+            {/* Move Up */}
+            {onMoveUp && canMoveUp && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 w-7 p-0 hover:bg-gray-100 dark:hover:bg-gray-800"
+                onClick={(e) => handleQuickAction(e, () => onMoveUp(task.id))}
+                title="Move up in list"
+              >
+                <ChevronUp className="h-3 w-3 text-gray-600" />
+              </Button>
+            )}
+
+            {/* Move Down */}
+            {onMoveDown && canMoveDown && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 w-7 p-0 hover:bg-gray-100 dark:hover:bg-gray-800"
+                onClick={(e) => handleQuickAction(e, () => onMoveDown(task.id))}
+                title="Move down in list"
+              >
+                <ChevronDown className="h-3 w-3 text-gray-600" />
+              </Button>
+            )}
+
+            {/* Quick Resolve */}
+            {onResolve && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 w-7 p-0 hover:bg-green-100 dark:hover:bg-green-900/30"
+                onClick={(e) => handleQuickAction(e, () => onResolve(task.id))}
+                title="Mark as complete"
+              >
+                <Check className="h-3 w-3 text-green-600" />
+              </Button>
+            )}
+
+            {/* View Details */}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 w-7 p-0 hover:bg-primary/10"
+              onClick={(e) => handleQuickAction(e, onClick)}
+              title="View details"
+            >
+              <Eye className="h-3 w-3 text-primary" />
+            </Button>
+          </div>
+
+          {/* Main Arrow */}
+          <ChevronRight className={`h-4 w-4 text-muted-foreground transition-all duration-200 ${
+            isHovered ? 'text-foreground translate-x-1' : ''
+          }`} />
         </div>
       </div>
     </div>
