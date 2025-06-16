@@ -32,6 +32,14 @@ export interface TaskList {
   updated_at: string;
 }
 
+interface CreateTaskData {
+  title: string;
+  description?: string;
+  task_type: string;
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  conversation_id?: string;
+}
+
 export const useTasks = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -81,13 +89,17 @@ export const useTasks = () => {
 
   // Create task mutation
   const createTaskMutation = useMutation({
-    mutationFn: async (taskData: Partial<Task>) => {
+    mutationFn: async (taskData: CreateTaskData) => {
       if (!user) throw new Error('User not authenticated');
 
       const { data, error } = await supabase
         .from('tasks')
         .insert({
-          ...taskData,
+          title: taskData.title,
+          description: taskData.description,
+          task_type: taskData.task_type,
+          priority: taskData.priority,
+          conversation_id: taskData.conversation_id,
           user_id: user.id,
         })
         .select()
