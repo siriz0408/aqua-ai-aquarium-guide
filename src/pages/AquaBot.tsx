@@ -11,7 +11,6 @@ import { ConversationList } from '@/components/chat/ConversationList';
 import { MessageBubble } from '@/components/chat/MessageBubble';
 import { ChatInput } from '@/components/chat/ChatInput';
 import { QuickPrompts } from '@/components/chat/QuickPrompts';
-import { TankTestsIntegration } from '@/components/chat/TankTestsIntegration';
 import { Badge } from '@/components/ui/badge';
 
 interface FileAttachment {
@@ -77,10 +76,6 @@ const AquaBot = () => {
 
   const handleQuickPrompt = async (prompt: string) => {
     await handleSendMessage(prompt);
-  };
-
-  const handleTestAnalysis = async (testData: string) => {
-    await handleSendMessage(testData);
   };
 
   const handleFollowUpClick = async (prompt: string) => {
@@ -191,10 +186,6 @@ const AquaBot = () => {
                       onPromptSelect={handleQuickPrompt}
                       disabled={isLoading || isSearching}
                     />
-                    <TankTestsIntegration 
-                      onSendTestData={handleTestAnalysis}
-                      disabled={isLoading || isSearching}
-                    />
                     <div className="flex items-center justify-center h-32 text-muted-foreground">
                       <p>Choose a quick action above or start typing your question!</p>
                     </div>
@@ -243,11 +234,6 @@ const AquaBot = () => {
                 
                 <QuickPrompts 
                   onPromptSelect={handleQuickPrompt}
-                  disabled={isLoading || isSearching}
-                />
-                
-                <TankTestsIntegration 
-                  onSendTestData={handleTestAnalysis}
                   disabled={isLoading || isSearching}
                 />
               </div>
