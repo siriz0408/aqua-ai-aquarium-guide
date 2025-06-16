@@ -243,6 +243,54 @@ export type Database = {
         }
         Relationships: []
       }
+      setup_plans: {
+        Row: {
+          budget_timeline: Json
+          compatible_livestock: Json
+          created_at: string
+          equipment: Json
+          id: string
+          monthly_maintenance: string | null
+          plan_name: string
+          recommendations: Json | null
+          tank_specs: Json
+          timeline: Json
+          total_estimate: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          budget_timeline: Json
+          compatible_livestock: Json
+          created_at?: string
+          equipment: Json
+          id?: string
+          monthly_maintenance?: string | null
+          plan_name: string
+          recommendations?: Json | null
+          tank_specs: Json
+          timeline: Json
+          total_estimate?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          budget_timeline?: Json
+          compatible_livestock?: Json
+          created_at?: string
+          equipment?: Json
+          id?: string
+          monthly_maintenance?: string | null
+          plan_name?: string
+          recommendations?: Json | null
+          tank_specs?: Json
+          timeline?: Json
+          total_estimate?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       task_lists: {
         Row: {
           color: string | null

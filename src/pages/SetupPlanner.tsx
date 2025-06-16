@@ -8,6 +8,7 @@ import { RotateCcw, Sparkles } from 'lucide-react';
 import SetupWizard from '@/components/setup-wizard/SetupWizard';
 import PlanGenerationLoading from '@/components/setup-wizard/PlanGenerationLoading';
 import EnhancedPlanDisplay from '@/components/setup-wizard/EnhancedPlanDisplay';
+import SavePlanDialog from '@/components/setup-wizard/SavePlanDialog';
 import { generateSetupPlan } from '@/components/setup-wizard/PlanGenerationLogic';
 
 const SetupPlanner = () => {
@@ -68,12 +69,17 @@ const SetupPlanner = () => {
                   Step-by-step guidance for your perfect saltwater aquarium setup
                 </CardDescription>
               </div>
-              {setupPlan && (
-                <Button variant="outline" onClick={resetPlan}>
-                  <RotateCcw className="mr-2 h-4 w-4" />
-                  Start Over
-                </Button>
-              )}
+              <div className="flex items-center gap-2">
+                {setupPlan && (
+                  <>
+                    <SavePlanDialog setupPlan={setupPlan} />
+                    <Button variant="outline" onClick={resetPlan}>
+                      <RotateCcw className="mr-2 h-4 w-4" />
+                      Start Over
+                    </Button>
+                  </>
+                )}
+              </div>
             </div>
           </CardHeader>
           <CardContent>
