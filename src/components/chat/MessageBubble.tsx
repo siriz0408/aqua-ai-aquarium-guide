@@ -1,41 +1,171 @@
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Card } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Bot, User, Plus, Sparkles } from 'lucide-react';
+import { Bot, User, Plus, Sparkles, Table } from 'lucide-react';
 import { Message } from '@/hooks/useChat';
 import { ParsedTask, parseAIRecommendations } from '@/utils/taskParser';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { useTasks } from '@/hooks/useTasks';
+import { Table as TableComponent, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 interface MessageBubbleProps {
   message: Message;
 }
 
-// Component to render markdown-style content
-const MarkdownContent: React.FC<{ content: string }> = ({ content }) => {
-  // Convert markdown-style formatting to HTML
-  const formatContent = (text: string) => {
+// Component to render markdown-style content with enhanced table and checkbox support
+const MarkdownContent: React.FC<{ content: string; onAddTask: (task: ParsedTask) => void }> = ({ content, onAddTask }) => {
+  // Extract and parse tables from markdown
+  const parseContent = useMemo(() => {
+    const lines = content.split('\n');
+    const elements: Array<{ type: 'text' | 'table' | 'checkbox'; content: string | string[][]; task?: ParsedTask }> = [];
+    let currentText = '';
+    let i = 0;
+
+    while (i < lines.length) {
+      const line = lines[i].trim();
+      
+      // Check for table start (header row with |)
+      if (line.includes('|') && lines[i + 1]?.includes('---')) {
+        // Save any accumulated text
+        if (currentText.trim()) {
+          elements.push({ type: 'text', content: currentText });
+          currentText = '';
+        }
+
+        // Parse table
+        const tableRows: string[][] = [];
+        let tableIndex = i;
+        
+        // Parse header
+        const headerCells = line.split('|').map(cell => cell.trim()).filter(cell => cell);
+        tableRows.push(headerCells);
+        
+        // Skip separator row
+        tableIndex += 2;
+        
+        // Parse data rows
+        while (tableIndex < lines.length && lines[tableIndex].trim().includes('|')) {
+          const rowCells = lines[tableIndex].split('|').map(cell => cell.trim()).filter(cell => cell);
+          if (rowCells.length > 0) {
+            tableRows.push(rowCells);
+          }
+          tableIndex++;
+        }
+        
+        elements.push({ type: 'table', content: tableRows });
+        i = tableIndex;
+        continue;
+      }
+      
+      // Check for checkbox tasks
+      if (line.startsWith('☐') || line.match(/^\[\s*\]/)) {
+        // Save any accumulated text
+        if (currentText.trim()) {
+          elements.push({ type: 'text', content: currentText });
+          currentText = '';
+        }
+
+        // Extract task information
+        const taskText = line.replace(/^[☐\[\s\]]+/, '').trim();
+        const task: ParsedTask = {
+          title: taskText.split(' - ')[0].replace(/\*\*/g, ''),
+          description: taskText,
+          category: 'maintenance',
+          priority: 'medium'
+        };
+
+        elements.push({ type: 'checkbox', content: taskText, task });
+        i++;
+        continue;
+      }
+
+      // Accumulate regular text
+      currentText += line + '\n';
+      i++;
+    }
+
+    // Add any remaining text
+    if (currentText.trim()) {
+      elements.push({ type: 'text', content: currentText });
+    }
+
+    return elements;
+  }, [content]);
+
+  // Format regular text content
+  const formatText = (text: string) => {
     return text
-      // Bold text **text** or __text__
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
       .replace(/__(.*?)__/g, '<strong>$1</strong>')
-      // Checkboxes ☐ or [ ]
-      .replace(/☐\s*(.*?)$/gm, '<label class="flex items-center gap-2 my-1"><input type="checkbox" class="rounded border-border" /> <span>$1</span></label>')
-      .replace(/\[\s*\]\s*(.*?)$/gm, '<label class="flex items-center gap-2 my-1"><input type="checkbox" class="rounded border-border" /> <span>$1</span></label>')
-      // Bullet points • or -
-      .replace(/^[•\-]\s*(.*?)$/gm, '<li class="ml-4">$1</li>')
-      // Line breaks
+      .replace(/^[•\-]\s*(.*?)$/gm, '<li class="ml-4 list-disc">$1</li>')
       .replace(/\n/g, '<br />');
   };
 
   return (
-    <div 
-      className="prose prose-sm max-w-none dark:prose-invert [&_strong]:font-semibold [&_li]:list-disc [&_li]:ml-4 [&_input]:w-4 [&_input]:h-4"
-      dangerouslySetInnerHTML={{ __html: formatContent(content) }}
-    />
+    <div className="space-y-3">
+      {parseContent.map((element, idx) => {
+        if (element.type === 'table') {
+          const tableData = element.content as string[][];
+          return (
+            <div key={idx} className="border rounded-lg overflow-hidden">
+              <TableComponent>
+                <TableHeader>
+                  <TableRow>
+                    {tableData[0]?.map((header, headerIdx) => (
+                      <TableHead key={headerIdx} className="font-semibold">
+                        {header}
+                      </TableHead>
+                    ))}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {tableData.slice(1).map((row, rowIdx) => (
+                    <TableRow key={rowIdx}>
+                      {row.map((cell, cellIdx) => (
+                        <TableCell key={cellIdx} className="text-sm">
+                          <span dangerouslySetInnerHTML={{ __html: formatText(cell) }} />
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </TableComponent>
+            </div>
+          );
+        }
+
+        if (element.type === 'checkbox' && element.task) {
+          return (
+            <div key={idx} className="flex items-start gap-3 p-3 bg-background/50 rounded-lg border border-border/50">
+              <input type="checkbox" className="mt-1 h-4 w-4 rounded border-border" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm" dangerouslySetInnerHTML={{ __html: formatText(element.content as string) }} />
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => onAddTask(element.task!)}
+                className="shrink-0 h-7 text-xs px-2"
+              >
+                <Plus className="h-3 w-3 mr-1" />
+                Add Task
+              </Button>
+            </div>
+          );
+        }
+
+        return (
+          <div
+            key={idx}
+            className="prose prose-sm max-w-none dark:prose-invert [&_strong]:font-semibold [&_li]:list-disc [&_li]:ml-4"
+            dangerouslySetInnerHTML={{ __html: formatText(element.content as string) }}
+          />
+        );
+      })}
+    </div>
   );
 };
 
@@ -85,11 +215,11 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message }) => {
               <p className="whitespace-pre-wrap m-0">{message.content}</p>
             </div>
           ) : (
-            <MarkdownContent content={message.content} />
+            <MarkdownContent content={message.content} onAddTask={addToPlanner} />
           )}
           
-          {/* Task suggestions for AI messages */}
-          {!isUser && parsedTasks.length > 0 && (
+          {/* Task suggestions for AI messages - only show if no checkboxes are already in content */}
+          {!isUser && parsedTasks.length > 0 && !message.content.includes('☐') && (
             <div className="mt-3 pt-3 border-t border-border/50">
               <p className="text-xs font-medium mb-2 flex items-center gap-1">
                 <Sparkles className="h-3 w-3" />
