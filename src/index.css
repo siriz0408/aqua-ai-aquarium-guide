@@ -65,21 +65,27 @@
   * {
     @apply border-border;
   }
+  
   body {
     @apply bg-background text-foreground;
     font-family: "Inter", sans-serif;
     /* Prevent horizontal scroll on mobile */
     overflow-x: hidden;
+    /* Better font rendering */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    /* Prevent tap highlight on mobile */
+    -webkit-tap-highlight-color: transparent;
   }
   
-  /* Mobile touch improvements */
+  /* Enhanced mobile touch improvements */
   @media (max-width: 768px) {
     button, 
     [role="button"],
     input,
     select,
     textarea {
-      /* Minimum touch target size for mobile */
+      /* Minimum touch target size for mobile accessibility */
       min-height: 44px;
     }
     
@@ -93,15 +99,40 @@
     html {
       scroll-behavior: smooth;
     }
+    
+    /* Better touch scrolling */
+    * {
+      -webkit-overflow-scrolling: touch;
+    }
+    
+    /* Prevent zoom on input focus */
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="number"],
+    textarea,
+    select {
+      font-size: 16px;
+    }
   }
   
   /* Safe area support for mobile devices with notches */
   .safe-area-inset-bottom {
-    padding-bottom: env(safe-area-inset-bottom);
+    padding-bottom: max(env(safe-area-inset-bottom), 1rem);
   }
   
   .safe-area-inset-top {
     padding-top: env(safe-area-inset-top);
+  }
+  
+  /* Better focus indicators for accessibility */
+  button:focus-visible,
+  [role="button"]:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
   }
 }
 
@@ -146,27 +177,63 @@
     }
   }
   
-  /* Mobile-first card animations */
+  /* Enhanced mobile-first card animations */
   .mobile-card-hover {
-    @apply transition-all duration-200 hover:shadow-lg;
+    @apply transition-all duration-200;
   }
   
   @media (max-width: 768px) {
     .mobile-card-hover {
-      @apply active:scale-95;
+      @apply active:scale-95 active:shadow-sm;
     }
   }
   
   @media (min-width: 769px) {
     .mobile-card-hover {
-      @apply hover:scale-[1.02];
+      @apply hover:scale-[1.02] hover:shadow-lg;
+    }
+  }
+  
+  /* Loading states */
+  .loading-skeleton {
+    @apply animate-pulse bg-muted rounded;
+  }
+  
+  /* Better button states for mobile */
+  .mobile-button {
+    @apply transition-all duration-150 active:scale-95;
+  }
+  
+  @media (hover: hover) {
+    .mobile-button {
+      @apply hover:scale-105;
     }
   }
 }
 
-/* Mobile viewport fix */
+/* Mobile viewport fixes */
 @supports (-webkit-touch-callout: none) {
   .min-h-screen {
     min-height: -webkit-fill-available;
+  }
+}
+
+/* PWA display mode styles */
+@media (display-mode: standalone) {
+  body {
+    /* Add any standalone app specific styles */
+    user-select: none;
+    -webkit-user-select: none;
+  }
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
