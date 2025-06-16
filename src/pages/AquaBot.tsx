@@ -1,13 +1,18 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import { Layout } from '@/components/Layout';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
-import { Loader2, MessageSquare, X } from 'lucide-react';
+import { Loader2, MessageSquare, X, Globe } from 'lucide-react';
 import { useChat } from '@/hooks/useChat';
+import { useWebSearch } from '@/hooks/useWebSearch';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { ConversationList } from '@/components/chat/ConversationList';
 import { MessageBubble } from '@/components/chat/MessageBubble';
 import { ChatInput } from '@/components/chat/ChatInput';
+import { QuickPrompts } from '@/components/chat/QuickPrompts';
+import { PlanIntegration } from '@/components/chat/PlanIntegration';
+import { Badge } from '@/components/ui/badge';
 
 interface FileAttachment {
   name: string;
@@ -31,7 +36,9 @@ const AquaBot = () => {
     deleteConversation,
   } = useChat();
 
+  const { searchWeb, isSearching } = useWebSearch();
   const [showSidebar, setShowSidebar] = useState(false);
+  const [webSearchEnabled, setWebSearchEnabled] = useState(false);
   const isMobile = useIsMobile();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -52,7 +59,28 @@ const AquaBot = () => {
 
   const handleSendMessage = async (message: string, attachments?: FileAttachment[]) => {
     console.log('Handling send message with attachments:', attachments?.length || 0);
-    await sendMessage(message, !currentConversationId, attachments);
+    
+    let finalMessage = message;
+    
+    // If web search is enabled, search for relevant information first
+    if (webSearchEnabled && message.trim()) {
+      const searchQuery = `marine aquarium ${message}`;
+      const searchResult = await searchWeb(searchQuery);
+      
+      if (searchResult.success) {
+        finalMessage = `${message}\n\n[Web Search Results]:\n${searchResult.content}`;
+      }
+    }
+    
+    await sendMessage(finalMessage, !currentConversationId, attachments);
+  };
+
+  const handleQuickPrompt = async (prompt: string) => {
+    await handleSendMessage(prompt);
+  };
+
+  const handlePlanIntegration = async (planData: string, action: 'checklist' | 'reminders') => {
+    await handleSendMessage(planData);
   };
 
   return (
@@ -127,7 +155,22 @@ const AquaBot = () => {
             <h2 className="font-semibold flex-1 text-center">
               AquaBot Assistant
             </h2>
-            <div className="w-10 sm:w-auto" /> {/* Spacer for centering */}
+            <div className="flex items-center gap-2">
+              <Button
+                variant={webSearchEnabled ? "default" : "outline"}
+                size="sm"
+                onClick={() => setWebSearchEnabled(!webSearchEnabled)}
+                className="flex items-center gap-2"
+              >
+                <Globe className="h-4 w-4" />
+                <span className="hidden sm:inline">Web Search</span>
+              </Button>
+              {webSearchEnabled && (
+                <Badge variant="secondary" className="hidden sm:inline-flex">
+                  Live Data
+                </Badge>
+              )}
+            </div>
           </div>
 
           {/* Messages */}
@@ -139,21 +182,33 @@ const AquaBot = () => {
                     <Loader2 className="h-6 w-6 animate-spin" />
                   </div>
                 ) : messages.length === 0 ? (
-                  <div className="flex items-center justify-center h-32 text-muted-foreground">
-                    <p>No messages yet. Start the conversation!</p>
+                  <div className="space-y-4">
+                    <QuickPrompts 
+                      onPromptSelect={handleQuickPrompt}
+                      disabled={isLoading || isSearching}
+                    />
+                    <PlanIntegration 
+                      onSendPlanData={handlePlanIntegration}
+                      disabled={isLoading || isSearching}
+                    />
+                    <div className="flex items-center justify-center h-32 text-muted-foreground">
+                      <p>Choose a quick action above or start typing your question!</p>
+                    </div>
                   </div>
                 ) : (
                   <div className="space-y-4">
                     {messages.map((message) => (
                       <MessageBubble key={message.id} message={message} />
                     ))}
-                    {isLoading && (
+                    {(isLoading || isSearching) && (
                       <div className="flex gap-3 mb-4">
                         <div className="h-8 w-8 bg-secondary rounded-full flex items-center justify-center">
                           <Loader2 className="h-4 w-4 animate-spin" />
                         </div>
                         <div className="bg-muted p-3 rounded-lg">
-                          <p className="text-sm text-muted-foreground">AquaBot is thinking...</p>
+                          <p className="text-sm text-muted-foreground">
+                            {isSearching ? 'Searching web data...' : 'AquaBot is thinking...'}
+                          </p>
                         </div>
                       </div>
                     )}
@@ -162,20 +217,31 @@ const AquaBot = () => {
                 <div ref={messagesEndRef} />
               </>
             ) : (
-              <div className="flex items-center justify-center h-full">
-                <div className="text-center space-y-4">
-                  <div className="h-16 w-16 rounded-full ocean-gradient flex items-center justify-center mx-auto">
-                    <span className="text-white text-2xl">🤖</span>
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-semibold mb-2">Welcome to AquaBot!</h2>
-                    <p className="text-muted-foreground max-w-md">
-                      I'm your marine aquarium assistant. Ask me anything about water chemistry, 
-                      fish care, equipment, or troubleshooting your tank! You can also attach 
-                      images for disease identification.
-                    </p>
+              <div className="space-y-6">
+                <div className="flex items-center justify-center">
+                  <div className="text-center space-y-4">
+                    <div className="h-16 w-16 rounded-full ocean-gradient flex items-center justify-center mx-auto">
+                      <span className="text-white text-2xl">🤖</span>
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-semibold mb-2">Welcome to AquaBot!</h2>
+                      <p className="text-muted-foreground max-w-md">
+                        I'm your marine aquarium assistant with access to real-time web data. 
+                        Ask me anything about water chemistry, fish care, equipment, or troubleshooting!
+                      </p>
+                    </div>
                   </div>
                 </div>
+                
+                <QuickPrompts 
+                  onPromptSelect={handleQuickPrompt}
+                  disabled={isLoading || isSearching}
+                />
+                
+                <PlanIntegration 
+                  onSendPlanData={handlePlanIntegration}
+                  disabled={isLoading || isSearching}
+                />
               </div>
             )}
           </ScrollArea>
@@ -183,7 +249,7 @@ const AquaBot = () => {
           {/* Chat Input */}
           <ChatInput 
             onSendMessage={handleSendMessage} 
-            disabled={isLoading} 
+            disabled={isLoading || isSearching} 
           />
         </div>
       </div>
