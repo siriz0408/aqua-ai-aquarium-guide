@@ -1,11 +1,13 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
-import { Plus, Minus, BarChart3, Settings, Lightbulb, AlertTriangle } from 'lucide-react';
+import { Plus, Minus, BarChart3, Settings, Lightbulb, AlertTriangle, Fish } from 'lucide-react';
+import { useAquarium } from '@/contexts/AquariumContext';
+import { useToast } from '@/hooks/use-toast';
+import { useNavigate } from 'react-router-dom';
 
 interface EnhancedPlanDisplayProps {
   setupPlan: any;
@@ -18,6 +20,11 @@ const EnhancedPlanDisplay: React.FC<EnhancedPlanDisplayProps> = ({ setupPlan, on
   );
   const [showInsights, setShowInsights] = useState(true);
   const [advancedMode, setAdvancedMode] = useState(false);
+  const [isConverting, setIsConverting] = useState(false);
+  
+  const { addTank } = useAquarium();
+  const { toast } = useToast();
+  const navigate = useNavigate();
 
   const toggleItem = (itemName: string, isSelected: boolean) => {
     if (isSelected) {
@@ -34,6 +41,80 @@ const EnhancedPlanDisplay: React.FC<EnhancedPlanDisplayProps> = ({ setupPlan, on
         const price = item.price.replace(/[\$,-]/g, '').split('-')[0];
         return total + parseInt(price);
       }, 0);
+  };
+
+  const convertToMyTank = async () => {
+    setIsConverting(true);
+    
+    try {
+      // Extract tank specifications from the setup plan
+      const tankSpecs = setupPlan.tankSpecs || {};
+      const tankSize = setupPlan.tankSize || `${tankSpecs.length || '?'}x${tankSpecs.width || '?'}x${tankSpecs.height || '?'} inches`;
+      const gallons = setupPlan.estimatedGallons || 'Unknown';
+      
+      // Determine tank type based on setup plan data
+      let tankType: 'FOWLR' | 'Reef' | 'Mixed' = 'FOWLR';
+      if (tankSpecs.tankType) {
+        if (tankSpecs.tankType.toLowerCase().includes('reef')) {
+          tankType = 'Reef';
+        } else if (tankSpecs.tankType.toLowerCase().includes('mixed')) {
+          tankType = 'Mixed';
+        }
+      }
+
+      // Create equipment entries from selected items
+      const equipment = setupPlan.equipment
+        .filter((item: any) => selectedItems.includes(item.item))
+        .map((item: any) => ({
+          name: item.item,
+          type: item.category || 'Equipment',
+          model: '',
+          imageUrl: '',
+          maintenanceTips: '',
+          upgradeNotes: '',
+        }));
+
+      // Create livestock entries from compatible livestock
+      const livestock = setupPlan.compatibleLivestock.map((animal: string) => ({
+        name: animal,
+        species: animal,
+        careLevel: 'Beginner',
+        compatibility: 'Good',
+        imageUrl: '',
+        healthNotes: '',
+      }));
+
+      // Create the new tank
+      const newTank = {
+        name: setupPlan.planName || `${tankSize} Tank`,
+        size: `${tankSize} (~${gallons} gallons)`,
+        type: tankType,
+        equipment,
+        livestock,
+        parameters: [],
+      };
+
+      addTank(newTank);
+
+      toast({
+        title: "Tank created successfully!",
+        description: `Your setup plan has been converted to "${newTank.name}" in My Tanks`,
+      });
+
+      // Navigate to the tanks page after a short delay
+      setTimeout(() => {
+        navigate('/');
+      }, 1500);
+
+    } catch (error) {
+      toast({
+        title: "Error creating tank",
+        description: "Failed to convert setup plan to tank. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsConverting(false);
+    }
   };
 
   const getInsights = () => {
@@ -73,6 +154,14 @@ const EnhancedPlanDisplay: React.FC<EnhancedPlanDisplayProps> = ({ setupPlan, on
               </CardDescription>
             </div>
             <div className="flex items-center space-x-4">
+              <Button
+                onClick={convertToMyTank}
+                disabled={isConverting}
+                className="gap-2"
+              >
+                <Fish className="h-4 w-4" />
+                {isConverting ? 'Converting...' : 'Convert to My Tank'}
+              </Button>
               <div className="flex items-center space-x-2">
                 <label htmlFor="insights" className="text-sm font-medium">
                   Show Insights
