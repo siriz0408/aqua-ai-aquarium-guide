@@ -76,7 +76,7 @@ export const QuickPrompts: React.FC<QuickPromptsProps> = ({ onPromptSelect, disa
         <h3 className="text-lg font-semibold text-foreground">Quick Actions</h3>
       </div>
       
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
         {quickPrompts.map((prompt) => {
           const IconComponent = prompt.icon;
           return (
@@ -84,19 +84,19 @@ export const QuickPrompts: React.FC<QuickPromptsProps> = ({ onPromptSelect, disa
               key={prompt.id}
               variant="ghost"
               className={`
-                h-auto p-4 flex flex-col items-center gap-3 text-center
+                h-8 px-3 py-1 flex items-center gap-2 text-left
                 ${prompt.color} ${prompt.textColor} border border-border/50
                 transition-all duration-200 hover:scale-[1.02] hover:shadow-sm
                 disabled:opacity-50 disabled:hover:scale-100 disabled:hover:shadow-none
-                group
+                group justify-start
               `}
               onClick={() => onPromptSelect(prompt.prompt)}
               disabled={disabled}
             >
-              <div className={`h-8 w-8 rounded-lg ${prompt.iconBg} flex items-center justify-center transition-colors`}>
-                <IconComponent className="h-4 w-4" />
+              <div className={`h-4 w-4 rounded ${prompt.iconBg} flex items-center justify-center transition-colors flex-shrink-0`}>
+                <IconComponent className="h-3 w-3" />
               </div>
-              <span className="text-sm font-medium leading-tight">{prompt.title}</span>
+              <span className="text-xs font-medium truncate">{prompt.title}</span>
             </Button>
           );
         })}
