@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Layout } from '@/components/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -21,6 +22,8 @@ import { useAquarium, Tank } from '@/contexts/AquariumContext';
 import { useNavigate } from 'react-router-dom';
 import { MessageCircle, Plus, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { cn } from '@/lib/utils';
 import TaskRecommendations from '@/components/TaskRecommendations';
 import SavedPlans from '@/components/SavedPlans';
 
@@ -28,6 +31,7 @@ const Index = () => {
   const { tanks, addTank, deleteTank } = useAquarium();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   const [isAddingTank, setIsAddingTank] = useState(false);
   const [newTank, setNewTank] = useState({
     name: '',
@@ -88,18 +92,36 @@ const Index = () => {
 
   return (
     <Layout title="AquaAI">
-      <div className="space-y-4 sm:space-y-6 pb-16 sm:pb-20">
-        {/* Welcome Section - Enhanced for mobile */}
-        <div className="text-center space-y-3 sm:space-y-4">
-          <div className="ocean-gradient rounded-xl sm:rounded-2xl p-6 sm:p-8 text-white">
-            <h2 className="text-2xl sm:text-3xl font-bold mb-2">Welcome to AquaAI</h2>
-            <p className="text-blue-100 text-sm sm:text-base mb-4 sm:mb-6">Your AI-powered saltwater aquarium assistant</p>
+      <div className={cn(
+        "space-y-4 sm:space-y-6",
+        isMobile ? "pb-6" : "pb-16 sm:pb-20"
+      )}>
+        {/* Welcome Section - Mobile optimized */}
+        <div className="text-center">
+          <div className={cn(
+            "ocean-gradient rounded-xl text-white",
+            isMobile ? "p-4" : "p-6 sm:p-8"
+          )}>
+            <h2 className={cn(
+              "font-bold mb-2",
+              isMobile ? "text-xl" : "text-2xl sm:text-3xl"
+            )}>Welcome to AquaAI</h2>
+            <p className={cn(
+              "text-blue-100 mb-4",
+              isMobile ? "text-sm mb-3" : "text-sm sm:text-base mb-4 sm:mb-6"
+            )}>Your AI-powered saltwater aquarium assistant</p>
             <Button
               onClick={() => navigate('/aquabot')}
-              className="bg-white/20 hover:bg-white/30 text-white border border-white/30 text-sm sm:text-base"
-              size="sm"
+              className={cn(
+                "bg-white/20 hover:bg-white/30 text-white border border-white/30",
+                isMobile ? "text-sm h-9" : "text-sm sm:text-base"
+              )}
+              size={isMobile ? "sm" : "default"}
             >
-              <MessageCircle className="mr-2 h-4 w-4" />
+              <MessageCircle className={cn(
+                "mr-2",
+                isMobile ? "h-3 w-3" : "h-4 w-4"
+              )} />
               Ask AquaBot
             </Button>
           </div>
@@ -108,21 +130,48 @@ const Index = () => {
         {/* AI Recommendations Section */}
         <TaskRecommendations />
 
-        {/* Quick Actions - Mobile optimized grid */}
-        <div className="grid grid-cols-2 gap-3 sm:gap-4">
-          <Card className="cursor-pointer hover:shadow-lg transition-all duration-200 active:scale-95" onClick={() => navigate('/aquabot')}>
-            <CardContent className="p-3 sm:p-4 text-center">
-              <MessageCircle className="h-6 w-6 sm:h-8 sm:w-8 mx-auto mb-2 text-primary" />
-              <p className="font-medium text-sm sm:text-base">Chat with AI</p>
-              <p className="text-xs sm:text-sm text-muted-foreground">Get instant help</p>
+        {/* Quick Actions - Mobile optimized */}
+        <div className={cn(
+          "grid gap-3",
+          isMobile ? "grid-cols-2" : "grid-cols-2 sm:gap-4"
+        )}>
+          <Card className="cursor-pointer hover:shadow-lg transition-all duration-200 active:scale-95 mobile-card-hover" onClick={() => navigate('/aquabot')}>
+            <CardContent className={cn(
+              "text-center",
+              isMobile ? "p-3" : "p-3 sm:p-4"
+            )}>
+              <MessageCircle className={cn(
+                "mx-auto mb-2 text-primary",
+                isMobile ? "h-6 w-6" : "h-6 w-6 sm:h-8 sm:w-8"
+              )} />
+              <p className={cn(
+                "font-medium",
+                isMobile ? "text-sm" : "text-sm sm:text-base"
+              )}>Chat with AI</p>
+              <p className={cn(
+                "text-muted-foreground",
+                isMobile ? "text-xs" : "text-xs sm:text-sm"
+              )}>Get instant help</p>
             </CardContent>
           </Card>
           
-          <Card className="cursor-pointer hover:shadow-lg transition-all duration-200 active:scale-95" onClick={() => navigate('/setup-planner')}>
-            <CardContent className="p-3 sm:p-4 text-center">
-              <Plus className="h-6 w-6 sm:h-8 sm:w-8 mx-auto mb-2 text-accent" />
-              <p className="font-medium text-sm sm:text-base">Setup Planner</p>
-              <p className="text-xs sm:text-sm text-muted-foreground">Plan your tank</p>
+          <Card className="cursor-pointer hover:shadow-lg transition-all duration-200 active:scale-95 mobile-card-hover" onClick={() => navigate('/setup-planner')}>
+            <CardContent className={cn(
+              "text-center",
+              isMobile ? "p-3" : "p-3 sm:p-4"
+            )}>
+              <Plus className={cn(
+                "mx-auto mb-2 text-accent",
+                isMobile ? "h-6 w-6" : "h-6 w-6 sm:h-8 sm:w-8"
+              )} />
+              <p className={cn(
+                "font-medium",
+                isMobile ? "text-sm" : "text-sm sm:text-base"
+              )}>Setup Planner</p>
+              <p className={cn(
+                "text-muted-foreground",
+                isMobile ? "text-xs" : "text-xs sm:text-sm"
+              )}>Plan your tank</p>
             </CardContent>
           </Card>
         </div>
@@ -130,54 +179,88 @@ const Index = () => {
         {/* My Plans Section */}
         <div className="space-y-3 sm:space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-xl sm:text-2xl font-bold">My Plans</h3>
+            <h3 className={cn(
+              "font-bold",
+              isMobile ? "text-lg" : "text-xl sm:text-2xl"
+            )}>My Plans</h3>
             <Button onClick={() => navigate('/setup-planner')} variant="outline" size="sm">
-              <Plus className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="text-xs sm:text-sm">New Plan</span>
+              <Plus className={cn(
+                "mr-1",
+                isMobile ? "h-3 w-3" : "h-3 w-3 sm:h-4 sm:w-4"
+              )} />
+              <span className={cn(
+                isMobile ? "text-xs" : "text-xs sm:text-sm"
+              )}>New Plan</span>
             </Button>
           </div>
           <SavedPlans />
         </div>
 
-        {/* My Tanks Section */}
+        {/* My Tanks Section - Mobile optimized */}
         <div className="space-y-3 sm:space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-xl sm:text-2xl font-bold">My Tanks</h3>
+            <h3 className={cn(
+              "font-bold",
+              isMobile ? "text-lg" : "text-xl sm:text-2xl"
+            )}>My Tanks</h3>
             <Dialog open={isAddingTank} onOpenChange={setIsAddingTank}>
               <DialogTrigger asChild>
                 <Button size="sm">
-                  <Plus className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-                  <span className="text-xs sm:text-sm">Add Tank</span>
+                  <Plus className={cn(
+                    "mr-1",
+                    isMobile ? "h-3 w-3" : "h-3 w-3 sm:h-4 sm:w-4"
+                  )} />
+                  <span className={cn(
+                    isMobile ? "text-xs" : "text-xs sm:text-sm"
+                  )}>Add Tank</span>
                 </Button>
               </DialogTrigger>
-              <DialogContent className="w-[95vw] max-w-md">
+              <DialogContent className={cn(
+                isMobile ? "w-[95vw] max-w-sm mx-2" : "w-[95vw] max-w-md"
+              )}>
                 <DialogHeader>
-                  <DialogTitle>Add New Tank</DialogTitle>
-                  <DialogDescription>
+                  <DialogTitle className={cn(
+                    isMobile ? "text-lg" : "text-xl"
+                  )}>Add New Tank</DialogTitle>
+                  <DialogDescription className={cn(
+                    isMobile ? "text-sm" : "text-base"
+                  )}>
                     Create a new aquarium to start tracking
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
                   <div>
-                    <Label htmlFor="tank-name">Tank Name</Label>
+                    <Label htmlFor="tank-name" className={cn(
+                      isMobile ? "text-sm" : "text-base"
+                    )}>Tank Name</Label>
                     <Input
                       id="tank-name"
                       placeholder="e.g., Living Room Reef"
                       value={newTank.name}
                       onChange={(e) => setNewTank(prev => ({ ...prev, name: e.target.value }))}
+                      className={cn(
+                        isMobile && "text-base" // Prevent zoom on iOS
+                      )}
                     />
                   </div>
                   <div>
-                    <Label htmlFor="tank-size">Tank Size</Label>
+                    <Label htmlFor="tank-size" className={cn(
+                      isMobile ? "text-sm" : "text-base"
+                    )}>Tank Size</Label>
                     <Input
                       id="tank-size"
                       placeholder="e.g., 75 gallons, 48x18x20 inches"
                       value={newTank.size}
                       onChange={(e) => setNewTank(prev => ({ ...prev, size: e.target.value }))}
+                      className={cn(
+                        isMobile && "text-base" // Prevent zoom on iOS
+                      )}
                     />
                   </div>
                   <div>
-                    <Label htmlFor="tank-type">Tank Type</Label>
+                    <Label htmlFor="tank-type" className={cn(
+                      isMobile ? "text-sm" : "text-base"
+                    )}>Tank Type</Label>
                     <Select value={newTank.type} onValueChange={(value: Tank['type']) => setNewTank(prev => ({ ...prev, type: value }))}>
                       <SelectTrigger>
                         <SelectValue />
@@ -198,12 +281,23 @@ const Index = () => {
           </div>
 
           {tanks.length === 0 ? (
-            <Card className="p-6 sm:p-8 text-center">
+            <Card className={cn(
+              "text-center",
+              isMobile ? "p-4" : "p-6 sm:p-8"
+            )}>
               <div className="space-y-3 sm:space-y-4">
-                <div className="text-4xl sm:text-6xl">🐠</div>
+                <div className={cn(
+                  isMobile ? "text-3xl" : "text-4xl sm:text-6xl"
+                )}>🐠</div>
                 <div>
-                  <h4 className="text-base sm:text-lg font-medium">No tanks yet</h4>
-                  <p className="text-sm sm:text-base text-muted-foreground">Add your first aquarium to get started</p>
+                  <h4 className={cn(
+                    "font-medium",
+                    isMobile ? "text-base" : "text-base sm:text-lg"
+                  )}>No tanks yet</h4>
+                  <p className={cn(
+                    "text-muted-foreground",
+                    isMobile ? "text-sm" : "text-sm sm:text-base"
+                  )}>Add your first aquarium to get started</p>
                 </div>
                 <Button onClick={() => setIsAddingTank(true)} size="sm">
                   <Plus className="mr-2 h-4 w-4" />
@@ -216,16 +310,26 @@ const Index = () => {
               {tanks.map((tank) => (
                 <Card 
                   key={tank.id} 
-                  className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-[1.01] active:scale-95"
+                  className="cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-[1.01] active:scale-95 mobile-card-hover"
                 >
-                  <CardHeader className="pb-2 sm:pb-3">
+                  <CardHeader className={cn(
+                    isMobile ? "pb-2" : "pb-2 sm:pb-3"
+                  )}>
                     <div className="flex items-start justify-between">
                       <div className="min-w-0 flex-1" onClick={() => navigate(`/tank/${tank.id}`)}>
-                        <CardTitle className="text-base sm:text-lg truncate">{tank.name}</CardTitle>
-                        <CardDescription className="text-sm">{tank.size} • {tank.type}</CardDescription>
+                        <CardTitle className={cn(
+                          "truncate",
+                          isMobile ? "text-base" : "text-base sm:text-lg"
+                        )}>{tank.name}</CardTitle>
+                        <CardDescription className={cn(
+                          isMobile ? "text-sm" : "text-sm"
+                        )}>{tank.size} • {tank.type}</CardDescription>
                       </div>
                       <div className="flex items-center gap-2 ml-2">
-                        <div className="text-xl sm:text-2xl flex-shrink-0">
+                        <div className={cn(
+                          "flex-shrink-0",
+                          isMobile ? "text-xl" : "text-xl sm:text-2xl"
+                        )}>
                           {tank.type === 'Reef' ? '🪸' : tank.type === 'FOWLR' ? '🐠' : '🌊'}
                         </div>
                         <AlertDialog>
@@ -234,13 +338,21 @@ const Index = () => {
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </AlertDialogTrigger>
-                          <AlertDialogContent>
+                          <AlertDialogContent className={cn(
+                            isMobile && "w-[95vw] max-w-sm mx-2"
+                          )}>
                             <AlertDialogHeader>
-                              <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+                              <AlertDialogTitle className={cn(
+                                "flex items-center gap-2 text-destructive",
+                                isMobile ? "text-lg" : "text-xl"
+                              )}>
                                 <Trash2 className="h-5 w-5" />
                                 Permanently Delete Tank
                               </AlertDialogTitle>
-                              <AlertDialogDescription className="space-y-2">
+                              <AlertDialogDescription className={cn(
+                                "space-y-2",
+                                isMobile ? "text-sm" : "text-base"
+                              )}>
                                 <p className="font-medium">
                                   Are you sure you want to permanently delete "{tank.name}"?
                                 </p>
@@ -259,11 +371,18 @@ const Index = () => {
                                 </p>
                               </AlertDialogDescription>
                             </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogFooter className={cn(
+                              isMobile && "flex-col gap-2"
+                            )}>
+                              <AlertDialogCancel className={cn(
+                                isMobile && "w-full"
+                              )}>Cancel</AlertDialogCancel>
                               <AlertDialogAction 
                                 onClick={() => handleDeleteTank(tank.id, tank.name)}
-                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                className={cn(
+                                  "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+                                  isMobile && "w-full"
+                                )}
                               >
                                 Yes, Permanently Delete
                               </AlertDialogAction>
@@ -274,18 +393,39 @@ const Index = () => {
                     </div>
                   </CardHeader>
                   <CardContent className="pt-0" onClick={() => navigate(`/tank/${tank.id}`)}>
-                    <div className="grid grid-cols-3 gap-2 sm:gap-4 text-center">
+                    <div className={cn(
+                      "grid grid-cols-3 text-center",
+                      isMobile ? "gap-2" : "gap-2 sm:gap-4"
+                    )}>
                       <div>
-                        <p className="text-lg sm:text-2xl font-bold text-primary">{tank.livestock.length}</p>
-                        <p className="text-xs text-muted-foreground">Livestock</p>
+                        <p className={cn(
+                          "font-bold text-primary",
+                          isMobile ? "text-lg" : "text-lg sm:text-2xl"
+                        )}>{tank.livestock.length}</p>
+                        <p className={cn(
+                          "text-muted-foreground",
+                          isMobile ? "text-xs" : "text-xs"
+                        )}>Livestock</p>
                       </div>
                       <div>
-                        <p className="text-lg sm:text-2xl font-bold text-accent">{tank.equipment.length}</p>
-                        <p className="text-xs text-muted-foreground">Equipment</p>
+                        <p className={cn(
+                          "font-bold text-accent",
+                          isMobile ? "text-lg" : "text-lg sm:text-2xl"
+                        )}>{tank.equipment.length}</p>
+                        <p className={cn(
+                          "text-muted-foreground",
+                          isMobile ? "text-xs" : "text-xs"
+                        )}>Equipment</p>
                       </div>
                       <div>
-                        <p className="text-lg sm:text-2xl font-bold text-green-600">{tank.parameters.length}</p>
-                        <p className="text-xs text-muted-foreground">Test Logs</p>
+                        <p className={cn(
+                          "font-bold text-green-600",
+                          isMobile ? "text-lg" : "text-lg sm:text-2xl"
+                        )}>{tank.parameters.length}</p>
+                        <p className={cn(
+                          "text-muted-foreground",
+                          isMobile ? "text-xs" : "text-xs"
+                        )}>Test Logs</p>
                       </div>
                     </div>
                   </CardContent>

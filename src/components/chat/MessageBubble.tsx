@@ -3,13 +3,15 @@ import React, { useMemo } from 'react';
 import { Card } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Bot, User, Plus, Sparkles, Table, MessageCircle } from 'lucide-react';
+import { Bot, User, Plus, Sparkles, MessageCircle } from 'lucide-react';
 import { Message } from '@/hooks/useChat';
 import { ParsedTask, parseAIRecommendations } from '@/utils/taskParser';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { useTasks } from '@/hooks/useTasks';
 import { Table as TableComponent, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { cn } from '@/lib/utils';
 
 interface MessageBubbleProps {
   message: Message;
@@ -76,6 +78,8 @@ const generateFollowUpQuestions = (content: string): string[] => {
 
 // Component to render markdown-style content with enhanced table and checkbox support
 const MarkdownContent: React.FC<{ content: string; onAddTask: (task: ParsedTask) => void }> = ({ content, onAddTask }) => {
+  const isMobile = useIsMobile();
+
   // Extract and parse tables from markdown
   const parseContent = useMemo(() => {
     const lines = content.split('\n');
@@ -164,52 +168,76 @@ const MarkdownContent: React.FC<{ content: string; onAddTask: (task: ParsedTask)
   };
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2 sm:space-y-3">
       {parseContent.map((element, idx) => {
         if (element.type === 'table') {
           const tableData = element.content as string[][];
           return (
             <div key={idx} className="border rounded-lg overflow-hidden">
-              <TableComponent>
-                <TableHeader>
-                  <TableRow>
-                    {tableData[0]?.map((header, headerIdx) => (
-                      <TableHead key={headerIdx} className="font-semibold">
-                        {header}
-                      </TableHead>
-                    ))}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {tableData.slice(1).map((row, rowIdx) => (
-                    <TableRow key={rowIdx}>
-                      {row.map((cell, cellIdx) => (
-                        <TableCell key={cellIdx} className="text-sm">
-                          <span dangerouslySetInnerHTML={{ __html: formatText(cell) }} />
-                        </TableCell>
+              <div className={cn(
+                "overflow-x-auto",
+                isMobile && "max-w-[280px]"
+              )}>
+                <TableComponent>
+                  <TableHeader>
+                    <TableRow>
+                      {tableData[0]?.map((header, headerIdx) => (
+                        <TableHead key={headerIdx} className={cn(
+                          "font-semibold whitespace-nowrap",
+                          isMobile ? "text-xs px-2 py-1" : "text-sm"
+                        )}>
+                          {header}
+                        </TableHead>
                       ))}
                     </TableRow>
-                  ))}
-                </TableBody>
-              </TableComponent>
+                  </TableHeader>
+                  <TableBody>
+                    {tableData.slice(1).map((row, rowIdx) => (
+                      <TableRow key={rowIdx}>
+                        {row.map((cell, cellIdx) => (
+                          <TableCell key={cellIdx} className={cn(
+                            isMobile ? "text-xs px-2 py-1" : "text-sm"
+                          )}>
+                            <span dangerouslySetInnerHTML={{ __html: formatText(cell) }} />
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </TableComponent>
+              </div>
             </div>
           );
         }
 
         if (element.type === 'checkbox' && element.task) {
           return (
-            <div key={idx} className="flex items-start gap-3 p-3 bg-background/50 rounded-lg border border-border/50">
-              <input type="checkbox" className="mt-1 h-4 w-4 rounded border-border" />
+            <div key={idx} className={cn(
+              "flex items-start gap-2 sm:gap-3 p-2 sm:p-3 bg-background/50 rounded-lg border border-border/50",
+              isMobile && "text-sm"
+            )}>
+              <input type="checkbox" className={cn(
+                "mt-1 rounded border-border",
+                isMobile ? "h-3 w-3" : "h-4 w-4"
+              )} />
               <div className="flex-1 min-w-0">
-                <p className="text-sm" dangerouslySetInnerHTML={{ __html: formatText(element.content as string) }} />
+                <p className={cn(
+                  isMobile ? "text-xs" : "text-sm"
+                )} dangerouslySetInnerHTML={{ __html: formatText(element.content as string) }} />
               </div>
               <Button
                 size="sm"
                 variant="outline"
                 onClick={() => onAddTask(element.task!)}
-                className="shrink-0 h-7 text-xs px-2"
+                className={cn(
+                  "shrink-0",
+                  isMobile ? "h-6 text-xs px-1" : "h-7 text-xs px-2"
+                )}
               >
-                <Plus className="h-3 w-3 mr-1" />
+                <Plus className={cn(
+                  "mr-1",
+                  isMobile ? "h-2 w-2" : "h-3 w-3"
+                )} />
                 Add Task
               </Button>
             </div>
@@ -219,7 +247,10 @@ const MarkdownContent: React.FC<{ content: string; onAddTask: (task: ParsedTask)
         return (
           <div
             key={idx}
-            className="prose prose-sm max-w-none dark:prose-invert [&_strong]:font-semibold [&_li]:list-disc [&_li]:ml-4"
+            className={cn(
+              "prose prose-sm max-w-none dark:prose-invert [&_strong]:font-semibold [&_li]:list-disc [&_li]:ml-4",
+              isMobile && "prose-xs [&_p]:text-sm [&_li]:text-sm"
+            )}
             dangerouslySetInnerHTML={{ __html: formatText(element.content as string) }}
           />
         );
@@ -232,6 +263,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onFollowU
   const isUser = message.role === 'user';
   const { toast } = useToast();
   const { createTask } = useTasks();
+  const isMobile = useIsMobile();
   
   // Parse AI responses for actionable tasks
   const parsedTasks = !isUser ? parseAIRecommendations(message.content) : [];
@@ -263,18 +295,39 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onFollowU
   };
   
   return (
-    <div className={`flex gap-3 ${isUser ? 'flex-row-reverse' : 'flex-row'} mb-4`}>
-      <Avatar className="h-8 w-8 mt-1">
+    <div className={cn(
+      "flex gap-2 sm:gap-3 mb-3 sm:mb-4",
+      isUser ? "flex-row-reverse" : "flex-row"
+    )}>
+      <Avatar className={cn(
+        "mt-1 flex-shrink-0",
+        isMobile ? "h-6 w-6" : "h-8 w-8"
+      )}>
         <AvatarFallback className={isUser ? 'bg-primary text-primary-foreground' : 'bg-secondary'}>
-          {isUser ? <User className="h-4 w-4" /> : <Bot className="h-4 w-4" />}
+          {isUser ? (
+            <User className={isMobile ? "h-3 w-3" : "h-4 w-4"} />
+          ) : (
+            <Bot className={isMobile ? "h-3 w-3" : "h-4 w-4"} />
+          )}
         </AvatarFallback>
       </Avatar>
       
-      <div className={`flex-1 max-w-[80%] ${isUser ? 'items-end' : 'items-start'} flex flex-col`}>
-        <Card className={`p-3 ${isUser ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
+      <div className={cn(
+        "flex-1 min-w-0 flex flex-col",
+        isUser ? "items-end" : "items-start",
+        isMobile && "max-w-[85%]"
+      )}>
+        <Card className={cn(
+          "p-2 sm:p-3",
+          isUser ? 'bg-primary text-primary-foreground' : 'bg-muted',
+          isMobile && "max-w-full"
+        )}>
           {isUser ? (
             <div className="prose prose-sm max-w-none dark:prose-invert">
-              <p className="whitespace-pre-wrap m-0">{message.content}</p>
+              <p className={cn(
+                "whitespace-pre-wrap m-0",
+                isMobile ? "text-sm" : "text-base"
+              )}>{message.content}</p>
             </div>
           ) : (
             <MarkdownContent content={message.content} onAddTask={addToPlanner} />
@@ -282,20 +335,36 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onFollowU
           
           {/* Task suggestions for AI messages - only show if no checkboxes are already in content */}
           {!isUser && parsedTasks.length > 0 && !message.content.includes('☐') && (
-            <div className="mt-3 pt-3 border-t border-border/50">
-              <p className="text-xs font-medium mb-2 flex items-center gap-1">
-                <Sparkles className="h-3 w-3" />
+            <div className={cn(
+              "mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-border/50"
+            )}>
+              <p className={cn(
+                "font-medium mb-2 flex items-center gap-1",
+                isMobile ? "text-xs" : "text-xs"
+              )}>
+                <Sparkles className={cn(
+                  isMobile ? "h-2 w-2" : "h-3 w-3"
+                )} />
                 Found {parsedTasks.length} actionable items:
               </p>
               <div className="space-y-1">
                 {parsedTasks.slice(0, 3).map((task, idx) => (
                   <div 
                     key={idx} 
-                    className="flex items-center justify-between gap-2 p-2 rounded bg-background/50"
+                    className={cn(
+                      "flex items-center justify-between gap-2 p-2 rounded bg-background/50",
+                      isMobile && "text-xs"
+                    )}
                   >
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium truncate">{task.title}</p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className={cn(
+                        "font-medium truncate",
+                        isMobile ? "text-xs" : "text-xs"
+                      )}>{task.title}</p>
+                      <p className={cn(
+                        "text-muted-foreground",
+                        isMobile ? "text-xs" : "text-xs"
+                      )}>
                         {task.category} • {task.priority} priority
                       </p>
                     </div>
@@ -303,9 +372,15 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onFollowU
                       size="sm"
                       variant="outline"
                       onClick={() => addToPlanner(task)}
-                      className="shrink-0 h-6 text-xs"
+                      className={cn(
+                        "shrink-0",
+                        isMobile ? "h-5 text-xs px-1" : "h-6 text-xs"
+                      )}
                     >
-                      <Plus className="h-3 w-3 mr-1" />
+                      <Plus className={cn(
+                        "mr-1",
+                        isMobile ? "h-2 w-2" : "h-3 w-3"
+                      )} />
                       Add
                     </Button>
                   </div>
@@ -317,9 +392,17 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onFollowU
         
         {/* Follow-up questions for AI responses */}
         {!isUser && followUpQuestions.length > 0 && onFollowUpClick && (
-          <div className="mt-3 w-full">
-            <p className="text-xs font-medium mb-2 flex items-center gap-1 text-muted-foreground">
-              <MessageCircle className="h-3 w-3" />
+          <div className={cn(
+            "mt-2 sm:mt-3 w-full",
+            isMobile && "max-w-full"
+          )}>
+            <p className={cn(
+              "font-medium mb-2 flex items-center gap-1 text-muted-foreground",
+              isMobile ? "text-xs" : "text-xs"
+            )}>
+              <MessageCircle className={cn(
+                isMobile ? "h-2 w-2" : "h-3 w-3"
+              )} />
               Follow-up questions:
             </p>
             <div className="space-y-1">
@@ -328,7 +411,10 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onFollowU
                   key={idx}
                   variant="ghost"
                   size="sm"
-                  className="h-auto p-2 text-xs text-left justify-start w-full bg-background/50 hover:bg-background border border-border/30 hover:border-border"
+                  className={cn(
+                    "h-auto p-2 text-left justify-start w-full bg-background/50 hover:bg-background border border-border/30 hover:border-border",
+                    isMobile ? "text-xs" : "text-xs"
+                  )}
                   onClick={() => onFollowUpClick(question)}
                 >
                   {question}
@@ -338,7 +424,10 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onFollowU
           </div>
         )}
         
-        <span className="text-xs text-muted-foreground mt-1">
+        <span className={cn(
+          "text-muted-foreground mt-1",
+          isMobile ? "text-xs" : "text-xs"
+        )}>
           {format(new Date(message.created_at), 'HH:mm')}
         </span>
       </div>
