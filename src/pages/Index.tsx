@@ -18,9 +18,10 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { FloatingActionButton } from '@/components/ui/floating-action-button';
 import { useAquarium, Tank } from '@/contexts/AquariumContext';
 import { useNavigate } from 'react-router-dom';
-import { MessageCircle, Plus, Trash2 } from 'lucide-react';
+import { MessageCircle, Plus, Trash2, BookOpen } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import TaskRecommendations from '@/components/TaskRecommendations';
 import SavedPlans from '@/components/SavedPlans';
@@ -36,7 +37,7 @@ const Index = () => {
     type: 'FOWLR' as Tank['type'],
   });
 
-  const handleAddTank = () => {
+  const handleAddTank = async () => {
     if (!newTank.name || !newTank.size) {
       toast({
         title: "Please fill in all fields",
@@ -45,17 +46,26 @@ const Index = () => {
       return;
     }
 
-    addTank({
+    await addTank({
       ...newTank,
       equipment: [],
       livestock: [],
       parameters: [],
     });
 
-    toast({
-      title: "Tank added successfully!",
-      description: `${newTank.name} has been added to your aquarium collection.`,
-    });
+    // Get the latest tank (the one we just added)
+    // We'll need to wait a bit for the state to update, so let's use a timeout
+    setTimeout(() => {
+      const latestTank = tanks[tanks.length - 1];
+      if (latestTank) {
+        toast({
+          title: "Tank created successfully!",
+          description: "Let's add some fish to your tank!",
+        });
+        // Auto-navigate to livestock selection for the new tank
+        navigate(`/tank/${latestTank.id}/livestock`);
+      }
+    }, 100);
 
     setNewTank({ name: '', size: '', type: 'FOWLR' });
     setIsAddingTank(false);
@@ -260,6 +270,11 @@ const Index = () => {
           )}
         </div>
       </div>
+
+      {/* Research FAB */}
+      <FloatingActionButton onClick={() => navigate('/education')}>
+        <BookOpen className="h-6 w-6" />
+      </FloatingActionButton>
     </Layout>
   );
 };

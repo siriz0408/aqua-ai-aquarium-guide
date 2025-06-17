@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Layout } from '@/components/Layout';
@@ -9,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Combobox } from '@/components/ui/combobox';
 import { useAquarium } from '@/contexts/AquariumContext';
 import { useToast } from '@/hooks/use-toast';
-import { Upload, Save, ArrowLeft } from 'lucide-react';
+import { Upload, Save, ArrowLeft, Plus, Settings } from 'lucide-react';
 import { livestockOptions, livestockCategories } from '@/data/livestockOptions';
 
 const Livestock = () => {
@@ -22,6 +21,7 @@ const Livestock = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedLivestock, setSelectedLivestock] = useState('');
+  const [showContinueActions, setShowContinueActions] = useState(false);
   const [livestock, setLivestock] = useState({
     name: '',
     species: '',
@@ -71,6 +71,7 @@ const Livestock = () => {
       name: '',
       species: '',
     });
+    setShowContinueActions(false);
   };
 
   const mockAnalyzeLivestock = async () => {
@@ -117,6 +118,8 @@ const Livestock = () => {
       species: livestock.species,
       careLevel: selectedOption?.careLevel || 'Beginner',
       compatibility: selectedOption?.compatibility || 'Peaceful, reef safe, good beginner fish. Compatible with most community fish.',
+      quantity: 1,
+      size: 'Medium'
     };
 
     addLivestock(tankId!, mockResults);
@@ -125,8 +128,11 @@ const Livestock = () => {
       title: "Livestock added successfully!",
       description: `${livestock.name} has been added to your tank.`,
     });
-    
-    navigate(`/tank/${tankId}`);
+
+    // Reset form and show continue actions
+    setLivestock({ name: '', species: '' });
+    setSelectedLivestock('');
+    setShowContinueActions(true);
   };
 
   const getCategoryEmoji = (category: string) => {
@@ -141,8 +147,59 @@ const Livestock = () => {
   };
 
   return (
-    <Layout title="Add Livestock" showBackButton>
+    <Layout 
+      title="Add Livestock" 
+      showBackButton
+      actions={
+        <Button 
+          variant="outline" 
+          size="sm"
+          onClick={() => navigate(`/tank/${tankId}`)}
+          className="gap-1"
+        >
+          <Settings className="h-3 w-3" />
+          Tank Overview
+        </Button>
+      }
+    >
       <div className="space-y-6 pb-20">
+        {/* Success message and continue actions */}
+        {showContinueActions && (
+          <Card className="bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800">
+            <CardContent className="p-4">
+              <div className="text-center space-y-4">
+                <div className="text-2xl">✅</div>
+                <div>
+                  <h3 className="font-medium text-green-800 dark:text-green-200">Livestock Added!</h3>
+                  <p className="text-sm text-green-700 dark:text-green-300">What would you like to do next?</p>
+                </div>
+                
+                <div className="flex flex-col sm:flex-row gap-2 justify-center">
+                  <Button onClick={resetSelection} variant="outline" size="sm">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add More Fish
+                  </Button>
+                  <Button 
+                    onClick={() => navigate(`/tank/${tankId}/equipment`)} 
+                    variant="outline" 
+                    size="sm"
+                  >
+                    <Settings className="mr-2 h-4 w-4" />
+                    Add Equipment
+                  </Button>
+                  <Button 
+                    onClick={() => navigate(`/tank/${tankId}`)} 
+                    className="ocean-gradient text-white"
+                    size="sm"
+                  >
+                    View My Tank
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         <Card>
           <CardHeader>
             <CardTitle>Livestock Identification</CardTitle>

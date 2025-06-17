@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Layout } from '@/components/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,13 +7,19 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAquarium } from '@/contexts/AquariumContext';
 import { Plus, Upload, Edit } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { EnhancedLivestockCard } from '@/components/tank-form/EnhancedLivestockCard';
+import { EnhancedEquipmentCard } from '@/components/tank-form/EnhancedEquipmentCard';
+import { useToast } from '@/hooks/use-toast';
 
 const TankDetails = () => {
   const { tankId } = useParams<{ tankId: string }>();
   const navigate = useNavigate();
-  const { getTank } = useAquarium();
+  const { getTank, updateTank } = useAquarium();
+  const { toast } = useToast();
   
   const tank = tankId ? getTank(tankId) : undefined;
+  const [livestock, setLivestock] = useState(tank?.livestock || []);
+  const [equipment, setEquipment] = useState(tank?.equipment || []);
 
   if (!tank) {
     return (
@@ -28,6 +33,62 @@ const TankDetails = () => {
   }
 
   const latestParameters = tank.parameters[tank.parameters.length - 1];
+
+  const updateLivestock = (id: string, updates: any) => {
+    const updatedLivestock = livestock.map(item =>
+      item.id === id ? { ...item, ...updates } : item
+    );
+    setLivestock(updatedLivestock);
+    
+    // Update tank in context
+    updateTank(tankId!, { livestock: updatedLivestock });
+    
+    toast({
+      title: "Livestock updated",
+      description: "Changes saved successfully.",
+    });
+  };
+
+  const deleteLivestock = (id: string) => {
+    const updatedLivestock = livestock.filter(item => item.id !== id);
+    setLivestock(updatedLivestock);
+    
+    // Update tank in context
+    updateTank(tankId!, { livestock: updatedLivestock });
+    
+    toast({
+      title: "Livestock removed",
+      description: "Item removed from your tank.",
+    });
+  };
+
+  const updateEquipment = (id: string, updates: any) => {
+    const updatedEquipment = equipment.map(item =>
+      item.id === id ? { ...item, ...updates } : item
+    );
+    setEquipment(updatedEquipment);
+    
+    // Update tank in context
+    updateTank(tankId!, { equipment: updatedEquipment });
+    
+    toast({
+      title: "Equipment updated",
+      description: "Changes saved successfully.",
+    });
+  };
+
+  const deleteEquipment = (id: string) => {
+    const updatedEquipment = equipment.filter(item => item.id !== id);
+    setEquipment(updatedEquipment);
+    
+    // Update tank in context
+    updateTank(tankId!, { equipment: updatedEquipment });
+    
+    toast({
+      title: "Equipment removed",
+      description: "Item removed from your tank.",
+    });
+  };
 
   return (
     <Layout 
@@ -75,11 +136,11 @@ const TankDetails = () => {
           <CardContent>
             <div className="grid grid-cols-3 gap-4 text-center">
               <div>
-                <p className="text-2xl font-bold text-primary">{tank.livestock.length}</p>
+                <p className="text-2xl font-bold text-primary">{livestock.length}</p>
                 <p className="text-sm text-muted-foreground">Livestock</p>
               </div>
               <div>
-                <p className="text-2xl font-bold text-accent">{tank.equipment.length}</p>
+                <p className="text-2xl font-bold text-accent">{equipment.length}</p>
                 <p className="text-sm text-muted-foreground">Equipment</p>
               </div>
               <div>
@@ -173,26 +234,27 @@ const TankDetails = () => {
           </TabsContent>
 
           <TabsContent value="equipment" className="space-y-4">
-            {tank.equipment.length > 0 ? (
-              <div className="space-y-4">
-                {tank.equipment.map((equipment) => (
-                  <Card key={equipment.id}>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-base">{equipment.name}</CardTitle>
-                      <CardDescription>{equipment.type}</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      {equipment.model && (
-                        <p className="text-sm text-muted-foreground mb-2">Model: {equipment.model}</p>
-                      )}
-                      {equipment.maintenanceTips && (
-                        <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                          <p className="text-sm font-medium text-green-800 dark:text-green-200 mb-1">Maintenance Tips</p>
-                          <p className="text-sm text-green-700 dark:text-green-300">{equipment.maintenanceTips}</p>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
+            <div className="flex justify-between items-center">
+              <h3 className="font-medium">Tank Equipment</h3>
+              <Button 
+                onClick={() => navigate(`/tank/${tankId}/equipment`)}
+                variant="outline"
+                size="sm"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Add Equipment
+              </Button>
+            </div>
+            
+            {equipment.length > 0 ? (
+              <div className="space-y-3">
+                {equipment.map((item) => (
+                  <EnhancedEquipmentCard
+                    key={item.id}
+                    equipment={item}
+                    onUpdate={updateEquipment}
+                    onDelete={deleteEquipment}
+                  />
                 ))}
               </div>
             ) : (
@@ -213,29 +275,27 @@ const TankDetails = () => {
           </TabsContent>
 
           <TabsContent value="livestock" className="space-y-4">
-            {tank.livestock.length > 0 ? (
-              <div className="space-y-4">
-                {tank.livestock.map((animal) => (
-                  <Card key={animal.id}>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-base">{animal.name}</CardTitle>
-                      <CardDescription>{animal.species}</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-2">
-                        <div className="flex justify-between">
-                          <span className="text-sm">Care Level</span>
-                          <Badge variant="outline">{animal.careLevel}</Badge>
-                        </div>
-                        {animal.compatibility && (
-                          <div>
-                            <p className="text-sm font-medium mb-1">Compatibility</p>
-                            <p className="text-sm text-muted-foreground">{animal.compatibility}</p>
-                          </div>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
+            <div className="flex justify-between items-center">
+              <h3 className="font-medium">Tank Livestock</h3>
+              <Button 
+                onClick={() => navigate(`/tank/${tankId}/livestock`)}
+                variant="outline"
+                size="sm"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Add Livestock
+              </Button>
+            </div>
+
+            {livestock.length > 0 ? (
+              <div className="space-y-3">
+                {livestock.map((animal) => (
+                  <EnhancedLivestockCard
+                    key={animal.id}
+                    livestock={animal}
+                    onUpdate={updateLivestock}
+                    onDelete={deleteLivestock}
+                  />
                 ))}
               </div>
             ) : (
