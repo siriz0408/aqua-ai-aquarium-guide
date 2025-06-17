@@ -8,6 +8,7 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import { AquariumProvider } from "@/contexts/AquariumContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { AdminProtectedRoute } from "@/components/admin/AdminProtectedRoute";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import Index from "./pages/Index";
 import TankDetails from "./pages/TankDetails";
@@ -91,14 +92,16 @@ const App = () => (
                     } />
                     <Route path="/admin" element={
                       <ProtectedRoute>
-                        <Admin />
+                        <AdminProtectedRoute>
+                          <Admin />
+                        </AdminProtectedRoute>
                       </ProtectedRoute>
                     } />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </div>
               </BrowserRouter>
-            </TooltipProvider>
+            </TotooltipProvider>
           </AquariumProvider>
         </AuthProvider>
       </ThemeProvider>

@@ -9,8 +9,10 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
-import { Search, Edit, UserPlus, Crown, User } from 'lucide-react';
+import { Search, Edit, UserPlus, Crown, User, Trash2 } from 'lucide-react';
+import { UserInviteDialog } from './UserInviteDialog';
 
 interface UserProfile {
   id: string;
@@ -33,10 +35,18 @@ export const AdminUserManagement: React.FC = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch users with search
-  const { data: users = [], isLoading } = useQuery({
+  // Fetch users with improved query
+  const { data: users = [], isLoading, error } = useQuery({
     queryKey: ['admin-users', searchTerm],
     queryFn: async () => {
+      console.log('Fetching users with search term:', searchTerm);
+      
+      // First check if current user is admin
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('Not authenticated');
+      }
+
       let query = supabase
         .from('profiles')
         .select('*')
@@ -47,14 +57,32 @@ export const AdminUserManagement: React.FC = () => {
       }
 
       const { data, error } = await query;
-      if (error) throw error;
+      
+      console.log('Users query result:', { data, error });
+      
+      if (error) {
+        console.error('Error fetching users:', error);
+        throw error;
+      }
+      
       return data as UserProfile[];
     },
+    retry: 1,
   });
 
   // Update user mutation
   const updateUserMutation = useMutation({
-    mutationFn: async (updates: { userId: string; is_admin: boolean; admin_role: string | null; subscription_status: string; subscription_tier: string; free_credits_remaining: number }) => {
+    mutationFn: async (updates: { 
+      userId: string; 
+      is_admin: boolean; 
+      admin_role: string | null; 
+      subscription_status: string; 
+      subscription_tier: string; 
+      free_credits_remaining: number;
+      full_name: string;
+    }) => {
+      console.log('Updating user:', updates);
+      
       const { error } = await supabase
         .from('profiles')
         .update({
@@ -63,10 +91,14 @@ export const AdminUserManagement: React.FC = () => {
           subscription_status: updates.subscription_status,
           subscription_tier: updates.subscription_tier,
           free_credits_remaining: updates.free_credits_remaining,
+          full_name: updates.full_name,
         })
         .eq('id', updates.userId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error updating user:', error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-users'] });
@@ -78,8 +110,42 @@ export const AdminUserManagement: React.FC = () => {
       });
     },
     onError: (error) => {
+      console.error('Update user error:', error);
       toast({
         title: "Update failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Delete user mutation
+  const deleteUserMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      console.log('Deleting user:', userId);
+      
+      // Delete user profile (this will cascade to auth.users due to foreign key)
+      const { error } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', userId);
+
+      if (error) {
+        console.error('Error deleting user:', error);
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+      toast({
+        title: "User deleted",
+        description: "User has been successfully deleted.",
+      });
+    },
+    onError: (error) => {
+      console.error('Delete user error:', error);
+      toast({
+        title: "Delete failed",
         description: error.message,
         variant: "destructive",
       });
@@ -101,9 +167,14 @@ export const AdminUserManagement: React.FC = () => {
       subscription_status: formData.get('subscription_status') as string,
       subscription_tier: formData.get('subscription_tier') as string,
       free_credits_remaining: parseInt(formData.get('free_credits_remaining') as string),
+      full_name: formData.get('full_name') as string,
     };
 
     updateUserMutation.mutate(updates);
+  };
+
+  const handleDeleteUser = (userId: string) => {
+    deleteUserMutation.mutate(userId);
   };
 
   const getRoleBadge = (user: UserProfile) => {
@@ -138,11 +209,26 @@ export const AdminUserManagement: React.FC = () => {
     );
   };
 
+  if (error) {
+    console.error('AdminUserManagement error:', error);
+    return (
+      <div className="text-center py-8">
+        <p className="text-red-600">Error loading users: {error.message}</p>
+        <Button 
+          onClick={() => queryClient.invalidateQueries({ queryKey: ['admin-users'] })}
+          className="mt-4"
+        >
+          Retry
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      {/* Search and Filters */}
-      <div className="flex items-center gap-4">
-        <div className="relative flex-1">
+      {/* Header with Search and Actions */}
+      <div className="flex items-center justify-between gap-4">
+        <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search users by email or name..."
@@ -151,6 +237,7 @@ export const AdminUserManagement: React.FC = () => {
             className="pl-10"
           />
         </div>
+        <UserInviteDialog />
       </div>
 
       {/* Users Table */}
@@ -171,12 +258,13 @@ export const AdminUserManagement: React.FC = () => {
               <TableRow>
                 <TableCell colSpan={6} className="text-center py-8">
                   <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto"></div>
+                  <p className="mt-2 text-muted-foreground">Loading users...</p>
                 </TableCell>
               </TableRow>
             ) : users.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                  No users found
+                  {searchTerm ? 'No users found matching your search' : 'No users found'}
                 </TableCell>
               </TableRow>
             ) : (
@@ -209,13 +297,39 @@ export const AdminUserManagement: React.FC = () => {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleEditUser(user)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEditUser(user)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="outline" size="sm">
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete User</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to delete {user.email}? This action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => handleDeleteUser(user.id)}
+                              className="bg-red-600 hover:bg-red-700"
+                            >
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))
@@ -230,7 +344,7 @@ export const AdminUserManagement: React.FC = () => {
           <DialogHeader>
             <DialogTitle>Edit User</DialogTitle>
             <DialogDescription>
-              Update user permissions, subscription, and credits.
+              Update user information, permissions, and subscription details.
             </DialogDescription>
           </DialogHeader>
           {selectedUser && (
@@ -242,6 +356,14 @@ export const AdminUserManagement: React.FC = () => {
               }}
               className="space-y-4"
             >
+              <div className="space-y-2">
+                <Label htmlFor="full_name">Full Name</Label>
+                <Input
+                  name="full_name"
+                  defaultValue={selectedUser.full_name || ''}
+                  placeholder="User's full name"
+                />
+              </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="is_admin">Admin Status</Label>
