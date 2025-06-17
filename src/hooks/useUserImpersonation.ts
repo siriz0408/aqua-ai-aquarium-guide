@@ -49,11 +49,16 @@ export const useUserImpersonation = () => {
       }
 
       const result = data[0];
-      if (!result || typeof result.user_data !== 'object') {
+      if (!result || !result.user_data) {
         throw new Error('Invalid user data format');
       }
 
-      return result as ImpersonationResult;
+      // Parse the user_data from Json to our UserData interface
+      const userData = result.user_data as UserData;
+      
+      return {
+        user_data: userData
+      } as ImpersonationResult;
     },
     onSuccess: async (data) => {
       console.log('Impersonation successful:', data);
