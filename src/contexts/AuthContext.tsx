@@ -8,7 +8,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  signUp: (email: string, password: string, fullName: string) => Promise<{ error: any }>;
+  signUp: (email: string, password: string, fullName: string, requestAdminAccess?: boolean) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
 }
@@ -49,7 +49,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string, fullName: string) => {
+  const signUp = async (email: string, password: string, fullName: string, requestAdminAccess: boolean = false) => {
     try {
       const redirectUrl = `${window.location.origin}/`;
       
@@ -59,7 +59,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         options: {
           emailRedirectTo: redirectUrl,
           data: {
-            full_name: fullName
+            full_name: fullName,
+            request_admin_access: requestAdminAccess
           }
         }
       });
@@ -71,9 +72,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           variant: "destructive",
         });
       } else {
+        const message = requestAdminAccess 
+          ? "Account created with admin access request! Please check your email for confirmation."
+          : "Check your email for confirmation to complete your registration.";
+        
         toast({
-          title: "Check your email",
-          description: "We've sent you a confirmation link to complete your registration.",
+          title: requestAdminAccess ? "Admin account created!" : "Check your email",
+          description: message,
         });
       }
 

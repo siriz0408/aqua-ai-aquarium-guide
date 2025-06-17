@@ -20,7 +20,7 @@ export const useCredits = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch user profile directly without recursion-prone RLS policies
+  // Fetch user profile using the safe admin check function
   const { data: profile, isLoading: profileLoading, error: profileError } = useQuery({
     queryKey: ['user-profile', user?.id],
     queryFn: async () => {
@@ -28,12 +28,20 @@ export const useCredits = () => {
       
       console.log('Fetching user profile for credits hook...');
       
-      // Direct query using explicit user ID filtering instead of RLS
+      // First check if user is admin using the safe function
+      const { data: isAdmin, error: adminError } = await supabase
+        .rpc('check_user_admin_status', { user_id: user.id });
+
+      if (adminError) {
+        console.error('Error checking admin status:', adminError);
+      }
+
+      // Then get the profile data
       const { data, error } = await supabase
         .from('profiles')
         .select('id, subscription_status, subscription_tier, subscription_start_date, subscription_end_date, is_admin, admin_role')
         .eq('id', user.id)
-        .maybeSingle();
+        .single();
 
       if (error) {
         console.error('Error fetching user profile:', error);

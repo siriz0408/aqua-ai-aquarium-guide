@@ -46,15 +46,7 @@ const Auth = () => {
           return;
         }
         
-        const { error } = await signUp(email, password, fullName);
-        
-        if (!error && requestAdminAccess) {
-          toast({
-            title: "Account created successfully!",
-            description: "Your account has been created with admin access. Please check your email for confirmation.",
-            variant: "default",
-          });
-        }
+        await signUp(email, password, fullName, requestAdminAccess);
       } else {
         const { error } = await signIn(email, password);
         if (!error) {

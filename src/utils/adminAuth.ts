@@ -14,33 +14,40 @@ export const checkAdminStatus = async () => {
 
     console.log('User found, checking admin status for:', user.id);
 
-    // Direct query to check admin status without using RLS policies that might cause recursion
-    const { data: profile, error } = await supabase
-      .from('profiles')
-      .select('id, email, full_name, is_admin, admin_role, subscription_status, subscription_tier')
-      .eq('id', user.id)
-      .maybeSingle();
+    // Use the new safe function to check admin status
+    const { data: isAdmin, error: adminError } = await supabase
+      .rpc('check_user_admin_status', { user_id: user.id });
 
-    if (error) {
-      console.error('Error checking admin status:', error);
+    if (adminError) {
+      console.error('Error checking admin status:', adminError);
       return { isAdmin: false, profile: null };
     }
 
-    if (!profile) {
-      console.log('No profile found for user');
-      return { isAdmin: false, profile: null };
-    }
+    // If user is admin, get their full profile
+    if (isAdmin) {
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('id, email, full_name, is_admin, admin_role, subscription_status, subscription_tier, admin_permissions')
+        .eq('id', user.id)
+        .single();
 
-    const isAdmin = profile.is_admin || false;
-    console.log('Admin status check result:', { isAdmin, profile });
-
-    return { 
-      isAdmin, 
-      profile: {
-        ...profile,
-        full_name: profile.full_name || user.email,
+      if (profileError) {
+        console.error('Error fetching admin profile:', profileError);
+        return { isAdmin: false, profile: null };
       }
-    };
+
+      console.log('Admin status check result:', { isAdmin, profile });
+
+      return { 
+        isAdmin: true, 
+        profile: {
+          ...profile,
+          full_name: profile.full_name || user.email,
+        }
+      };
+    }
+
+    return { isAdmin: false, profile: null };
   } catch (error) {
     console.error('Error in checkAdminStatus:', error);
     return { isAdmin: false, profile: null };
