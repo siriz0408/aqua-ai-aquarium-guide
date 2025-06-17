@@ -107,13 +107,13 @@ const Index = () => {
         {/* Your Aquariums Section */}
         <Card className="w-full">
           <CardHeader className="pb-3">
-            <div className="flex justify-between items-center">
-              <div>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+              <div className="flex-1 min-w-0">
                 <CardTitle className="text-lg">Your Aquariums</CardTitle>
                 <CardDescription className="text-sm">Monitor and manage your tanks</CardDescription>
               </div>
               {aquariums.length > 0 && (
-                <Button variant="ghost" size="sm" onClick={() => navigate('/tanks')}>
+                <Button variant="ghost" size="sm" onClick={() => navigate('/tanks')} className="flex-shrink-0 text-xs">
                   View All ({aquariums.length})
                 </Button>
               )}
@@ -122,7 +122,7 @@ const Index = () => {
           
           <CardContent>
             {isLoading ? (
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {[...Array(2)].map((_, i) => (
                   <div key={i} className="p-3 border rounded-lg animate-pulse">
                     <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
@@ -141,8 +141,8 @@ const Index = () => {
                 </Button>
               </div>
             ) : (
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                {aquariums.slice(0, 4).map((aquarium) => {
+              <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {aquariums.slice(0, 8).map((aquarium) => {
                   const parameterStatus = getParameterStatus(aquarium);
                   
                   return (
@@ -159,7 +159,7 @@ const Index = () => {
                             <p className="text-xs text-muted-foreground truncate">{aquarium.size}</p>
                           </div>
                         </div>
-                        <Badge variant="secondary" className="text-xs">
+                        <Badge variant="secondary" className="text-xs flex-shrink-0">
                           {aquarium.type}
                         </Badge>
                       </div>

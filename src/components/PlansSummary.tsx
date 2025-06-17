@@ -32,7 +32,7 @@ const PlansSummary = () => {
     return (
       <Card className="w-full">
         <CardHeader className="pb-3">
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
             <div>
               <div className="h-5 bg-gray-200 rounded w-32 mb-1"></div>
               <div className="h-3 bg-gray-200 rounded w-48"></div>
@@ -40,7 +40,7 @@ const PlansSummary = () => {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {[...Array(2)].map((_, i) => (
               <div key={i} className="p-3 border rounded-lg animate-pulse">
                 <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
@@ -56,18 +56,18 @@ const PlansSummary = () => {
   return (
     <Card className="w-full">
       <CardHeader className="pb-3">
-        <div className="flex justify-between items-center">
-          <div>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+          <div className="flex-1 min-w-0">
             <CardTitle className="text-lg">Your Setup Plans</CardTitle>
             <CardDescription className="text-sm">Manage your aquarium setup plans</CardDescription>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-shrink-0">
             {plans.length > 0 && (
-              <Button variant="ghost" size="sm" onClick={handleViewAllPlans}>
+              <Button variant="ghost" size="sm" onClick={handleViewAllPlans} className="text-xs">
                 View All ({plans.length})
               </Button>
             )}
-            <Button size="sm" onClick={handleCreatePlan} className="gap-1">
+            <Button size="sm" onClick={handleCreatePlan} className="gap-1 text-xs">
               <Plus className="h-3 w-3" />
               Create Plan
             </Button>
@@ -87,8 +87,8 @@ const PlansSummary = () => {
             </Button>
           </div>
         ) : (
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {plans.slice(0, 4).map((plan) => (
+          <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {plans.slice(0, 8).map((plan) => (
               <div 
                 key={plan.id} 
                 className="p-3 border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors group"
@@ -97,7 +97,7 @@ const PlansSummary = () => {
                 <div className="flex items-start justify-between mb-2">
                   <div className="min-w-0 flex-1">
                     <h4 className="text-sm font-medium truncate">{plan.plan_name}</h4>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1 flex-wrap">
                       <span className="flex items-center gap-1">
                         <Calendar className="h-3 w-3" />
                         {formatDate(plan.created_at)}
@@ -117,7 +117,7 @@ const PlansSummary = () => {
                       e.stopPropagation();
                       handleViewPlan(plan);
                     }}
-                    className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0"
+                    className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0 flex-shrink-0"
                   >
                     <Eye className="h-3 w-3" />
                   </Button>
