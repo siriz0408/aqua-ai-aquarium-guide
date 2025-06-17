@@ -9,6 +9,69 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      admin_activity_logs: {
+        Row: {
+          action: string
+          admin_user_id: string | null
+          created_at: string
+          details: Json | null
+          id: string
+          ip_address: string | null
+          target_id: string | null
+          target_type: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          action: string
+          admin_user_id?: string | null
+          created_at?: string
+          details?: Json | null
+          id?: string
+          ip_address?: string | null
+          target_id?: string | null
+          target_type?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          action?: string
+          admin_user_id?: string | null
+          created_at?: string
+          details?: Json | null
+          id?: string
+          ip_address?: string | null
+          target_id?: string | null
+          target_type?: string | null
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
+      admin_notes: {
+        Row: {
+          admin_id: string | null
+          created_at: string
+          id: string
+          note: string
+          note_type: string | null
+          user_id: string | null
+        }
+        Insert: {
+          admin_id?: string | null
+          created_at?: string
+          id?: string
+          note: string
+          note_type?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          admin_id?: string | null
+          created_at?: string
+          id?: string
+          note?: string
+          note_type?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       aquariums: {
         Row: {
           alkalinity: number | null
@@ -400,6 +463,36 @@ export type Database = {
         }
         Relationships: []
       }
+      impersonation_tokens: {
+        Row: {
+          admin_id: string | null
+          created_at: string
+          expires_at: string
+          id: string
+          token: string
+          used: boolean | null
+          user_id: string | null
+        }
+        Insert: {
+          admin_id?: string | null
+          created_at?: string
+          expires_at: string
+          id?: string
+          token: string
+          used?: boolean | null
+          user_id?: string | null
+        }
+        Update: {
+          admin_id?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          token?: string
+          used?: boolean | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           content: string
@@ -437,13 +530,18 @@ export type Database = {
       }
       profiles: {
         Row: {
+          admin_permissions: Json | null
+          admin_role: string | null
           avatar_url: string | null
           created_at: string
+          created_by_admin_id: string | null
           email: string | null
           free_credits_remaining: number | null
           full_name: string | null
           id: string
+          is_admin: boolean | null
           last_active: string | null
+          last_admin_login: string | null
           stripe_customer_id: string | null
           stripe_subscription_id: string | null
           subscription_end_date: string | null
@@ -456,13 +554,18 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          admin_permissions?: Json | null
+          admin_role?: string | null
           avatar_url?: string | null
           created_at?: string
+          created_by_admin_id?: string | null
           email?: string | null
           free_credits_remaining?: number | null
           full_name?: string | null
           id: string
+          is_admin?: boolean | null
           last_active?: string | null
+          last_admin_login?: string | null
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
           subscription_end_date?: string | null
@@ -475,13 +578,18 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          admin_permissions?: Json | null
+          admin_role?: string | null
           avatar_url?: string | null
           created_at?: string
+          created_by_admin_id?: string | null
           email?: string | null
           free_credits_remaining?: number | null
           full_name?: string | null
           id?: string
+          is_admin?: boolean | null
           last_active?: string | null
+          last_admin_login?: string | null
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
           subscription_end_date?: string | null
@@ -610,6 +718,83 @@ export type Database = {
           feature_used?: string
           id?: string
           subscription_status?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      support_ticket_responses: {
+        Row: {
+          created_at: string
+          from_admin: boolean | null
+          id: string
+          message: string
+          ticket_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          from_admin?: boolean | null
+          id?: string
+          message: string
+          ticket_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          from_admin?: boolean | null
+          id?: string
+          message?: string
+          ticket_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_ticket_responses_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "support_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      support_tickets: {
+        Row: {
+          assigned_admin_id: string | null
+          created_at: string
+          id: string
+          message: string
+          priority: string | null
+          resolved_at: string | null
+          response_count: number | null
+          status: string | null
+          subject: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          assigned_admin_id?: string | null
+          created_at?: string
+          id?: string
+          message: string
+          priority?: string | null
+          resolved_at?: string | null
+          response_count?: number | null
+          status?: string | null
+          subject: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          assigned_admin_id?: string | null
+          created_at?: string
+          id?: string
+          message?: string
+          priority?: string | null
+          resolved_at?: string | null
+          response_count?: number | null
+          status?: string | null
+          subject?: string
+          updated_at?: string
           user_id?: string | null
         }
         Relationships: []
