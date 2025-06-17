@@ -64,19 +64,24 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onTaskSelect }) => {
     return title.replace(/\*\*/g, '').trim();
   };
 
-  // Function to extract summary from description or title
+  // Function to extract summary from description, excluding the title
   const getTaskSummary = (task: Task) => {
     const cleanTitle = formatTaskTitle(task.title);
     
-    // If description exists, use it as summary, otherwise extract from title
+    // If description exists and is different from title, use it as summary
     if (task.description && task.description.trim()) {
-      return task.description.trim();
+      const cleanDescription = task.description.replace(/\*\*/g, '').trim();
+      // Don't show description if it's the same as the title
+      if (cleanDescription !== cleanTitle) {
+        return cleanDescription;
+      }
     }
     
-    // If title contains a colon, split and use the part after colon as summary
+    // If title contains a colon, use only the part after colon as summary
     if (cleanTitle.includes(':')) {
       const parts = cleanTitle.split(':');
-      return parts.slice(1).join(':').trim();
+      const summary = parts.slice(1).join(':').trim();
+      return summary || null;
     }
     
     return null;
