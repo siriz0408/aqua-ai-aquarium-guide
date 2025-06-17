@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
-import { Search, Edit, UserPlus, Crown, User, Trash2 } from 'lucide-react';
+import { Search, Edit, UserPlus, Crown, User, Trash2, RefreshCw } from 'lucide-react';
 import { UserInviteDialog } from './UserInviteDialog';
 import { UserDetailModal } from './UserDetailModal';
 
@@ -40,7 +41,7 @@ export const AdminUserManagement: React.FC = () => {
   const queryClient = useQueryClient();
 
   // Fetch users using the admin function that bypasses RLS
-  const { data: users = [], isLoading, error } = useQuery({
+  const { data: users = [], isLoading, error, refetch } = useQuery({
     queryKey: ['admin-users', searchTerm],
     queryFn: async () => {
       console.log('Fetching users using admin function...');
@@ -59,6 +60,8 @@ export const AdminUserManagement: React.FC = () => {
         throw functionError;
       }
       
+      console.log('Raw data from admin function:', data);
+      
       // Filter by search term if provided
       let filteredData = data || [];
       if (searchTerm && Array.isArray(filteredData)) {
@@ -68,11 +71,24 @@ export const AdminUserManagement: React.FC = () => {
         );
       }
       
+      console.log('Filtered data:', filteredData);
       return filteredData as UserProfile[];
     },
-    retry: 1,
+    retry: 2,
     enabled: !!user?.id,
+    refetchOnWindowFocus: false,
+    staleTime: 1000 * 60 * 5, // 5 minutes
   });
+
+  // Force refresh function
+  const handleRefresh = () => {
+    console.log('Manually refreshing user data...');
+    refetch();
+    toast({
+      title: "Refreshing data",
+      description: "Fetching the latest user information...",
+    });
+  };
 
   // Update user mutation using the admin function
   const updateUserMutation = useMutation({
@@ -174,6 +190,7 @@ export const AdminUserManagement: React.FC = () => {
   };
 
   const handleViewUserDetail = (user: UserProfile) => {
+    console.log('Opening detail modal for user:', user);
     setSelectedUser(user);
     setIsDetailModalOpen(true);
   };
@@ -236,9 +253,10 @@ export const AdminUserManagement: React.FC = () => {
       <div className="text-center py-8">
         <p className="text-red-600">Error loading users: {error.message}</p>
         <Button 
-          onClick={() => queryClient.invalidateQueries({ queryKey: ['admin-users'] })}
+          onClick={handleRefresh}
           className="mt-4"
         >
+          <RefreshCw className="h-4 w-4 mr-2" />
           Retry
         </Button>
       </div>
@@ -258,7 +276,18 @@ export const AdminUserManagement: React.FC = () => {
             className="pl-10"
           />
         </div>
-        <UserInviteDialog />
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={handleRefresh} size="sm">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Refresh
+          </Button>
+          <UserInviteDialog />
+        </div>
+      </div>
+
+      {/* Debug Info */}
+      <div className="text-xs text-muted-foreground">
+        Total users loaded: {users.length} | Search term: "{searchTerm}" | Loading: {isLoading.toString()}
       </div>
 
       {/* Users Table */}
@@ -370,6 +399,8 @@ export const AdminUserManagement: React.FC = () => {
         onClose={() => {
           setIsDetailModalOpen(false);
           setSelectedUser(null);
+          // Refresh data when modal closes to show any updates
+          handleRefresh();
         }}
       />
 

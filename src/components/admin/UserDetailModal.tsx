@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -42,19 +42,25 @@ export const UserDetailModal: React.FC<UserDetailModalProps> = ({ user, isOpen, 
   const queryClient = useQueryClient();
   
   const [formData, setFormData] = useState<Partial<UserProfile>>({});
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
-  React.useEffect(() => {
-    if (user) {
-      setFormData({
+  // Reset form data when user changes or modal opens
+  useEffect(() => {
+    if (user && isOpen) {
+      console.log('Setting form data for user:', user);
+      const initialData = {
         full_name: user.full_name || '',
         is_admin: user.is_admin,
         admin_role: user.admin_role,
         subscription_status: user.subscription_status,
         subscription_tier: user.subscription_tier,
         free_credits_remaining: user.free_credits_remaining,
-      });
+      };
+      setFormData(initialData);
+      setHasUnsavedChanges(false);
+      console.log('Initial form data:', initialData);
     }
-  }, [user]);
+  }, [user, isOpen]);
 
   const updateUserMutation = useMutation({
     mutationFn: async (updates: Partial<UserProfile>) => {
@@ -62,10 +68,12 @@ export const UserDetailModal: React.FC<UserDetailModalProps> = ({ user, isOpen, 
         throw new Error('User not authenticated or target user not found');
       }
 
+      console.log('Updating user with data:', updates);
+
       const { data, error } = await supabase.rpc('admin_update_profile', {
         requesting_admin_id: currentUser.id,
         target_user_id: user.id,
-        new_full_name: updates.full_name || user.full_name,
+        new_full_name: updates.full_name || user.full_name || '',
         new_is_admin: updates.is_admin ?? user.is_admin,
         new_admin_role: updates.admin_role || user.admin_role,
         new_subscription_status: updates.subscription_status || user.subscription_status,
@@ -73,32 +81,57 @@ export const UserDetailModal: React.FC<UserDetailModalProps> = ({ user, isOpen, 
         new_free_credits_remaining: updates.free_credits_remaining ?? user.free_credits_remaining
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Update error:', error);
+        throw error;
+      }
+      
+      console.log('Update successful:', data);
       return data;
     },
     onSuccess: () => {
+      // Invalidate all relevant queries to refresh data
       queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-users', ''] });
+      setHasUnsavedChanges(false);
       toast({
         title: "User updated successfully",
         description: "All changes have been saved.",
       });
       onClose();
     },
-    onError: (error) => {
+    onError: (error: any) => {
+      console.error('Update mutation error:', error);
       toast({
         title: "Update failed",
-        description: error.message,
+        description: error.message || 'An error occurred while updating the user',
         variant: "destructive",
       });
     },
   });
 
   const handleSave = () => {
+    console.log('Saving form data:', formData);
     updateUserMutation.mutate(formData);
   };
 
   const handleInputChange = (field: keyof UserProfile, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    console.log('Field changed:', field, 'New value:', value);
+    setFormData(prev => {
+      const newData = { ...prev, [field]: value };
+      console.log('Updated form data:', newData);
+      return newData;
+    });
+    setHasUnsavedChanges(true);
+  };
+
+  const handleClose = () => {
+    if (hasUnsavedChanges) {
+      const confirmClose = window.confirm('You have unsaved changes. Are you sure you want to close?');
+      if (!confirmClose) return;
+    }
+    setHasUnsavedChanges(false);
+    onClose();
   };
 
   const getRoleBadge = (isAdmin: boolean, adminRole: string | null) => {
@@ -136,7 +169,7 @@ export const UserDetailModal: React.FC<UserDetailModalProps> = ({ user, isOpen, 
   if (!user) return null;
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3">
@@ -146,7 +179,12 @@ export const UserDetailModal: React.FC<UserDetailModalProps> = ({ user, isOpen, 
             <div>
               <div className="flex items-center gap-2">
                 Edit User Details
-                {getRoleBadge(user.is_admin, user.admin_role)}
+                {getRoleBadge(formData.is_admin ?? user.is_admin, formData.admin_role ?? user.admin_role)}
+                {hasUnsavedChanges && (
+                  <Badge variant="secondary" className="text-xs bg-orange-100 text-orange-800">
+                    Unsaved Changes
+                  </Badge>
+                )}
               </div>
               <DialogDescription className="text-left">
                 {user.email}
@@ -244,7 +282,7 @@ export const UserDetailModal: React.FC<UserDetailModalProps> = ({ user, isOpen, 
                   <div className="space-y-2">
                     <Label htmlFor="is_admin">Admin Status</Label>
                     <Select
-                      value={formData.is_admin?.toString()}
+                      value={(formData.is_admin ?? user.is_admin)?.toString()}
                       onValueChange={(value) => handleInputChange('is_admin', value === 'true')}
                     >
                       <SelectTrigger>
@@ -259,9 +297,9 @@ export const UserDetailModal: React.FC<UserDetailModalProps> = ({ user, isOpen, 
                   <div className="space-y-2">
                     <Label htmlFor="admin_role">Admin Role</Label>
                     <Select
-                      value={formData.admin_role || ''}
+                      value={formData.admin_role ?? user.admin_role ?? ''}
                       onValueChange={(value) => handleInputChange('admin_role', value || null)}
-                      disabled={!formData.is_admin}
+                      disabled={!(formData.is_admin ?? user.is_admin)}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select role" />
@@ -275,11 +313,11 @@ export const UserDetailModal: React.FC<UserDetailModalProps> = ({ user, isOpen, 
                   </div>
                 </div>
                 
-                {formData.is_admin && (
+                {(formData.is_admin ?? user.is_admin) && (
                   <div className="p-4 bg-purple-50 rounded-lg">
                     <h4 className="font-medium text-purple-900 mb-2">Admin Permissions</h4>
                     <div className="text-sm text-purple-700">
-                      {formData.admin_role === 'super_admin' ? (
+                      {(formData.admin_role ?? user.admin_role) === 'super_admin' ? (
                         'Full system access including user management, settings, and analytics'
                       ) : (
                         'Standard admin access to user management and analytics'
@@ -304,7 +342,7 @@ export const UserDetailModal: React.FC<UserDetailModalProps> = ({ user, isOpen, 
                   <div className="space-y-2">
                     <Label htmlFor="subscription_status">Subscription Status</Label>
                     <Select
-                      value={formData.subscription_status}
+                      value={formData.subscription_status ?? user.subscription_status}
                       onValueChange={(value) => handleInputChange('subscription_status', value)}
                     >
                       <SelectTrigger>
@@ -321,7 +359,7 @@ export const UserDetailModal: React.FC<UserDetailModalProps> = ({ user, isOpen, 
                   <div className="space-y-2">
                     <Label htmlFor="subscription_tier">Subscription Tier</Label>
                     <Select
-                      value={formData.subscription_tier}
+                      value={formData.subscription_tier ?? user.subscription_tier}
                       onValueChange={(value) => handleInputChange('subscription_tier', value)}
                     >
                       <SelectTrigger>
@@ -341,12 +379,12 @@ export const UserDetailModal: React.FC<UserDetailModalProps> = ({ user, isOpen, 
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="credits">Free Credits Remaining</Label>
-                    {getSubscriptionBadge(formData.subscription_status || user.subscription_status)}
+                    {getSubscriptionBadge(formData.subscription_status ?? user.subscription_status)}
                   </div>
                   <Input
                     id="credits"
                     type="number"
-                    value={formData.free_credits_remaining}
+                    value={formData.free_credits_remaining ?? user.free_credits_remaining}
                     onChange={(e) => handleInputChange('free_credits_remaining', parseInt(e.target.value) || 0)}
                     min="0"
                   />
@@ -378,15 +416,20 @@ export const UserDetailModal: React.FC<UserDetailModalProps> = ({ user, isOpen, 
                   <Separator />
                   
                   <div className="space-y-2">
-                    <Label>Admin Permissions</Label>
-                    <div className="text-sm bg-gray-50 p-3 rounded">
-                      {user.admin_permissions ? (
-                        <pre className="whitespace-pre-wrap">
-                          {JSON.stringify(user.admin_permissions, null, 2)}
-                        </pre>
-                      ) : (
-                        'No special permissions assigned'
-                      )}
+                    <Label>Current Form Data (Debug)</Label>
+                    <div className="text-sm bg-gray-50 p-3 rounded max-h-48 overflow-y-auto">
+                      <pre className="whitespace-pre-wrap">
+                        {JSON.stringify(formData, null, 2)}
+                      </pre>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Original User Data (Debug)</Label>
+                    <div className="text-sm bg-gray-50 p-3 rounded max-h-48 overflow-y-auto">
+                      <pre className="whitespace-pre-wrap">
+                        {JSON.stringify(user, null, 2)}
+                      </pre>
                     </div>
                   </div>
                 </div>
@@ -396,14 +439,15 @@ export const UserDetailModal: React.FC<UserDetailModalProps> = ({ user, isOpen, 
         </Tabs>
 
         <div className="flex justify-end gap-2 pt-4 border-t">
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="outline" onClick={handleClose}>
             Cancel
           </Button>
           <Button 
             onClick={handleSave} 
-            disabled={updateUserMutation.isPending}
+            disabled={updateUserMutation.isPending || !hasUnsavedChanges}
+            className={hasUnsavedChanges ? 'bg-orange-600 hover:bg-orange-700' : ''}
           >
-            {updateUserMutation.isPending ? 'Saving...' : 'Save Changes'}
+            {updateUserMutation.isPending ? 'Saving...' : hasUnsavedChanges ? 'Save Changes' : 'No Changes'}
           </Button>
         </div>
       </DialogContent>
