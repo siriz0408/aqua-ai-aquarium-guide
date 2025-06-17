@@ -93,11 +93,14 @@ export const useChat = () => {
         throw new Error('Please sign in to use the chat feature');
       }
 
-      // Verify we have a valid session
+      // Get the current session to ensure we have a valid access token
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError || !session) {
+      if (sessionError || !session?.access_token) {
+        console.error('Session error:', sessionError);
         throw new Error('Your session has expired. Please sign in again.');
       }
+      
+      console.log('Session token available:', !!session.access_token);
       
       const { data, error } = await supabase.functions.invoke('openai-chat', {
         body: {

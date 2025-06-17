@@ -15,7 +15,15 @@ serve(async (req) => {
   try {
     const { message, conversationId, isNewConversation, attachments } = await req.json()
     
-    const authHeader = req.headers.get('Authorization')!
+    // Get the authorization header
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader) {
+      console.error('No Authorization header found')
+      return new Response('Unauthorized - No auth header', { status: 401, headers: corsHeaders })
+    }
+
+    console.log('Auth header received:', authHeader ? 'Present' : 'Missing')
+    
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
@@ -30,8 +38,10 @@ serve(async (req) => {
     const { data: { user }, error: userError } = await supabase.auth.getUser()
     if (userError || !user) {
       console.error('User authentication error:', userError)
-      return new Response('Unauthorized', { status: 401, headers: corsHeaders })
+      return new Response('Unauthorized - Invalid session', { status: 401, headers: corsHeaders })
     }
+
+    console.log('User authenticated successfully:', user.id)
 
     // Check if OpenAI API key is available
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY')
