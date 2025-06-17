@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Layout } from '@/components/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,7 +21,7 @@ import {
 import { FloatingActionButton } from '@/components/ui/floating-action-button';
 import { useAquarium, Tank } from '@/contexts/AquariumContext';
 import { useNavigate } from 'react-router-dom';
-import { MessageCircle, Plus, Trash2 } from 'lucide-react';
+import { MessageCircle, Plus, Trash2, BookOpen } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import TaskRecommendations from '@/components/TaskRecommendations';
 import SavedPlans from '@/components/SavedPlans';
