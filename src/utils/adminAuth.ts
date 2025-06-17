@@ -23,6 +23,8 @@ export const checkAdminStatus = async () => {
       return { isAdmin: false, profile: null };
     }
 
+    console.log('Admin check result:', isAdmin);
+
     // If user is admin, get their full profile
     if (isAdmin) {
       const { data: profile, error: profileError } = await supabase
