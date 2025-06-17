@@ -9,7 +9,6 @@ import { AquariumProvider } from "@/contexts/AquariumContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import AdminLayout from "@/components/admin/AdminLayout";
 import Index from "./pages/Index";
 import TankDetails from "./pages/TankDetails";
 import LogParameters from "./pages/LogParameters";
@@ -21,10 +20,6 @@ import Reminders from "./pages/Reminders";
 import Education from "./pages/Education";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
-import Admin from "./pages/Admin";
-import AdminUsersPage from "./pages/AdminUsers";
-import AdminTicketsPage from "./pages/AdminTickets";
-import AdminSettingsPage from "./pages/AdminSettings";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -48,20 +43,6 @@ const App = () => (
                 <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-cyan-50 dark:from-slate-900 dark:via-blue-900 dark:to-cyan-900">
                   <Routes>
                     <Route path="/auth" element={<Auth />} />
-                    
-                    {/* Admin Routes */}
-                    <Route path="/admin" element={
-                      <ProtectedRoute>
-                        <AdminLayout />
-                      </ProtectedRoute>
-                    }>
-                      <Route index element={<Admin />} />
-                      <Route path="users" element={<AdminUsersPage />} />
-                      <Route path="tickets" element={<AdminTicketsPage />} />
-                      <Route path="settings" element={<AdminSettingsPage />} />
-                    </Route>
-                    
-                    {/* Regular App Routes */}
                     <Route path="/" element={
                       <ProtectedRoute>
                         <Index />

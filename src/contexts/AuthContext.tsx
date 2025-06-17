@@ -29,41 +29,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  // Check subscription status after login
-  const checkSubscriptionStatus = async (user: User) => {
-    try {
-      await supabase.functions.invoke('check-subscription');
-      console.log('Subscription status checked after login');
-    } catch (error) {
-      console.error('Error checking subscription status:', error);
-    }
-  };
-
   useEffect(() => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
-        
-        // Check subscription status when user logs in
-        if (event === 'SIGNED_IN' && session?.user) {
-          await checkSubscriptionStatus(session.user);
-        }
       }
     );
 
     // Check for existing session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
-      
-      // Check subscription status for existing session
-      if (session?.user) {
-        await checkSubscriptionStatus(session.user);
-      }
     });
 
     return () => subscription.unsubscribe();

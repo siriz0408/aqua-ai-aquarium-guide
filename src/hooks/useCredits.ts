@@ -13,7 +13,6 @@ export interface UserProfile {
   total_credits_used: number;
   subscription_start_date?: string;
   subscription_end_date?: string;
-  stripe_customer_id?: string;
 }
 
 export interface UsageLog {
@@ -31,7 +30,7 @@ export const useCredits = () => {
   const queryClient = useQueryClient();
 
   // Fetch user profile with subscription info
-  const { data: profile, isLoading: profileLoading, refetch: refetchProfile } = useQuery({
+  const { data: profile, isLoading: profileLoading } = useQuery({
     queryKey: ['userProfile', user?.id],
     queryFn: async () => {
       if (!user) return null;
@@ -45,8 +44,7 @@ export const useCredits = () => {
           free_credits_remaining,
           total_credits_used,
           subscription_start_date,
-          subscription_end_date,
-          stripe_customer_id
+          subscription_end_date
         `)
         .eq('id', user.id)
         .single();
@@ -59,29 +57,6 @@ export const useCredits = () => {
       return data as UserProfile;
     },
     enabled: !!user,
-  });
-
-  // Check subscription status with Stripe
-  const checkSubscriptionStatus = useMutation({
-    mutationFn: async () => {
-      if (!user) throw new Error('User not authenticated');
-      
-      const { data, error } = await supabase.functions.invoke('check-subscription');
-      
-      if (error) {
-        console.error('Error checking subscription:', error);
-        throw error;
-      }
-      
-      return data;
-    },
-    onSuccess: () => {
-      // Refetch profile after checking subscription
-      refetchProfile();
-    },
-    onError: (error) => {
-      console.error('Error checking subscription status:', error);
-    },
   });
 
   // Fetch usage logs
@@ -135,24 +110,6 @@ export const useCredits = () => {
     return !isPaidUser && !hasCredits;
   };
 
-  // Get subscription tier display name
-  const getSubscriptionTierDisplay = () => {
-    if (!profile) return 'Free';
-    
-    if (profile.subscription_status === 'active') {
-      return profile.subscription_tier === 'premium' ? 'Premium' : 'Pro';
-    }
-    
-    return 'Free';
-  };
-
-  // Check subscription status on auth changes
-  useEffect(() => {
-    if (user && profile) {
-      checkSubscriptionStatus.mutate();
-    }
-  }, [user?.id]);
-
   // Update credits after a successful operation (called from frontend)
   const updateCreditsAfterUse = useMutation({
     mutationFn: async () => {
@@ -204,32 +161,6 @@ export const useCredits = () => {
     },
   });
 
-  // Open customer portal for subscription management
-  const openCustomerPortal = useMutation({
-    mutationFn: async () => {
-      if (!user) throw new Error('User not authenticated');
-      
-      const { data, error } = await supabase.functions.invoke('customer-portal');
-      
-      if (error) {
-        console.error('Error opening customer portal:', error);
-        throw error;
-      }
-      
-      if (data.url) {
-        window.open(data.url, '_blank');
-      }
-    },
-    onError: (error) => {
-      console.error('Error opening customer portal:', error);
-      toast({
-        title: "Error",
-        description: "Failed to open subscription management. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
-
   return {
     profile,
     usageLogs,
@@ -238,12 +169,7 @@ export const useCredits = () => {
     canUseFeature,
     getRemainingCredits,
     needsUpgrade,
-    getSubscriptionTierDisplay,
     updateCreditsAfterUse: updateCreditsAfterUse.mutate,
     isUpdatingCredits: updateCreditsAfterUse.isPending,
-    checkSubscriptionStatus: checkSubscriptionStatus.mutate,
-    isCheckingSubscription: checkSubscriptionStatus.isPending,
-    openCustomerPortal: openCustomerPortal.mutate,
-    isOpeningPortal: openCustomerPortal.isPending,
   };
 };
