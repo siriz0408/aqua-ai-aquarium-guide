@@ -14,29 +14,32 @@ export const checkAdminStatus = async () => {
 
     console.log('User found:', user.id);
 
-    // Query the profiles table directly to avoid recursion issues
+    // Query the profiles table directly with better error handling
     const { data: profileData, error: profileError } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', user.id)
-      .single();
+      .maybeSingle(); // Use maybeSingle to avoid errors when no profile exists
 
     if (profileError) {
       console.error('Error fetching profile:', profileError);
       return { isAdmin: false, profile: null };
     }
 
-    console.log('Profile data:', profileData);
-
-    // If user is admin, return the profile with admin status
-    if (profileData?.is_admin) {
-      return { 
-        isAdmin: true, 
-        profile: profileData
-      };
+    if (!profileData) {
+      console.log('No profile found for user');
+      return { isAdmin: false, profile: null };
     }
 
-    return { isAdmin: false, profile: profileData };
+    console.log('Profile data:', profileData);
+
+    // Check admin status with explicit boolean check
+    const isAdmin = Boolean(profileData.is_admin);
+    
+    return { 
+      isAdmin, 
+      profile: profileData
+    };
   } catch (error) {
     console.error('Error in checkAdminStatus:', error);
     return { isAdmin: false, profile: null };

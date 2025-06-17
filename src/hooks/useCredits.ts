@@ -42,12 +42,22 @@ export const useCredits = () => {
             admin_role
           `)
           .eq('id', user.id)
-          .single();
+          .maybeSingle(); // Use maybeSingle to handle missing profiles gracefully
 
         if (error) {
           console.error('Error fetching user profile:', error);
           
           // Return a safe default profile to prevent app from breaking
+          return {
+            id: user.id,
+            subscription_status: 'free',
+            subscription_tier: 'free',
+            is_admin: false
+          } as UserProfile;
+        }
+
+        if (!data) {
+          console.log('No profile found, returning default');
           return {
             id: user.id,
             subscription_status: 'free',
@@ -70,7 +80,8 @@ export const useCredits = () => {
       }
     },
     enabled: !!user,
-    retry: 1,
+    retry: 3, // Increase retry count
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
     staleTime: 30000,
   });
 
