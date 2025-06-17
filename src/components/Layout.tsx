@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -9,6 +9,7 @@ import { OfflineIndicator } from '@/components/OfflineIndicator';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { useDevice } from '@/hooks/use-device';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -24,6 +25,27 @@ export function Layout({ children, title, showBackButton = false, actions, loadi
   const navigate = useNavigate();
   const location = useLocation();
   const { isMobile, isTouch } = useDevice();
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  // Check admin status for current user
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      if (user?.id) {
+        const { data, error } = await supabase
+          .rpc('check_user_admin_status', { user_id: user.id });
+        
+        if (!error && data) {
+          setIsAdmin(true);
+        } else {
+          setIsAdmin(false);
+        }
+      } else {
+        setIsAdmin(false);
+      }
+    };
+
+    checkAdminStatus();
+  }, [user]);
 
   const toggleTheme = () => {
     setTheme(theme === 'dark' ? 'light' : 'dark');
@@ -71,8 +93,8 @@ export function Layout({ children, title, showBackButton = false, actions, loadi
           
           <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
             {actions}
-            {/* Admin Settings Button */}
-            {user && (
+            {/* Admin Settings Button - Only show for admin users */}
+            {user && isAdmin && (
               <Button
                 variant="ghost"
                 size="sm"

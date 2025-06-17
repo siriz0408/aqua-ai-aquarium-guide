@@ -139,7 +139,7 @@ export const UserDetailModal: React.FC<UserDetailModalProps> = ({ user, isOpen, 
       return (
         <Badge variant="default" className="bg-purple-100 text-purple-800">
           <Crown className="h-3 w-3 mr-1" />
-          {adminRole || 'Admin'}
+          Admin
         </Badge>
       );
     }
@@ -307,7 +307,6 @@ export const UserDetailModal: React.FC<UserDetailModalProps> = ({ user, isOpen, 
                       <SelectContent>
                         <SelectItem value="none">None</SelectItem>
                         <SelectItem value="admin">Admin</SelectItem>
-                        <SelectItem value="super_admin">Super Admin</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -317,11 +316,7 @@ export const UserDetailModal: React.FC<UserDetailModalProps> = ({ user, isOpen, 
                   <div className="p-4 bg-purple-50 rounded-lg">
                     <h4 className="font-medium text-purple-900 mb-2">Admin Permissions</h4>
                     <div className="text-sm text-purple-700">
-                      {(formData.admin_role ?? user.admin_role) === 'super_admin' ? (
-                        'Full system access including user management, settings, and analytics'
-                      ) : (
-                        'Standard admin access to user management and analytics'
-                      )}
+                      Full admin access: User management, Analytics, Settings
                     </div>
                   </div>
                 )}

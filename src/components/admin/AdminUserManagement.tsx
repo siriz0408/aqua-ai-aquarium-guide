@@ -218,7 +218,7 @@ export const AdminUserManagement: React.FC = () => {
       return (
         <Badge variant="default" className="bg-purple-100 text-purple-800">
           <Crown className="h-3 w-3 mr-1" />
-          {user.admin_role || 'Admin'}
+          Admin
         </Badge>
       );
     }
@@ -447,7 +447,6 @@ export const AdminUserManagement: React.FC = () => {
                     <SelectContent>
                       <SelectItem value="">None</SelectItem>
                       <SelectItem value="admin">Admin</SelectItem>
-                      <SelectItem value="super_admin">Super Admin</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
