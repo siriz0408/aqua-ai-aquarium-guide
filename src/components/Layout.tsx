@@ -1,12 +1,8 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Loader2, ChevronLeft, Settings } from 'lucide-react';
+import { Loader2, ChevronLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { AdminFooterButton } from '@/components/AdminFooterButton';
-import { ImpersonationBanner } from '@/components/admin/ImpersonationBanner';
-import { useAuth } from '@/contexts/AuthContext';
-import { checkAdminStatus } from '@/utils/adminAuth';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -30,26 +26,6 @@ export const Layout: React.FC<LayoutProps> = ({
   actions,
 }) => {
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const [isAdmin, setIsAdmin] = React.useState(false);
-
-  React.useEffect(() => {
-    const checkAdmin = async () => {
-      if (user) {
-        try {
-          const { isAdmin: adminStatus } = await checkAdminStatus();
-          setIsAdmin(adminStatus);
-        } catch (error) {
-          console.error('Error checking admin status:', error);
-          setIsAdmin(false);
-        }
-      } else {
-        setIsAdmin(false);
-      }
-    };
-
-    checkAdmin();
-  }, [user]);
 
   const handleBackClick = () => {
     if (backButtonPath) {
@@ -57,10 +33,6 @@ export const Layout: React.FC<LayoutProps> = ({
     } else {
       navigate(-1);
     }
-  };
-
-  const handleAdminClick = () => {
-    navigate('/admin');
   };
 
   if (loading) {
@@ -77,8 +49,6 @@ export const Layout: React.FC<LayoutProps> = ({
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-cyan-50 dark:from-slate-900 dark:via-blue-900 dark:to-cyan-900">
       <div className="container mx-auto px-4 py-8">
-        <ImpersonationBanner />
-        
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-4">
@@ -93,24 +63,11 @@ export const Layout: React.FC<LayoutProps> = ({
                 </Button>
               )}
             </div>
-            <div className="flex items-center gap-2">
-              {isAdmin && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleAdminClick}
-                  className="text-muted-foreground hover:text-foreground"
-                  title="Admin Dashboard"
-                >
-                  <Settings className="h-4 w-4" />
-                </Button>
-              )}
-              {actions && (
-                <>
-                  {actions}
-                </>
-              )}
-            </div>
+            {actions && (
+              <div className="flex items-center gap-2">
+                {actions}
+              </div>
+            )}
           </div>
           <h1 className="text-4xl font-bold text-foreground mb-2">{title}</h1>
           {subtitle && <p className="text-xl text-muted-foreground">{subtitle}</p>}
@@ -119,10 +76,6 @@ export const Layout: React.FC<LayoutProps> = ({
         <main className="space-y-6">
           {children}
         </main>
-
-        <footer className="mt-12 pt-8 border-t border-border flex justify-center">
-          <AdminFooterButton />
-        </footer>
       </div>
     </div>
   );
