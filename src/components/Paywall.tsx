@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,6 +14,9 @@ interface PaywallProps {
   showUpgradeOnly?: boolean;
 }
 
+// You'll need to replace this with your actual Stripe price ID
+const STRIPE_PRICE_ID = "price_1QUIgKJNcmPzuSeKKiKvtLQH"; // Replace with your actual price ID
+
 const PaywallModal: React.FC<PaywallProps> = ({ 
   isOpen, 
   onClose, 
@@ -26,15 +30,24 @@ const PaywallModal: React.FC<PaywallProps> = ({
   const subscriptionInfo = getSubscriptionInfo();
   const handleUpgrade = async (plan: string) => {
     try {
+      console.log('Starting upgrade process for plan:', plan);
       const { data, error } = await supabase.functions.invoke('create-checkout', {
-        body: { priceId: "price_pro_monthly" } // Replace with actual price ID
+        body: { priceId: STRIPE_PRICE_ID }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw error;
+      }
+
+      console.log('Checkout session response:', data);
 
       if (data?.url) {
+        // Open Stripe checkout in a new tab
         window.open(data.url, '_blank');
         onClose();
+      } else {
+        throw new Error('No checkout URL received');
       }
     } catch (error) {
       console.error('Error creating checkout session:', error);

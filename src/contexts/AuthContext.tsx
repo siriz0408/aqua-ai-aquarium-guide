@@ -37,7 +37,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setUser(session?.user ?? null);
         setLoading(false);
         
-        // Handle successful sign up
+        // Handle successful sign up - using string comparison instead of enum
         if (event === 'SIGNED_UP' && session?.user) {
           toast({
             title: "Welcome to AquaAI!",

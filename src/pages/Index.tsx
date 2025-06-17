@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { Layout } from '@/components/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -36,7 +35,7 @@ const Index = () => {
   };
 
   return (
-    <Layout>
+    <Layout title="AquaAI - Intelligent Aquarium Management">
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-gray-900 dark:to-blue-900">
         <div className="container mx-auto px-4 py-8">
           {user && <TrialBanner onUpgrade={handleUpgrade} />}
