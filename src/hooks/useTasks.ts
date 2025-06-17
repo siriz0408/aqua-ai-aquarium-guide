@@ -5,21 +5,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
-export interface TaskStep {
-  id: string;
-  description: string;
-  completed: boolean;
-  notes?: string;
-}
-
-export interface TaskResource {
-  id: string;
-  title: string;
-  url?: string;
-  type: 'link' | 'image' | 'document' | 'video';
-  description?: string;
-}
-
 export interface Task {
   id: string;
   user_id: string;
@@ -32,14 +17,6 @@ export interface Task {
   due_date?: string;
   list_id?: string;
   conversation_id?: string;
-  detailed_instructions?: string;
-  steps?: TaskStep[];
-  estimated_time?: string;
-  difficulty?: 'beginner' | 'intermediate' | 'advanced';
-  resources?: TaskResource[];
-  tips?: string[];
-  warnings?: string[];
-  required_tools?: string[];
   created_at: string;
   updated_at: string;
 }
@@ -61,42 +38,7 @@ interface CreateTaskData {
   task_type: string;
   priority: 'low' | 'medium' | 'high' | 'urgent';
   conversation_id?: string;
-  detailed_instructions?: string;
-  steps?: TaskStep[];
-  estimated_time?: string;
-  difficulty?: 'beginner' | 'intermediate' | 'advanced';
-  resources?: TaskResource[];
-  tips?: string[];
-  warnings?: string[];
-  required_tools?: string[];
 }
-
-// Helper function to convert database row to Task
-const convertToTask = (row: any): Task => {
-  return {
-    id: row.id,
-    user_id: row.user_id,
-    title: row.title,
-    description: row.description,
-    task_type: row.task_type,
-    priority: row.priority,
-    status: row.status,
-    frequency: row.frequency,
-    due_date: row.due_date,
-    list_id: row.list_id,
-    conversation_id: row.conversation_id,
-    detailed_instructions: row.detailed_instructions,
-    steps: Array.isArray(row.steps) ? row.steps as TaskStep[] : [],
-    estimated_time: row.estimated_time,
-    difficulty: row.difficulty,
-    resources: Array.isArray(row.resources) ? row.resources as TaskResource[] : [],
-    tips: Array.isArray(row.tips) ? row.tips : [],
-    warnings: Array.isArray(row.warnings) ? row.warnings : [],
-    required_tools: Array.isArray(row.required_tools) ? row.required_tools : [],
-    created_at: row.created_at,
-    updated_at: row.updated_at,
-  };
-};
 
 export const useTasks = () => {
   const { user } = useAuth();
@@ -119,7 +61,7 @@ export const useTasks = () => {
         return [];
       }
 
-      return data ? data.map(convertToTask) : [];
+      return data as Task[];
     },
     enabled: !!user,
   });
@@ -158,21 +100,13 @@ export const useTasks = () => {
           task_type: taskData.task_type,
           priority: taskData.priority,
           conversation_id: taskData.conversation_id,
-          detailed_instructions: taskData.detailed_instructions,
-          steps: taskData.steps || [],
-          estimated_time: taskData.estimated_time,
-          difficulty: taskData.difficulty,
-          resources: taskData.resources || [],
-          tips: taskData.tips || [],
-          warnings: taskData.warnings || [],
-          required_tools: taskData.required_tools || [],
           user_id: user.id,
         })
         .select()
         .single();
 
       if (error) throw error;
-      return convertToTask(data);
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
@@ -202,7 +136,7 @@ export const useTasks = () => {
         .single();
 
       if (error) throw error;
-      return convertToTask(data);
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });

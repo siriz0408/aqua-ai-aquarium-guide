@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Layout } from '@/components/Layout';
@@ -6,35 +5,22 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAquarium } from '@/contexts/AquariumContext';
-import { useTasks } from '@/hooks/useTasks';
 import { Plus, Upload, Edit } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { EnhancedLivestockCard } from '@/components/tank-form/EnhancedLivestockCard';
 import { EnhancedEquipmentCard } from '@/components/tank-form/EnhancedEquipmentCard';
 import { WaterTestHistory } from '@/components/tank/WaterTestHistory';
-import TaskDetailModal from '@/components/TaskDetailModal';
 import { useToast } from '@/hooks/use-toast';
-import { TaskStep } from '@/hooks/useTasks';
 
 const TankDetails = () => {
   const { tankId } = useParams<{ tankId: string }>();
   const navigate = useNavigate();
   const { getTank, updateTank } = useAquarium();
-  const { tasks, updateTask } = useTasks();
   const { toast } = useToast();
   
   const tank = tankId ? getTank(tankId) : undefined;
   const [livestock, setLivestock] = useState(tank?.livestock || []);
   const [equipment, setEquipment] = useState(tank?.equipment || []);
-  const [selectedTask, setSelectedTask] = useState<any>(null);
-  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
-
-  // Get tank-related tasks
-  const tankTasks = tasks.filter(task => 
-    task.task_type === 'maintenance' || 
-    task.task_type === 'water_change' ||
-    task.task_type === 'equipment_check'
-  );
 
   if (!tank) {
     return (
@@ -105,24 +91,6 @@ const TankDetails = () => {
     });
   };
 
-  const handleTaskClick = (task: any) => {
-    setSelectedTask(task);
-    setIsTaskModalOpen(true);
-  };
-
-  const handleResolveTask = (taskId: string) => {
-    updateTask({ id: taskId, status: 'completed' });
-  };
-
-  const handleDeleteTask = (taskId: string) => {
-    // Note: deleteTask function would need to be added to useTasks hook
-    console.log('Delete task:', taskId);
-  };
-
-  const handleUpdateSteps = (taskId: string, steps: TaskStep[]) => {
-    updateTask({ id: taskId, steps });
-  };
-
   return (
     <Layout 
       title={tank.name} 
@@ -186,11 +154,10 @@ const TankDetails = () => {
 
         {/* Tabs */}
         <Tabs defaultValue="parameters" className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="parameters">Parameters</TabsTrigger>
             <TabsTrigger value="equipment">Equipment</TabsTrigger>
             <TabsTrigger value="livestock">Livestock</TabsTrigger>
-            <TabsTrigger value="tasks">Tasks</TabsTrigger>
             <TabsTrigger value="reminders">Reminders</TabsTrigger>
           </TabsList>
           
@@ -357,75 +324,6 @@ const TankDetails = () => {
             )}
           </TabsContent>
 
-          <TabsContent value="tasks" className="space-y-4">
-            <div className="flex justify-between items-center">
-              <h3 className="font-medium">Tank Maintenance Tasks</h3>
-              <Button 
-                onClick={() => navigate('/reminders')}
-                variant="outline"
-                size="sm"
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                View All Tasks
-              </Button>
-            </div>
-
-            {tankTasks.length > 0 ? (
-              <div className="space-y-3">
-                {tankTasks.slice(0, 5).map((task) => (
-                  <Card 
-                    key={task.id} 
-                    className="cursor-pointer hover:shadow-md transition-shadow"
-                    onClick={() => handleTaskClick(task)}
-                  >
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <h4 className="font-medium">{task.title}</h4>
-                          <p className="text-sm text-muted-foreground">
-                            {task.description}
-                          </p>
-                          <div className="flex items-center gap-2 mt-2">
-                            <Badge variant="outline">
-                              {task.priority}
-                            </Badge>
-                            <Badge variant="secondary">
-                              {task.task_type}
-                            </Badge>
-                            {task.estimated_time && (
-                              <Badge variant="outline">
-                                {task.estimated_time}
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-                        <Badge 
-                          variant={task.status === 'completed' ? 'default' : 'secondary'}
-                        >
-                          {task.status}
-                        </Badge>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            ) : (
-              <Card className="p-8 text-center">
-                <div className="space-y-4">
-                  <div className="text-4xl">✅</div>
-                  <div>
-                    <h4 className="font-medium">No maintenance tasks</h4>
-                    <p className="text-sm text-muted-foreground">AI will suggest tasks based on your tank's needs</p>
-                  </div>
-                  <Button onClick={() => navigate('/reminders')}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    View Task Center
-                  </Button>
-                </div>
-              </Card>
-            )}
-          </TabsContent>
-
           <TabsContent value="reminders" className="space-y-4">
             <Card className="p-8 text-center">
               <div className="space-y-4">
@@ -442,19 +340,6 @@ const TankDetails = () => {
             </Card>
           </TabsContent>
         </Tabs>
-
-        {/* Task Detail Modal */}
-        <TaskDetailModal
-          task={selectedTask}
-          isOpen={isTaskModalOpen}
-          onClose={() => {
-            setIsTaskModalOpen(false);
-            setSelectedTask(null);
-          }}
-          onResolve={handleResolveTask}
-          onDelete={handleDeleteTask}
-          onUpdateSteps={handleUpdateSteps}
-        />
       </div>
     </Layout>
   );

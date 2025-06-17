@@ -7,7 +7,7 @@ import { useTasks } from '@/hooks/useTasks';
 import { Sparkles, AlertTriangle, Clock } from 'lucide-react';
 import TaskActionButton from '@/components/TaskActionButton';
 import TaskDetailModal from '@/components/TaskDetailModal';
-import { Task, TaskStep } from '@/hooks/useTasks';
+import { Task } from '@/hooks/useTasks';
 import { useToast } from '@/hooks/use-toast';
 
 const TaskRecommendations = () => {
@@ -79,10 +79,6 @@ const TaskRecommendations = () => {
         variant: "destructive",
       });
     }
-  };
-
-  const handleUpdateSteps = (taskId: string, steps: TaskStep[]) => {
-    updateTask({ id: taskId, steps });
   };
 
   const closeModal = () => {
@@ -200,7 +196,6 @@ const TaskRecommendations = () => {
         onClose={closeModal}
         onResolve={handleResolveTask}
         onDelete={handleDeleteTask}
-        onUpdateSteps={handleUpdateSteps}
       />
     </>
   );
