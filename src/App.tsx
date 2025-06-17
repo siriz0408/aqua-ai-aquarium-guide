@@ -101,7 +101,7 @@ const App = () => (
                   </Routes>
                 </div>
               </BrowserRouter>
-            </TotooltipProvider>
+            </TooltipProvider>
           </AquariumProvider>
         </AuthProvider>
       </ThemeProvider>
