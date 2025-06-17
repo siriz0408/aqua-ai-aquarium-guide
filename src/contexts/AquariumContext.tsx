@@ -55,8 +55,6 @@ interface AquariumContextType {
   updateTank: (tankId: string, updates: Partial<Tank>) => Promise<void>;
   deleteTank: (tankId: string) => Promise<void>;
   addParameters: (tankId: string, parameters: Omit<WaterParameters, 'id'>) => Promise<void>;
-  deleteParameters: (tankId: string, parametersId: string) => Promise<void>;
-  loadWaterTestLogs: (tankId: string) => Promise<void>;
   addEquipment: (tankId: string, equipment: Omit<Equipment, 'id'>) => void;
   addLivestock: (tankId: string, livestock: Omit<Livestock, 'id'>) => void;
   getTank: (tankId: string) => Tank | undefined;
@@ -107,44 +105,15 @@ export function AquariumProvider({ children }: { children: React.ReactNode }) {
       if (error) throw error;
 
       // Convert Supabase data to Tank format
-      const supabaseTanks: Tank[] = await Promise.all((aquariums || []).map(async (aquarium) => {
-        // Load water test logs for each tank
-        const { data: waterTests, error: waterTestError } = await supabase
-          .from('water_test_logs')
-          .select('*')
-          .eq('aquarium_id', aquarium.id)
-          .order('test_date', { ascending: false });
-
-        if (waterTestError) {
-          console.error('Error loading water tests:', waterTestError);
-        }
-
-        // Convert water test logs to WaterParameters format
-        const parameters: WaterParameters[] = (waterTests || []).map(test => ({
-          id: test.id,
-          date: test.test_date,
-          ph: test.ph || 0,
-          salinity: test.salinity || 0,
-          temperature: test.temperature || 0,
-          ammonia: test.ammonia || 0,
-          nitrite: test.nitrite || 0,
-          nitrate: test.nitrate || 0,
-          kh: test.alkalinity || 0,
-          calcium: test.calcium || 0,
-          magnesium: test.magnesium || 0,
-          aiInsights: test.notes || undefined,
-        }));
-
-        return {
-          id: aquarium.id,
-          name: aquarium.name,
-          size: `${aquarium.size_gallons || 0} gallons`,
-          type: 'Mixed' as const, // Default type for now
-          equipment: [],
-          livestock: [],
-          parameters,
-          createdAt: aquarium.created_at
-        };
+      const supabaseTanks: Tank[] = (aquariums || []).map(aquarium => ({
+        id: aquarium.id,
+        name: aquarium.name,
+        size: `${aquarium.size_gallons || 0} gallons`,
+        type: 'Mixed' as const, // Default type for now
+        equipment: [],
+        livestock: [],
+        parameters: [],
+        createdAt: aquarium.created_at
       }));
 
       setTanks(supabaseTanks);
@@ -157,48 +126,6 @@ export function AquariumProvider({ children }: { children: React.ReactNode }) {
       });
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const loadWaterTestLogs = async (tankId: string) => {
-    if (!user) return;
-
-    try {
-      const { data: waterTests, error } = await supabase
-        .from('water_test_logs')
-        .select('*')
-        .eq('aquarium_id', tankId)
-        .order('test_date', { ascending: false });
-
-      if (error) throw error;
-
-      // Convert water test logs to WaterParameters format
-      const parameters: WaterParameters[] = (waterTests || []).map(test => ({
-        id: test.id,
-        date: test.test_date,
-        ph: test.ph || 0,
-        salinity: test.salinity || 0,
-        temperature: test.temperature || 0,
-        ammonia: test.ammonia || 0,
-        nitrite: test.nitrite || 0,
-        nitrate: test.nitrate || 0,
-        kh: test.alkalinity || 0,
-        calcium: test.calcium || 0,
-        magnesium: test.magnesium || 0,
-        aiInsights: test.notes || undefined,
-      }));
-
-      // Update the specific tank with new parameters
-      setTanks(prev => prev.map(tank => 
-        tank.id === tankId ? { ...tank, parameters } : tank
-      ));
-    } catch (error: any) {
-      console.error('Error loading water test logs:', error);
-      toast({
-        title: "Error loading test logs",
-        description: error.message || "Failed to load water test data",
-        variant: "destructive",
-      });
     }
   };
 
@@ -368,9 +295,6 @@ export function AquariumProvider({ children }: { children: React.ReactNode }) {
 
         if (error) throw error;
 
-        // Reload water test logs to refresh the data
-        await loadWaterTestLogs(tankId);
-
         toast({
           title: "Test results saved!",
           description: "Your water test has been logged successfully.",
@@ -383,65 +307,24 @@ export function AquariumProvider({ children }: { children: React.ReactNode }) {
           variant: "destructive",
         });
       }
-    } else {
-      // Update local state for non-authenticated users
-      const newParameters: WaterParameters = {
-        ...parametersData,
-        id: Date.now().toString(),
-      };
-      
-      setTanks(prev => prev.map(tank => 
-        tank.id === tankId 
-          ? { ...tank, parameters: [...tank.parameters, newParameters] }
-          : tank
-      ));
-
-      const updatedTanks = tanks.map(tank => 
-        tank.id === tankId 
-          ? { ...tank, parameters: [...tank.parameters, newParameters] }
-          : tank
-      );
-      localStorage.setItem('aqua-ai-tanks', JSON.stringify(updatedTanks));
     }
-  };
 
-  const deleteParameters = async (tankId: string, parametersId: string) => {
-    if (user) {
-      // Delete from Supabase
-      try {
-        const { error } = await supabase
-          .from('water_test_logs')
-          .delete()
-          .eq('id', parametersId);
+    // Update local state
+    const newParameters: WaterParameters = {
+      ...parametersData,
+      id: Date.now().toString(),
+    };
+    
+    setTanks(prev => prev.map(tank => 
+      tank.id === tankId 
+        ? { ...tank, parameters: [...tank.parameters, newParameters] }
+        : tank
+    ));
 
-        if (error) throw error;
-
-        // Reload water test logs to refresh the data
-        await loadWaterTestLogs(tankId);
-
-        toast({
-          title: "Test result deleted",
-          description: "The water test result has been removed.",
-        });
-      } catch (error: any) {
-        console.error('Error deleting test result from Supabase:', error);
-        toast({
-          title: "Error deleting test result",
-          description: error.message || "Failed to delete test result",
-          variant: "destructive",
-        });
-      }
-    } else {
-      // Update local state for non-authenticated users
-      setTanks(prev => prev.map(tank => 
-        tank.id === tankId 
-          ? { ...tank, parameters: tank.parameters.filter(p => p.id !== parametersId) }
-          : tank
-      ));
-
+    if (!user) {
       const updatedTanks = tanks.map(tank => 
         tank.id === tankId 
-          ? { ...tank, parameters: tank.parameters.filter(p => p.id !== parametersId) }
+          ? { ...tank, parameters: [...tank.parameters, newParameters] }
           : tank
       );
       localStorage.setItem('aqua-ai-tanks', JSON.stringify(updatedTanks));
@@ -503,8 +386,6 @@ export function AquariumProvider({ children }: { children: React.ReactNode }) {
       updateTank,
       deleteTank,
       addParameters,
-      deleteParameters,
-      loadWaterTestLogs,
       addEquipment,
       addLivestock,
       getTank,
