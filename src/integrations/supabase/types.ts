@@ -1150,6 +1150,40 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_delete_profile: {
+        Args: { requesting_admin_id: string; target_user_id: string }
+        Returns: boolean
+      }
+      admin_get_all_profiles: {
+        Args: { requesting_admin_id: string }
+        Returns: {
+          id: string
+          email: string
+          full_name: string
+          is_admin: boolean
+          admin_role: string
+          subscription_status: string
+          subscription_tier: string
+          free_credits_remaining: number
+          total_credits_used: number
+          created_at: string
+          last_active: string
+          admin_permissions: Json
+        }[]
+      }
+      admin_update_profile: {
+        Args: {
+          requesting_admin_id: string
+          target_user_id: string
+          new_full_name: string
+          new_is_admin: boolean
+          new_admin_role: string
+          new_subscription_status: string
+          new_subscription_tier: string
+          new_free_credits_remaining: number
+        }
+        Returns: boolean
+      }
       is_admin: {
         Args: { user_id: string }
         Returns: boolean
