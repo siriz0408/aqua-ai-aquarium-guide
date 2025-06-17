@@ -6,40 +6,36 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Search, Fish, Settings, Download, Database, Plus } from 'lucide-react';
-import { useEducationalFish } from '@/hooks/useEducationalFish';
+import { Search, Fish, Settings, RefreshCw, Clock, Database } from 'lucide-react';
 import { useEducationalEquipment } from '@/hooks/useEducationalEquipment';
-import FishCard from '@/components/educational/FishCard';
+import { useAutoSpecies } from '@/hooks/useAutoSpecies';
 import EquipmentCard from '@/components/educational/EquipmentCard';
-import GBIFImportDialog from '@/components/educational/GBIFImportDialog';
-import ImportJobStatus from '@/components/educational/ImportJobStatus';
+import AutoFishCard from '@/components/educational/AutoFishCard';
 
 const Education = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [isGBIFDialogOpen, setIsGBIFDialogOpen] = useState(false);
 
   const { 
-    fish, 
-    fishLoading, 
-    addToList, 
-    isInList, 
-    getFishByCategory 
-  } = useEducationalFish();
+    species,
+    isLoading: speciesLoading,
+    error: speciesError,
+    manualRefresh,
+    getCacheInfo
+  } = useAutoSpecies();
 
   const { 
     equipment, 
     equipmentLoading 
   } = useEducationalEquipment();
 
-  // Filter fish based on search term and category
-  const filteredFish = fish.filter(f => {
+  // Filter species based on search term and category
+  const filteredSpecies = species.filter(f => {
     const matchesSearch = searchTerm === '' || 
       f.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       f.scientific_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      f.category.toLowerCase().includes(searchTerm.toLowerCase());
+      f.family?.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesCategory = selectedCategory === 'all' || f.category === selectedCategory;
     
@@ -53,8 +49,10 @@ const Education = () => {
     e.category.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Get unique categories from fish data
-  const fishCategories = [...new Set(fish.map(f => f.category))];
+  // Get unique categories from species data
+  const speciesCategories = [...new Set(species.map(f => f.category))];
+
+  const cacheInfo = getCacheInfo();
 
   return (
     <Layout title="Educational Library">
@@ -65,17 +63,24 @@ const Education = () => {
             <div>
               <h1 className="text-2xl font-bold">Marine Life Encyclopedia</h1>
               <p className="text-muted-foreground">
-                Comprehensive database of marine species and aquarium equipment
+                Auto-populated from GBIF database with {species.length} species
               </p>
+              {cacheInfo.lastUpdated && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Last updated: {cacheInfo.lastUpdated.toLocaleString()}
+                </p>
+              )}
             </div>
             
             <div className="flex gap-2">
               <Button
-                onClick={() => setIsGBIFDialogOpen(true)}
-                className="ocean-gradient text-white"
+                onClick={manualRefresh}
+                disabled={speciesLoading}
+                variant="outline"
+                size="sm"
               >
-                <Database className="h-4 w-4 mr-2" />
-                Import from GBIF
+                <RefreshCw className={`h-4 w-4 mr-2 ${speciesLoading ? 'animate-spin' : ''}`} />
+                Refresh Data
               </Button>
             </div>
           </div>
@@ -90,22 +95,38 @@ const Education = () => {
               className="pl-10"
             />
           </div>
+
+          {/* Error Message */}
+          {speciesError && (
+            <Card className="border-red-200 bg-red-50">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 text-red-700">
+                  <Database className="h-4 w-4" />
+                  <span className="text-sm">{speciesError}</span>
+                  <Button
+                    onClick={manualRefresh}
+                    variant="ghost"
+                    size="sm"
+                    className="ml-auto text-red-700 hover:text-red-800"
+                  >
+                    Try Again
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         {/* Main Content Tabs */}
         <Tabs defaultValue="fish" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="fish" className="flex items-center gap-2">
               <Fish className="h-4 w-4" />
-              Marine Life ({fish.length})
+              Marine Life ({species.length})
             </TabsTrigger>
             <TabsTrigger value="equipment" className="flex items-center gap-2">
               <Settings className="h-4 w-4" />
               Equipment ({equipment.length})
-            </TabsTrigger>
-            <TabsTrigger value="admin" className="flex items-center gap-2">
-              <Download className="h-4 w-4" />
-              Data Management
             </TabsTrigger>
           </TabsList>
 
@@ -118,10 +139,10 @@ const Education = () => {
                 size="sm"
                 onClick={() => setSelectedCategory('all')}
               >
-                All Categories ({fish.length})
+                All Species ({species.length})
               </Button>
-              {fishCategories.map(category => {
-                const count = getFishByCategory(category).length;
+              {speciesCategories.map(category => {
+                const count = species.filter(s => s.category === category).length;
                 return (
                   <Button
                     key={category}
@@ -136,7 +157,7 @@ const Education = () => {
             </div>
 
             {/* Species Grid */}
-            {fishLoading ? (
+            {speciesLoading ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {[...Array(6)].map((_, i) => (
                   <Card key={i} className="h-64 animate-pulse">
@@ -144,23 +165,49 @@ const Education = () => {
                   </Card>
                 ))}
               </div>
-            ) : filteredFish.length > 0 ? (
+            ) : filteredSpecies.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredFish.map(fishItem => (
-                  <FishCard key={fishItem.id} fish={fishItem} />
+                {filteredSpecies.map(fishItem => (
+                  <AutoFishCard key={fishItem.id} fish={fishItem} />
                 ))}
               </div>
             ) : (
               <Card className="p-8 text-center">
                 <Fish className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                <h3 className="text-lg font-medium mb-2">No species found</h3>
+                <h3 className="text-lg font-medium mb-2">
+                  {searchTerm ? 'No species found' : 'Loading species data...'}
+                </h3>
                 <p className="text-muted-foreground mb-4">
-                  {searchTerm ? 'Try adjusting your search terms' : 'Import species data from GBIF to get started'}
+                  {searchTerm 
+                    ? 'Try adjusting your search terms' 
+                    : 'Auto-populating species from GBIF database'
+                  }
                 </p>
-                <Button onClick={() => setIsGBIFDialogOpen(true)}>
-                  <Database className="h-4 w-4 mr-2" />
-                  Import from GBIF
-                </Button>
+                {!speciesLoading && (
+                  <Button onClick={manualRefresh}>
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Refresh Species Data
+                  </Button>
+                )}
+              </Card>
+            )}
+
+            {/* Cache Info */}
+            {cacheInfo.size > 0 && (
+              <Card className="p-4">
+                <div className="flex items-center justify-between text-sm text-muted-foreground">
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4" />
+                    <span>
+                      {cacheInfo.size} species cached • 
+                      Last updated: {cacheInfo.lastUpdated?.toLocaleString()} • 
+                      Expires: {cacheInfo.expiresAt?.toLocaleString()}
+                    </span>
+                  </div>
+                  <Badge variant="outline" className="bg-green-50 text-green-700">
+                    Auto-Populated
+                  </Badge>
+                </div>
               </Card>
             )}
           </TabsContent>
@@ -191,83 +238,7 @@ const Education = () => {
               </Card>
             )}
           </TabsContent>
-
-          {/* Admin/Data Management Tab */}
-          <TabsContent value="admin" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* GBIF Import Card */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Database className="h-5 w-5" />
-                    GBIF Integration
-                  </CardTitle>
-                  <CardDescription>
-                    Import species data from the Global Biodiversity Information Facility
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="text-sm text-muted-foreground">
-                    <p>Access to over 1.5 million species records with:</p>
-                    <ul className="list-disc list-inside mt-2 space-y-1">
-                      <li>Scientific names and taxonomy</li>
-                      <li>Common names in multiple languages</li>
-                      <li>High-quality images</li>
-                      <li>Geographic distribution data</li>
-                    </ul>
-                  </div>
-                  
-                  <Button 
-                    onClick={() => setIsGBIFDialogOpen(true)}
-                    className="w-full"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Import Species Data
-                  </Button>
-                </CardContent>
-              </Card>
-
-              {/* Database Statistics */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Database Statistics</CardTitle>
-                  <CardDescription>Current content overview</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                      <span>Total Species</span>
-                      <Badge variant="outline">{fish.length}</Badge>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span>Equipment Items</span>
-                      <Badge variant="outline">{equipment.length}</Badge>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span>Categories</span>
-                      <Badge variant="outline">{fishCategories.length}</Badge>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span>GBIF Records</span>
-                      <Badge variant="outline">
-                        {fish.filter(f => f.data_source === 'gbif').length}
-                      </Badge>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Import Job Status */}
-            <ImportJobStatus />
-          </TabsContent>
         </Tabs>
-
-        {/* GBIF Import Dialog */}
-        <GBIFImportDialog 
-          open={isGBIFDialogOpen} 
-          onOpenChange={setIsGBIFDialogOpen} 
-        />
       </div>
     </Layout>
   );
