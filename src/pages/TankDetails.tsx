@@ -9,6 +9,7 @@ import { Plus, Upload, Edit } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { EnhancedLivestockCard } from '@/components/tank-form/EnhancedLivestockCard';
 import { EnhancedEquipmentCard } from '@/components/tank-form/EnhancedEquipmentCard';
+import { WaterTestHistory } from '@/components/tank/WaterTestHistory';
 import { useToast } from '@/hooks/use-toast';
 
 const TankDetails = () => {
@@ -162,60 +163,68 @@ const TankDetails = () => {
           
           <TabsContent value="parameters" className="space-y-4">
             {latestParameters ? (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Latest Water Test</CardTitle>
-                  <CardDescription>
-                    Logged on {new Date(latestParameters.date).toLocaleDateString()}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <span className="text-sm">pH</span>
-                        <span className="font-medium">{latestParameters.ph}</span>
+              <>
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Latest Water Test</CardTitle>
+                    <CardDescription>
+                      Logged on {new Date(latestParameters.date).toLocaleDateString()}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <div className="flex justify-between">
+                          <span className="text-sm">pH</span>
+                          <span className="font-medium">{latestParameters.ph}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm">Salinity</span>
+                          <span className="font-medium">{latestParameters.salinity}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm">Temperature</span>
+                          <span className="font-medium">{latestParameters.temperature}°F</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm">Ammonia</span>
+                          <span className="font-medium">{latestParameters.ammonia}</span>
+                        </div>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm">Salinity</span>
-                        <span className="font-medium">{latestParameters.salinity}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm">Temperature</span>
-                        <span className="font-medium">{latestParameters.temperature}°F</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm">Ammonia</span>
-                        <span className="font-medium">{latestParameters.ammonia}</span>
+                      <div className="space-y-2">
+                        <div className="flex justify-between">
+                          <span className="text-sm">Nitrate</span>
+                          <span className="font-medium">{latestParameters.nitrate}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm">Nitrite</span>
+                          <span className="font-medium">{latestParameters.nitrite}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm">KH</span>
+                          <span className="font-medium">{latestParameters.kh}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm">Calcium</span>
+                          <span className="font-medium">{latestParameters.calcium}</span>
+                        </div>
                       </div>
                     </div>
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <span className="text-sm">Nitrate</span>
-                        <span className="font-medium">{latestParameters.nitrate}</span>
+                    {latestParameters.aiInsights && (
+                      <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                        <p className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-1">AI Insights</p>
+                        <p className="text-sm text-blue-700 dark:text-blue-300">{latestParameters.aiInsights}</p>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm">Nitrite</span>
-                        <span className="font-medium">{latestParameters.nitrite}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm">KH</span>
-                        <span className="font-medium">{latestParameters.kh}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-sm">Calcium</span>
-                        <span className="font-medium">{latestParameters.calcium}</span>
-                      </div>
-                    </div>
-                  </div>
-                  {latestParameters.aiInsights && (
-                    <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                      <p className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-1">AI Insights</p>
-                      <p className="text-sm text-blue-700 dark:text-blue-300">{latestParameters.aiInsights}</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Add Water Test History */}
+                <WaterTestHistory 
+                  tankId={tank.id} 
+                  currentTestId={latestParameters.id}
+                />
+              </>
             ) : (
               <Card className="p-8 text-center">
                 <div className="space-y-4">

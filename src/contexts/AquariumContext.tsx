@@ -58,6 +58,7 @@ interface AquariumContextType {
   addEquipment: (tankId: string, equipment: Omit<Equipment, 'id'>) => void;
   addLivestock: (tankId: string, livestock: Omit<Livestock, 'id'>) => void;
   getTank: (tankId: string) => Tank | undefined;
+  fetchWaterTestLogs: (tankId: string) => Promise<WaterParameters[]>;
   isLoading: boolean;
 }
 
@@ -126,6 +127,45 @@ export function AquariumProvider({ children }: { children: React.ReactNode }) {
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchWaterTestLogs = async (tankId: string): Promise<WaterParameters[]> => {
+    if (!user) {
+      // For non-authenticated users, return the parameters from local state
+      const tank = tanks.find(t => t.id === tankId);
+      return tank?.parameters || [];
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('water_test_logs')
+        .select('*')
+        .eq('aquarium_id', tankId)
+        .order('test_date', { ascending: false });
+
+      if (error) throw error;
+
+      // Transform the data to match the WaterParameters interface
+      const transformedData: WaterParameters[] = (data || []).map(log => ({
+        id: log.id,
+        date: log.test_date,
+        ph: log.ph || 0,
+        salinity: log.salinity || 0,
+        temperature: log.temperature || 0,
+        ammonia: log.ammonia || 0,
+        nitrite: log.nitrite || 0,
+        nitrate: log.nitrate || 0,
+        kh: log.alkalinity || 0,
+        calcium: log.calcium || 0,
+        magnesium: log.magnesium || 0,
+        aiInsights: log.notes || '',
+      }));
+
+      return transformedData;
+    } catch (error) {
+      console.error('Error fetching water test logs:', error);
+      return [];
     }
   };
 
@@ -389,6 +429,7 @@ export function AquariumProvider({ children }: { children: React.ReactNode }) {
       addEquipment,
       addLivestock,
       getTank,
+      fetchWaterTestLogs,
       isLoading,
     }}>
       {children}
