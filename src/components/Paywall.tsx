@@ -27,10 +27,23 @@ const PaywallModal: React.FC<PaywallProps> = ({
   if (!isOpen) return null;
 
   const subscriptionInfo = getSubscriptionInfo();
+  
   const handleUpgrade = async (plan: string) => {
     try {
       console.log('Starting upgrade process for plan:', plan);
       console.log('Using Stripe Price ID:', STRIPE_PRICE_ID);
+      
+      // Add user authentication check
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({
+          title: "Authentication Required",
+          description: "Please sign in to upgrade your subscription.",
+          variant: "destructive",
+        });
+        return;
+      }
+      console.log('User authenticated:', user.email);
       
       const { data, error } = await supabase.functions.invoke('create-checkout', {
         body: { priceId: STRIPE_PRICE_ID }
@@ -39,11 +52,35 @@ const PaywallModal: React.FC<PaywallProps> = ({
       if (error) {
         console.error('Supabase function error:', error);
         
-        // Provide more specific error messages
-        if (error.message?.includes('No such price')) {
+        // Provide more specific error messages based on the error content
+        if (error.message?.includes('publishable API key')) {
+          toast({
+            title: "Configuration Error",
+            description: "Stripe is configured with a publishable key instead of a secret key. Please check the STRIPE_SECRET_KEY environment variable.",
+            variant: "destructive",
+          });
+        } else if (error.message?.includes('No such price')) {
           toast({
             title: "Configuration Error",
             description: "The subscription plan is not properly configured. Please contact support.",
+            variant: "destructive",
+          });
+        } else if (error.message?.includes('STRIPE_SECRET_KEY')) {
+          toast({
+            title: "Configuration Error", 
+            description: "Stripe is not properly configured. Please check environment variables.",
+            variant: "destructive",
+          });
+        } else if (error.message?.includes('Authorization') || error.message?.includes('authentication')) {
+          toast({
+            title: "Authentication Error",
+            description: "Please sign in again to continue.",
+            variant: "destructive",
+          });
+        } else if (error.message?.includes('non-2xx status code')) {
+          toast({
+            title: "Service Error",
+            description: "There's an issue with the payment service. Please try again or contact support.",
             variant: "destructive",
           });
         } else {
@@ -69,7 +106,7 @@ const PaywallModal: React.FC<PaywallProps> = ({
       console.error('Error creating checkout session:', error);
       toast({
         title: "Error",
-        description: "Failed to start checkout process. Please try again.",
+        description: "An unexpected error occurred. Please try again.",
         variant: "destructive",
       });
     }

@@ -21,18 +21,32 @@ serve(async (req) => {
   try {
     logStep("Function started");
 
+    // Validate environment variables
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeKey) {
       logStep("ERROR: STRIPE_SECRET_KEY not found");
-      throw new Error("STRIPE_SECRET_KEY is not set");
+      throw new Error("STRIPE_SECRET_KEY is not configured. Please set it in Supabase Dashboard.");
     }
-    logStep("Stripe key verified");
+    
+    // Validate Stripe key format - this is the critical check that was missing
+    if (!stripeKey.startsWith('sk_')) {
+      logStep("ERROR: Invalid STRIPE_SECRET_KEY format", { keyPrefix: stripeKey.substring(0, 7) });
+      throw new Error("Invalid STRIPE_SECRET_KEY format. It should start with 'sk_' (secret key), not 'pk_' (publishable key). Please use your secret key from the Stripe Dashboard.");
+    }
+    
+    logStep("Stripe key verified", { keyPrefix: stripeKey.substring(0, 7) });
 
-    const supabaseClient = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_ANON_KEY") ?? ""
-    );
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
+    
+    if (!supabaseUrl || !supabaseAnonKey) {
+      logStep("ERROR: Missing Supabase configuration");
+      throw new Error("Supabase configuration is incomplete.");
+    }
 
+    const supabaseClient = createClient(supabaseUrl, supabaseAnonKey);
+
+    // Validate authorization
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       logStep("ERROR: No authorization header");
@@ -46,6 +60,7 @@ serve(async (req) => {
       logStep("ERROR: Authentication failed", { error: userError.message });
       throw new Error(`Authentication error: ${userError.message}`);
     }
+    
     const user = userData.user;
     if (!user?.email) {
       logStep("ERROR: User not authenticated or email not available");
@@ -53,6 +68,7 @@ serve(async (req) => {
     }
     logStep("User authenticated", { userId: user.id, email: user.email });
 
+    // Get request body
     const { priceId } = await req.json();
     if (!priceId) {
       logStep("ERROR: No price ID provided");
@@ -60,9 +76,26 @@ serve(async (req) => {
     }
     logStep("Price ID received", { priceId });
 
+    // Initialize Stripe with better error handling
     const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
     
-    // Check if customer exists
+    // Validate price exists in Stripe
+    try {
+      const price = await stripe.prices.retrieve(priceId);
+      logStep("Price verified in Stripe", { priceId: price.id, active: price.active, amount: price.unit_amount });
+      
+      if (!price.active) {
+        throw new Error("The selected price is not active in Stripe");
+      }
+    } catch (priceError: any) {
+      logStep("ERROR: Price validation failed", { error: priceError.message, code: priceError.code });
+      if (priceError.code === 'resource_missing') {
+        throw new Error(`Price ID '${priceId}' does not exist in your Stripe account. Please verify the price ID in your Stripe Dashboard.`);
+      }
+      throw new Error(`Price validation failed: ${priceError.message}`);
+    }
+    
+    // Check if customer exists or create new one
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
     let customerId;
     
@@ -80,6 +113,7 @@ serve(async (req) => {
 
     const origin = req.headers.get("origin") || "http://localhost:3000";
     
+    // Create checkout session
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       line_items: [
@@ -89,11 +123,13 @@ serve(async (req) => {
         },
       ],
       mode: "subscription",
-      success_url: `${origin}/?success=true`,
+      success_url: `${origin}/?success=true&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/?cancelled=true`,
       metadata: {
         user_id: user.id,
       },
+      allow_promotion_codes: true,
+      billing_address_collection: "auto",
     });
 
     logStep("Checkout session created", { sessionId: session.id, url: session.url });
@@ -105,9 +141,14 @@ serve(async (req) => {
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logStep("ERROR in create-checkout", { message: errorMessage });
-    return new Response(JSON.stringify({ error: errorMessage }), {
+    
+    // Return user-friendly error messages
+    return new Response(JSON.stringify({ 
+      error: errorMessage,
+      details: "Check the Edge Function logs in Supabase Dashboard for more information."
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 500,
+      status: 400,
     });
   }
 });
