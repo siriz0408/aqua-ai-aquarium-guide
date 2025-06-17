@@ -1,7 +1,6 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useCredits } from '@/hooks/useCredits';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Users, CreditCard, Settings, Activity } from 'lucide-react';
@@ -10,10 +9,29 @@ import { AdminSubscriptionManagement } from '@/components/admin/AdminSubscriptio
 import { AdminSystemSettings } from '@/components/admin/AdminSystemSettings';
 import { AdminActivityLogs } from '@/components/admin/AdminActivityLogs';
 import { Layout } from '@/components/Layout';
+import { checkAdminStatus } from '@/utils/adminAuth';
 
 const Admin = () => {
   const { user } = useAuth();
-  const { profile, profileLoading } = useCredits();
+  const [profile, setProfile] = useState<any>(null);
+  const [profileLoading, setProfileLoading] = useState(true);
+
+  useEffect(() => {
+    const loadAdminProfile = async () => {
+      try {
+        const { profile: adminProfile } = await checkAdminStatus();
+        setProfile(adminProfile);
+      } catch (error) {
+        console.error('Error loading admin profile:', error);
+      } finally {
+        setProfileLoading(false);
+      }
+    };
+
+    if (user) {
+      loadAdminProfile();
+    }
+  }, [user]);
 
   // Show loading while checking permissions
   if (profileLoading) {
@@ -31,6 +49,11 @@ const Admin = () => {
           <p className="text-muted-foreground">
             Manage users, subscriptions, and system settings for AquaAI
           </p>
+          {profile && (
+            <p className="text-sm text-muted-foreground mt-2">
+              Welcome back, {profile.full_name} ({profile.admin_role})
+            </p>
+          )}
         </div>
 
         <Tabs defaultValue="users" className="space-y-6">
