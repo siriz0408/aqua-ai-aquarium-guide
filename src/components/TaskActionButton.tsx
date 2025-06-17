@@ -29,6 +29,39 @@ const TaskActionButton: React.FC<TaskActionButtonProps> = ({
 }) => {
   const [isHovered, setIsHovered] = useState(false);
 
+  // Function to clean and format task title
+  const formatTaskTitle = (title: string) => {
+    // Remove markdown asterisks and clean up the title
+    return title.replace(/\*\*/g, '').trim();
+  };
+
+  // Function to extract summary from description or title
+  const getTaskSummary = (task: Task) => {
+    const cleanTitle = formatTaskTitle(task.title);
+    
+    // If description exists, use it as summary, otherwise extract from title
+    if (task.description && task.description.trim()) {
+      return task.description.trim();
+    }
+    
+    // If title contains a colon, split and use the part after colon as summary
+    if (cleanTitle.includes(':')) {
+      const parts = cleanTitle.split(':');
+      return parts.slice(1).join(':').trim();
+    }
+    
+    return null;
+  };
+
+  // Function to get the main title (before colon if exists)
+  const getMainTitle = (title: string) => {
+    const cleanTitle = formatTaskTitle(title);
+    if (cleanTitle.includes(':')) {
+      return cleanTitle.split(':')[0].trim();
+    }
+    return cleanTitle;
+  };
+
   const getPriorityIcon = (priority: string) => {
     switch (priority) {
       case 'urgent':
@@ -86,11 +119,8 @@ const TaskActionButton: React.FC<TaskActionButtonProps> = ({
     action();
   };
 
-  const getTaskSummary = () => {
-    const urgencyText = task.priority === 'urgent' ? '🚨 Urgent: ' : '';
-    const dueText = task.due_date ? ` (Due: ${new Date(task.due_date).toLocaleDateString()})` : '';
-    return `${urgencyText}${task.title}${dueText}`;
-  };
+  const mainTitle = getMainTitle(task.title);
+  const summary = getTaskSummary(task);
 
   return (
     <div 
@@ -108,15 +138,15 @@ const TaskActionButton: React.FC<TaskActionButtonProps> = ({
       `}>
         <div className="flex-1 min-w-0 mr-3">
           <div className="flex items-start justify-between mb-1">
-            <h4 className="text-sm font-medium truncate pr-2">{task.title}</h4>
+            <h4 className="text-sm font-semibold truncate pr-2">{mainTitle}</h4>
             <Badge variant={getPriorityColor(task.priority)} className="shrink-0">
               {getPriorityIcon(task.priority)}
               {task.priority}
             </Badge>
           </div>
-          {task.description && (
+          {summary && (
             <p className="text-xs text-muted-foreground line-clamp-2 mb-2">
-              {task.description}
+              {summary}
             </p>
           )}
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -149,9 +179,9 @@ const TaskActionButton: React.FC<TaskActionButtonProps> = ({
               </HoverCardTrigger>
               <HoverCardContent className="w-80 p-3">
                 <div className="space-y-2">
-                  <h4 className="font-medium text-sm">{task.title}</h4>
+                  <h4 className="font-medium text-sm">{mainTitle}</h4>
                   <p className="text-xs text-muted-foreground">
-                    {task.description || 'No description provided'}
+                    {summary || 'No description provided'}
                   </p>
                   <div className="flex items-center gap-2 text-xs">
                     <Badge variant={getPriorityColor(task.priority)} className="text-xs">

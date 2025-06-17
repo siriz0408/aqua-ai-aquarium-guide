@@ -58,6 +58,39 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onTaskSelect }) => {
     }
   };
 
+  // Function to clean and format task title
+  const formatTaskTitle = (title: string) => {
+    // Remove markdown asterisks and clean up the title
+    return title.replace(/\*\*/g, '').trim();
+  };
+
+  // Function to extract summary from description or title
+  const getTaskSummary = (task: Task) => {
+    const cleanTitle = formatTaskTitle(task.title);
+    
+    // If description exists, use it as summary, otherwise extract from title
+    if (task.description && task.description.trim()) {
+      return task.description.trim();
+    }
+    
+    // If title contains a colon, split and use the part after colon as summary
+    if (cleanTitle.includes(':')) {
+      const parts = cleanTitle.split(':');
+      return parts.slice(1).join(':').trim();
+    }
+    
+    return null;
+  };
+
+  // Function to get the main title (before colon if exists)
+  const getMainTitle = (title: string) => {
+    const cleanTitle = formatTaskTitle(title);
+    if (cleanTitle.includes(':')) {
+      return cleanTitle.split(':')[0].trim();
+    }
+    return cleanTitle;
+  };
+
   const handleStatusChange = async (task: Task, newStatus: string) => {
     try {
       updateTask({
@@ -110,102 +143,107 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onTaskSelect }) => {
 
   return (
     <div className="space-y-3">
-      {tasks.map((task) => (
-        <Card key={task.id} className={`transition-all duration-200 hover:shadow-md ${getStatusColor(task.status)}`}>
-          <CardContent className="p-4">
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-2">
-                  <h3 className="font-medium truncate">{task.title}</h3>
-                  <Badge variant={getPriorityColor(task.priority)} className="shrink-0">
-                    {getPriorityIcon(task.priority)}
-                    {task.priority}
-                  </Badge>
-                  <Badge variant="outline" className="capitalize shrink-0">
-                    {task.status.replace('_', ' ')}
-                  </Badge>
-                </div>
-                
-                {task.description && (
-                  <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
-                    {task.description}
-                  </p>
-                )}
-                
-                <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                  <span className="capitalize">{task.task_type}</span>
-                  {task.due_date && (
-                    <>
-                      <span>•</span>
-                      <div className="flex items-center gap-1">
-                        <Calendar className="h-3 w-3" />
-                        <span>Due {formatDate(task.due_date)}</span>
-                      </div>
-                    </>
+      {tasks.map((task) => {
+        const mainTitle = getMainTitle(task.title);
+        const summary = getTaskSummary(task);
+        
+        return (
+          <Card key={task.id} className={`transition-all duration-200 hover:shadow-md ${getStatusColor(task.status)}`}>
+            <CardContent className="p-4">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-2">
+                    <h3 className="font-semibold truncate">{mainTitle}</h3>
+                    <Badge variant={getPriorityColor(task.priority)} className="shrink-0">
+                      {getPriorityIcon(task.priority)}
+                      {task.priority}
+                    </Badge>
+                    <Badge variant="outline" className="capitalize shrink-0">
+                      {task.status.replace('_', ' ')}
+                    </Badge>
+                  </div>
+                  
+                  {summary && (
+                    <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
+                      {summary}
+                    </p>
                   )}
-                  <span>•</span>
-                  <span>Created {formatDate(task.created_at)}</span>
+                  
+                  <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                    <span className="capitalize">{task.task_type}</span>
+                    {task.due_date && (
+                      <>
+                        <span>•</span>
+                        <div className="flex items-center gap-1">
+                          <Calendar className="h-3 w-3" />
+                          <span>Due {formatDate(task.due_date)}</span>
+                        </div>
+                      </>
+                    )}
+                    <span>•</span>
+                    <span>Created {formatDate(task.created_at)}</span>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-2 shrink-0">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onTaskSelect(task.id)}
+                    className="hidden sm:flex"
+                  >
+                    <Bell className="h-3 w-3 mr-1" />
+                    Remind
+                  </Button>
+                  
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-48">
+                      <DropdownMenuItem onClick={() => onTaskSelect(task.id)}>
+                        <Bell className="mr-2 h-4 w-4" />
+                        Set Reminder
+                      </DropdownMenuItem>
+                      
+                      {task.status !== 'in_progress' && (
+                        <DropdownMenuItem onClick={() => handleStatusChange(task, 'in_progress')}>
+                          <Play className="mr-2 h-4 w-4" />
+                          Start Task
+                        </DropdownMenuItem>
+                      )}
+                      
+                      {task.status === 'in_progress' && (
+                        <DropdownMenuItem onClick={() => handleStatusChange(task, 'pending')}>
+                          <Pause className="mr-2 h-4 w-4" />
+                          Pause Task
+                        </DropdownMenuItem>
+                      )}
+                      
+                      {task.status !== 'completed' && (
+                        <DropdownMenuItem onClick={() => handleStatusChange(task, 'completed')}>
+                          <CheckCircle className="mr-2 h-4 w-4" />
+                          Mark Complete
+                        </DropdownMenuItem>
+                      )}
+                      
+                      <DropdownMenuItem 
+                        onClick={() => handleDeleteTask(task.id)}
+                        className="text-red-600"
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Delete Task
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </div>
-              
-              <div className="flex items-center gap-2 shrink-0">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => onTaskSelect(task.id)}
-                  className="hidden sm:flex"
-                >
-                  <Bell className="h-3 w-3 mr-1" />
-                  Remind
-                </Button>
-                
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-48">
-                    <DropdownMenuItem onClick={() => onTaskSelect(task.id)}>
-                      <Bell className="mr-2 h-4 w-4" />
-                      Set Reminder
-                    </DropdownMenuItem>
-                    
-                    {task.status !== 'in_progress' && (
-                      <DropdownMenuItem onClick={() => handleStatusChange(task, 'in_progress')}>
-                        <Play className="mr-2 h-4 w-4" />
-                        Start Task
-                      </DropdownMenuItem>
-                    )}
-                    
-                    {task.status === 'in_progress' && (
-                      <DropdownMenuItem onClick={() => handleStatusChange(task, 'pending')}>
-                        <Pause className="mr-2 h-4 w-4" />
-                        Pause Task
-                      </DropdownMenuItem>
-                    )}
-                    
-                    {task.status !== 'completed' && (
-                      <DropdownMenuItem onClick={() => handleStatusChange(task, 'completed')}>
-                        <CheckCircle className="mr-2 h-4 w-4" />
-                        Mark Complete
-                      </DropdownMenuItem>
-                    )}
-                    
-                    <DropdownMenuItem 
-                      onClick={() => handleDeleteTask(task.id)}
-                      className="text-red-600"
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Delete Task
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      ))}
+            </CardContent>
+          </Card>
+        );
+      })}
     </div>
   );
 };
