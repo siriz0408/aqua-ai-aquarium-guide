@@ -30,74 +30,74 @@ const PlansSummary = () => {
 
   if (isLoading) {
     return (
-      <div className="w-full">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold">Your Setup Plans</h2>
-        </div>
-        <div className="grid gap-4 md:grid-cols-2">
-          {[...Array(2)].map((_, i) => (
-            <Card key={i} className="animate-pulse">
-              <CardHeader>
-                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+      <Card className="w-full">
+        <CardHeader className="pb-3">
+          <div className="flex justify-between items-center">
+            <div>
+              <div className="h-5 bg-gray-200 rounded w-32 mb-1"></div>
+              <div className="h-3 bg-gray-200 rounded w-48"></div>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {[...Array(2)].map((_, i) => (
+              <div key={i} className="p-3 border rounded-lg animate-pulse">
+                <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
                 <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-              </CardHeader>
-              <CardContent>
-                <div className="h-20 bg-gray-200 rounded"></div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
-    <div className="w-full">
-      <div className="flex justify-between items-center mb-4">
-        <div>
-          <h2 className="text-xl font-semibold">Your Setup Plans</h2>
-          <p className="text-muted-foreground text-sm">Manage your aquarium setup plans</p>
-        </div>
-        <div className="flex gap-2">
-          {plans.length > 0 && (
-            <Button variant="ghost" onClick={handleViewAllPlans}>
-              View All ({plans.length})
-            </Button>
-          )}
-          <Button onClick={handleCreatePlan} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Create Plan
-          </Button>
-        </div>
-      </div>
-      
-      {plans.length === 0 ? (
-        <Card className="text-center p-8">
-          <div className="flex flex-col items-center gap-4">
-            <Wrench className="h-12 w-12 text-muted-foreground" />
-            <div>
-              <h3 className="text-lg font-semibold">No setup plans yet</h3>
-              <p className="text-muted-foreground mb-4">Create your first aquarium setup plan to get started</p>
-              <Button onClick={handleCreatePlan} className="gap-2">
-                <Plus className="h-4 w-4" />
-                Create Your First Plan
-              </Button>
-            </div>
+    <Card className="w-full">
+      <CardHeader className="pb-3">
+        <div className="flex justify-between items-center">
+          <div>
+            <CardTitle className="text-lg">Your Setup Plans</CardTitle>
+            <CardDescription className="text-sm">Manage your aquarium setup plans</CardDescription>
           </div>
-        </Card>
-      ) : (
-        <div className="grid gap-4 md:grid-cols-2">
-          {plans.slice(0, 4).map((plan) => (
-            <Card 
-              key={plan.id} 
-              className="cursor-pointer hover:shadow-lg transition-shadow group"
-              onClick={() => handleViewPlan(plan)}
-            >
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <div className="space-y-1">
-                    <CardTitle className="text-base">{plan.plan_name}</CardTitle>
-                    <CardDescription className="flex items-center gap-4">
+          <div className="flex gap-2">
+            {plans.length > 0 && (
+              <Button variant="ghost" size="sm" onClick={handleViewAllPlans}>
+                View All ({plans.length})
+              </Button>
+            )}
+            <Button size="sm" onClick={handleCreatePlan} className="gap-1">
+              <Plus className="h-3 w-3" />
+              Create Plan
+            </Button>
+          </div>
+        </div>
+      </CardHeader>
+      
+      <CardContent>
+        {plans.length === 0 ? (
+          <div className="text-center py-6">
+            <Wrench className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+            <h3 className="text-sm font-medium mb-1">No setup plans yet</h3>
+            <p className="text-xs text-muted-foreground mb-3">Create your first aquarium setup plan</p>
+            <Button size="sm" onClick={handleCreatePlan} className="gap-1">
+              <Plus className="h-3 w-3" />
+              Create Your First Plan
+            </Button>
+          </div>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {plans.slice(0, 4).map((plan) => (
+              <div 
+                key={plan.id} 
+                className="p-3 border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors group"
+                onClick={() => handleViewPlan(plan)}
+              >
+                <div className="flex items-start justify-between mb-2">
+                  <div className="min-w-0 flex-1">
+                    <h4 className="text-sm font-medium truncate">{plan.plan_name}</h4>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
                       <span className="flex items-center gap-1">
                         <Calendar className="h-3 w-3" />
                         {formatDate(plan.created_at)}
@@ -108,60 +108,58 @@ const PlansSummary = () => {
                           {plan.total_estimate}
                         </span>
                       )}
-                    </CardDescription>
+                    </div>
                   </div>
                   <Button
-                    variant="outline"
+                    variant="ghost"
                     size="sm"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleViewPlan(plan);
                     }}
-                    className="opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0"
                   >
-                    <Eye className="h-4 w-4" />
+                    <Eye className="h-3 w-3" />
                   </Button>
                 </div>
-              </CardHeader>
-              
-              <CardContent className="space-y-3">
+                
                 {plan.tank_specs && (
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-1 mb-2">
                     {plan.tank_specs.size && (
-                      <Badge variant="secondary">{plan.tank_specs.size}</Badge>
+                      <Badge variant="secondary" className="text-xs px-1 py-0">{plan.tank_specs.size}</Badge>
                     )}
                     {plan.tank_specs.type && (
-                      <Badge variant="secondary">{plan.tank_specs.type}</Badge>
+                      <Badge variant="secondary" className="text-xs px-1 py-0">{plan.tank_specs.type}</Badge>
                     )}
                   </div>
                 )}
                 
-                <div className="grid grid-cols-3 gap-2 text-center">
+                <div className="grid grid-cols-3 gap-1 text-center">
                   <div>
-                    <p className="text-sm font-medium text-primary">
+                    <p className="text-xs font-medium text-primary">
                       {plan.equipment?.length || 0}
                     </p>
                     <p className="text-xs text-muted-foreground">Equipment</p>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-accent">
+                    <p className="text-xs font-medium text-accent">
                       {plan.compatible_livestock?.length || 0}
                     </p>
                     <p className="text-xs text-muted-foreground">Livestock</p>
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-green-600">
+                    <p className="text-xs font-medium text-green-600">
                       {plan.timeline?.length || 0}
                     </p>
                     <p className="text-xs text-muted-foreground">Steps</p>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
-    </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 };
 
