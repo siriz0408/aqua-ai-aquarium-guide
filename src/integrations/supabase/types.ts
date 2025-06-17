@@ -192,62 +192,119 @@ export type Database = {
         Row: {
           care_level: string
           category: string
+          class: string | null
+          common_names: Json | null
           compatibility_notes: string | null
+          conservation_status: string | null
           created_at: string
+          data_source: string | null
           diet_type: string | null
+          family: string | null
           food_details: string | null
+          gbif_last_updated: string | null
+          gbif_species_key: number | null
+          gbif_usage_key: number | null
+          genus: string | null
+          geographic_distribution: Json | null
+          habitat_notes: string | null
           id: string
           image_gallery: string[] | null
           image_url: string | null
+          kingdom: string | null
           name: string
+          order_name: string | null
           ph_range: string | null
+          phylum: string | null
           reef_safe: boolean | null
           scientific_name: string | null
+          scientific_name_authorship: string | null
           similar_species: string[] | null
+          species_name: string | null
           summary: string | null
+          synonyms: Json | null
           tank_size_minimum: number | null
+          taxonomic_status: string | null
           updated_at: string
           water_temperature_range: string | null
+          water_type: string | null
         }
         Insert: {
           care_level?: string
           category?: string
+          class?: string | null
+          common_names?: Json | null
           compatibility_notes?: string | null
+          conservation_status?: string | null
           created_at?: string
+          data_source?: string | null
           diet_type?: string | null
+          family?: string | null
           food_details?: string | null
+          gbif_last_updated?: string | null
+          gbif_species_key?: number | null
+          gbif_usage_key?: number | null
+          genus?: string | null
+          geographic_distribution?: Json | null
+          habitat_notes?: string | null
           id?: string
           image_gallery?: string[] | null
           image_url?: string | null
+          kingdom?: string | null
           name: string
+          order_name?: string | null
           ph_range?: string | null
+          phylum?: string | null
           reef_safe?: boolean | null
           scientific_name?: string | null
+          scientific_name_authorship?: string | null
           similar_species?: string[] | null
+          species_name?: string | null
           summary?: string | null
+          synonyms?: Json | null
           tank_size_minimum?: number | null
+          taxonomic_status?: string | null
           updated_at?: string
           water_temperature_range?: string | null
+          water_type?: string | null
         }
         Update: {
           care_level?: string
           category?: string
+          class?: string | null
+          common_names?: Json | null
           compatibility_notes?: string | null
+          conservation_status?: string | null
           created_at?: string
+          data_source?: string | null
           diet_type?: string | null
+          family?: string | null
           food_details?: string | null
+          gbif_last_updated?: string | null
+          gbif_species_key?: number | null
+          gbif_usage_key?: number | null
+          genus?: string | null
+          geographic_distribution?: Json | null
+          habitat_notes?: string | null
           id?: string
           image_gallery?: string[] | null
           image_url?: string | null
+          kingdom?: string | null
           name?: string
+          order_name?: string | null
           ph_range?: string | null
+          phylum?: string | null
           reef_safe?: boolean | null
           scientific_name?: string | null
+          scientific_name_authorship?: string | null
           similar_species?: string[] | null
+          species_name?: string | null
           summary?: string | null
+          synonyms?: Json | null
           tank_size_minimum?: number | null
+          taxonomic_status?: string | null
           updated_at?: string
           water_temperature_range?: string | null
+          water_type?: string | null
         }
         Relationships: []
       }
@@ -297,6 +354,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      gbif_import_jobs: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          error_details: Json | null
+          failed_species: number | null
+          id: string
+          imported_species: number | null
+          job_type: string
+          search_query: string | null
+          status: string
+          total_species: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          error_details?: Json | null
+          failed_species?: number | null
+          id?: string
+          imported_species?: number | null
+          job_type: string
+          search_query?: string | null
+          status?: string
+          total_species?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          error_details?: Json | null
+          failed_species?: number | null
+          id?: string
+          imported_species?: number | null
+          job_type?: string
+          search_query?: string | null
+          status?: string
+          total_species?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       messages: {
         Row: {
@@ -407,6 +509,47 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      species_images: {
+        Row: {
+          attribution: string | null
+          created_at: string
+          id: string
+          image_source: string
+          image_url: string
+          is_primary: boolean | null
+          license: string | null
+          species_id: string | null
+        }
+        Insert: {
+          attribution?: string | null
+          created_at?: string
+          id?: string
+          image_source: string
+          image_url: string
+          is_primary?: boolean | null
+          license?: string | null
+          species_id?: string | null
+        }
+        Update: {
+          attribution?: string | null
+          created_at?: string
+          id?: string
+          image_source?: string
+          image_url?: string
+          is_primary?: boolean | null
+          license?: string | null
+          species_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "species_images_species_id_fkey"
+            columns: ["species_id"]
+            isOneToOne: false
+            referencedRelation: "educational_fish"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       task_lists: {
         Row: {

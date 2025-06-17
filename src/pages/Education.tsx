@@ -3,317 +3,271 @@ import React, { useState } from 'react';
 import { Layout } from '@/components/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { educationalSpecies, educationalEquipment } from '@/data/educationalData';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Search, Fish, Settings, Download, Database, Plus } from 'lucide-react';
+import { useEducationalFish } from '@/hooks/useEducationalFish';
+import { useEducationalEquipment } from '@/hooks/useEducationalEquipment';
 import FishCard from '@/components/educational/FishCard';
 import EquipmentCard from '@/components/educational/EquipmentCard';
-import { Search, Filter, BookOpen, Fish, Settings, Waves, Leaf } from 'lucide-react';
+import GBIFImportDialog from '@/components/educational/GBIFImportDialog';
+import ImportJobStatus from '@/components/educational/ImportJobStatus';
 
 const Education = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [waterType, setWaterType] = useState('all');
-  const [activeTab, setActiveTab] = useState('species');
+  const [isGBIFDialogOpen, setIsGBIFDialogOpen] = useState(false);
 
-  const categories = [
-    { value: 'all', label: 'All Species', icon: '🐠' },
-    { value: 'Fish', label: 'Fish', icon: '🐟' },
-    { value: 'Coral', label: 'Coral', icon: '🪸' },
-    { value: 'Invertebrate', label: 'Invertebrates', icon: '🦐' },
-    { value: 'Plant', label: 'Plants', icon: '🌱' },
-  ];
+  const { 
+    fish, 
+    fishLoading, 
+    addToList, 
+    isInList, 
+    getFishByCategory 
+  } = useEducationalFish();
 
-  const waterTypes = [
-    { value: 'all', label: 'All Water Types', icon: '🌊' },
-    { value: 'Saltwater', label: 'Saltwater', icon: '🧂' },
-    { value: 'Freshwater', label: 'Freshwater', icon: '💧' },
-  ];
+  const { 
+    equipment, 
+    equipmentLoading 
+  } = useEducationalEquipment();
 
-  const equipmentCategories = [
-    { value: 'all', label: 'All Equipment', icon: '⚙️' },
-    { value: 'Filtration', label: 'Filtration', icon: '🔄' },
-    { value: 'Lighting', label: 'Lighting', icon: '💡' },
-    { value: 'Heating', label: 'Heating', icon: '🌡️' },
-    { value: 'Testing', label: 'Testing', icon: '🧪' },
-    { value: 'Maintenance', label: 'Maintenance', icon: '🧽' },
-  ];
-
-  const filteredSpecies = educationalSpecies.filter(species => {
-    const matchesSearch = species.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         species.scientific_name?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || species.category === selectedCategory;
-    const matchesWaterType = waterType === 'all' || species.water_type === waterType;
+  // Filter fish based on search term and category
+  const filteredFish = fish.filter(f => {
+    const matchesSearch = searchTerm === '' || 
+      f.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      f.scientific_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      f.category.toLowerCase().includes(searchTerm.toLowerCase());
     
-    return matchesSearch && matchesCategory && matchesWaterType;
-  });
-
-  const filteredEquipment = educationalEquipment.filter(equipment => {
-    const matchesSearch = equipment.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         equipment.summary.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || equipment.category === selectedCategory;
+    const matchesCategory = selectedCategory === 'all' || f.category === selectedCategory;
     
     return matchesSearch && matchesCategory;
   });
 
-  const getSpeciesStats = () => {
-    const saltwater = educationalSpecies.filter(s => s.water_type === 'Saltwater');
-    const freshwater = educationalSpecies.filter(s => s.water_type === 'Freshwater');
-    const fish = educationalSpecies.filter(s => s.category === 'Fish');
-    const corals = educationalSpecies.filter(s => s.category === 'Coral');
-    const inverts = educationalSpecies.filter(s => s.category === 'Invertebrate');
-    const plants = educationalSpecies.filter(s => s.category === 'Plant');
-    const beginnerFriendly = educationalSpecies.filter(s => s.care_level === 'Beginner');
+  // Filter equipment based on search term
+  const filteredEquipment = equipment.filter(e => 
+    searchTerm === '' || 
+    e.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    e.category.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
-    return { saltwater, freshwater, fish, corals, inverts, plants, beginnerFriendly };
-  };
-
-  const stats = getSpeciesStats();
+  // Get unique categories from fish data
+  const fishCategories = [...new Set(fish.map(f => f.category))];
 
   return (
-    <Layout title="Research & Education" showBackButton>
+    <Layout title="Educational Library">
       <div className="space-y-6 pb-20">
-        {/* Header */}
-        <div className="text-center space-y-4">
-          <div className="ocean-gradient rounded-xl p-6 text-white">
-            <BookOpen className="mx-auto h-8 w-8 mb-2" />
-            <h2 className="text-2xl font-bold mb-2">Research & Learn</h2>
-            <p className="text-blue-100 text-sm">
-              Comprehensive database of aquarium species and equipment
-            </p>
+        {/* Header with Search and Actions */}
+        <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold">Marine Life Encyclopedia</h1>
+              <p className="text-muted-foreground">
+                Comprehensive database of marine species and aquarium equipment
+              </p>
+            </div>
+            
+            <div className="flex gap-2">
+              <Button
+                onClick={() => setIsGBIFDialogOpen(true)}
+                className="ocean-gradient text-white"
+              >
+                <Database className="h-4 w-4 mr-2" />
+                Import from GBIF
+              </Button>
+            </div>
+          </div>
+
+          {/* Search Bar */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search species, equipment, or categories..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
           </div>
         </div>
 
-        {/* Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="species" className="flex items-center gap-2">
+        {/* Main Content Tabs */}
+        <Tabs defaultValue="fish" className="w-full">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="fish" className="flex items-center gap-2">
               <Fish className="h-4 w-4" />
-              Species & Life
+              Marine Life ({fish.length})
             </TabsTrigger>
             <TabsTrigger value="equipment" className="flex items-center gap-2">
               <Settings className="h-4 w-4" />
-              Equipment
+              Equipment ({equipment.length})
+            </TabsTrigger>
+            <TabsTrigger value="admin" className="flex items-center gap-2">
+              <Download className="h-4 w-4" />
+              Data Management
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="species" className="space-y-6">
-            {/* Search and Filters */}
-            <Card>
-              <CardContent className="p-4 space-y-4">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search species by name or scientific name..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-                
-                <div className="space-y-3">
-                  <div className="flex flex-wrap gap-2">
-                    <span className="text-sm font-medium text-muted-foreground">Category:</span>
-                    {categories.map(category => (
-                      <Button
-                        key={category.value}
-                        variant={selectedCategory === category.value ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setSelectedCategory(category.value)}
-                        className="gap-1"
-                      >
-                        <span>{category.icon}</span>
-                        {category.label}
-                      </Button>
-                    ))}
-                  </div>
-
-                  <div className="flex flex-wrap gap-2">
-                    <span className="text-sm font-medium text-muted-foreground">Water Type:</span>
-                    {waterTypes.map(type => (
-                      <Button
-                        key={type.value}
-                        variant={waterType === type.value ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setWaterType(type.value)}
-                        className="gap-1"
-                      >
-                        <span>{type.icon}</span>
-                        {type.label}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Quick Stats */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <Card className="text-center p-4">
-                <div className="text-2xl mb-1">🧂</div>
-                <div className="text-lg font-bold">{stats.saltwater.length}</div>
-                <div className="text-xs text-muted-foreground">Marine Species</div>
-              </Card>
-              <Card className="text-center p-4">
-                <div className="text-2xl mb-1">💧</div>
-                <div className="text-lg font-bold">{stats.freshwater.length}</div>
-                <div className="text-xs text-muted-foreground">Freshwater Species</div>
-              </Card>
-              <Card className="text-center p-4">
-                <div className="text-2xl mb-1">🪸</div>
-                <div className="text-lg font-bold">{stats.corals.length}</div>
-                <div className="text-xs text-muted-foreground">Coral Types</div>
-              </Card>
-              <Card className="text-center p-4">
-                <div className="text-2xl mb-1">🌱</div>
-                <div className="text-lg font-bold">{stats.beginnerFriendly.length}</div>
-                <div className="text-xs text-muted-foreground">Beginner Friendly</div>
-              </Card>
+          {/* Fish/Marine Life Tab */}
+          <TabsContent value="fish" className="space-y-4">
+            {/* Category Filter */}
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant={selectedCategory === 'all' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setSelectedCategory('all')}
+              >
+                All Categories ({fish.length})
+              </Button>
+              {fishCategories.map(category => {
+                const count = getFishByCategory(category).length;
+                return (
+                  <Button
+                    key={category}
+                    variant={selectedCategory === category ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setSelectedCategory(category)}
+                  >
+                    {category} ({count})
+                  </Button>
+                );
+              })}
             </div>
 
-            {/* Results */}
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-medium">
-                  {filteredSpecies.length} Species Found
-                </h3>
-                <Badge variant="outline">
-                  <Filter className="mr-1 h-3 w-3" />
-                  {searchTerm ? `"${searchTerm}"` : 'All'}
-                </Badge>
+            {/* Species Grid */}
+            {fishLoading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {[...Array(6)].map((_, i) => (
+                  <Card key={i} className="h-64 animate-pulse">
+                    <div className="bg-gray-200 h-full rounded-lg"></div>
+                  </Card>
+                ))}
               </div>
-
-              {filteredSpecies.length === 0 ? (
-                <Card className="p-12 text-center">
-                  <div className="space-y-4">
-                    <div className="text-4xl">🔍</div>
-                    <div>
-                      <h4 className="font-medium">No species found</h4>
-                      <p className="text-sm text-muted-foreground">
-                        Try adjusting your search terms or filters
-                      </p>
-                    </div>
-                    <Button 
-                      variant="outline" 
-                      onClick={() => {
-                        setSearchTerm('');
-                        setSelectedCategory('all');
-                        setWaterType('all');
-                      }}
-                    >
-                      Clear Filters
-                    </Button>
-                  </div>
-                </Card>
-              ) : (
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {filteredSpecies.map((species) => (
-                    <FishCard key={species.id} fish={species} />
-                  ))}
-                </div>
-              )}
-            </div>
+            ) : filteredFish.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredFish.map(fishItem => (
+                  <FishCard key={fishItem.id} fish={fishItem} />
+                ))}
+              </div>
+            ) : (
+              <Card className="p-8 text-center">
+                <Fish className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                <h3 className="text-lg font-medium mb-2">No species found</h3>
+                <p className="text-muted-foreground mb-4">
+                  {searchTerm ? 'Try adjusting your search terms' : 'Import species data from GBIF to get started'}
+                </p>
+                <Button onClick={() => setIsGBIFDialogOpen(true)}>
+                  <Database className="h-4 w-4 mr-2" />
+                  Import from GBIF
+                </Button>
+              </Card>
+            )}
           </TabsContent>
 
-          <TabsContent value="equipment" className="space-y-6">
-            {/* Search and Filters for Equipment */}
-            <Card>
-              <CardContent className="p-4 space-y-4">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search equipment..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-                
-                <div className="flex flex-wrap gap-2">
-                  {equipmentCategories.map(category => (
-                    <Button
-                      key={category.value}
-                      variant={selectedCategory === category.value ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setSelectedCategory(category.value)}
-                      className="gap-1"
-                    >
-                      <span>{category.icon}</span>
-                      {category.label}
-                    </Button>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Equipment Stats */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <Card className="text-center p-4">
-                <div className="text-2xl mb-1">🔄</div>
-                <div className="text-lg font-bold">{educationalEquipment.filter(e => e.category === 'Filtration').length}</div>
-                <div className="text-xs text-muted-foreground">Filtration</div>
-              </Card>
-              <Card className="text-center p-4">
-                <div className="text-2xl mb-1">💡</div>
-                <div className="text-lg font-bold">{educationalEquipment.filter(e => e.category === 'Lighting').length}</div>
-                <div className="text-xs text-muted-foreground">Lighting</div>
-              </Card>
-              <Card className="text-center p-4">
-                <div className="text-2xl mb-1">🧪</div>
-                <div className="text-lg font-bold">{educationalEquipment.filter(e => e.category === 'Testing').length}</div>
-                <div className="text-xs text-muted-foreground">Testing</div>
-              </Card>
-              <Card className="text-center p-4">
-                <div className="text-2xl mb-1">⚙️</div>
-                <div className="text-lg font-bold">{educationalEquipment.filter(e => e.difficulty_level === 'Easy').length}</div>
-                <div className="text-xs text-muted-foreground">Beginner Friendly</div>
-              </Card>
-            </div>
-
-            {/* Equipment Results */}
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-medium">
-                  {filteredEquipment.length} Equipment Items Found
-                </h3>
-                <Badge variant="outline">
-                  <Filter className="mr-1 h-3 w-3" />
-                  {searchTerm ? `"${searchTerm}"` : 'All'}
-                </Badge>
+          {/* Equipment Tab */}
+          <TabsContent value="equipment" className="space-y-4">
+            {equipmentLoading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {[...Array(6)].map((_, i) => (
+                  <Card key={i} className="h-64 animate-pulse">
+                    <div className="bg-gray-200 h-full rounded-lg"></div>
+                  </Card>
+                ))}
               </div>
+            ) : filteredEquipment.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredEquipment.map(equipmentItem => (
+                  <EquipmentCard key={equipmentItem.id} equipment={equipmentItem} />
+                ))}
+              </div>
+            ) : (
+              <Card className="p-8 text-center">
+                <Settings className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                <h3 className="text-lg font-medium mb-2">No equipment found</h3>
+                <p className="text-muted-foreground">
+                  {searchTerm ? 'Try adjusting your search terms' : 'Equipment data will be available soon'}
+                </p>
+              </Card>
+            )}
+          </TabsContent>
 
-              {filteredEquipment.length === 0 ? (
-                <Card className="p-12 text-center">
-                  <div className="space-y-4">
-                    <div className="text-4xl">🔍</div>
-                    <div>
-                      <h4 className="font-medium">No equipment found</h4>
-                      <p className="text-sm text-muted-foreground">
-                        Try adjusting your search terms or filters
-                      </p>
-                    </div>
-                    <Button 
-                      variant="outline" 
-                      onClick={() => {
-                        setSearchTerm('');
-                        setSelectedCategory('all');
-                      }}
-                    >
-                      Clear Filters
-                    </Button>
+          {/* Admin/Data Management Tab */}
+          <TabsContent value="admin" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* GBIF Import Card */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Database className="h-5 w-5" />
+                    GBIF Integration
+                  </CardTitle>
+                  <CardDescription>
+                    Import species data from the Global Biodiversity Information Facility
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="text-sm text-muted-foreground">
+                    <p>Access to over 1.5 million species records with:</p>
+                    <ul className="list-disc list-inside mt-2 space-y-1">
+                      <li>Scientific names and taxonomy</li>
+                      <li>Common names in multiple languages</li>
+                      <li>High-quality images</li>
+                      <li>Geographic distribution data</li>
+                    </ul>
                   </div>
-                </Card>
-              ) : (
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {filteredEquipment.map((equipment) => (
-                    <EquipmentCard key={equipment.id} equipment={equipment} />
-                  ))}
-                </div>
-              )}
+                  
+                  <Button 
+                    onClick={() => setIsGBIFDialogOpen(true)}
+                    className="w-full"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Import Species Data
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Database Statistics */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Database Statistics</CardTitle>
+                  <CardDescription>Current content overview</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                      <span>Total Species</span>
+                      <Badge variant="outline">{fish.length}</Badge>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span>Equipment Items</span>
+                      <Badge variant="outline">{equipment.length}</Badge>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span>Categories</span>
+                      <Badge variant="outline">{fishCategories.length}</Badge>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span>GBIF Records</span>
+                      <Badge variant="outline">
+                        {fish.filter(f => f.data_source === 'gbif').length}
+                      </Badge>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
+
+            {/* Import Job Status */}
+            <ImportJobStatus />
           </TabsContent>
         </Tabs>
+
+        {/* GBIF Import Dialog */}
+        <GBIFImportDialog 
+          open={isGBIFDialogOpen} 
+          onOpenChange={setIsGBIFDialogOpen} 
+        />
       </div>
     </Layout>
   );

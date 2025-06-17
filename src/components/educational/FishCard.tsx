@@ -4,22 +4,27 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Heart, Plus, Thermometer, Droplets, Fish, MoreVertical, Waves, Leaf } from 'lucide-react';
+import { Heart, Plus, Thermometer, Droplets, Fish, MoreVertical, Waves, Leaf, ExternalLink, Database } from 'lucide-react';
 
 interface FishCardProps {
   fish: {
     id: string;
     name: string;
     scientific_name?: string;
-    category: 'Fish' | 'Coral' | 'Invertebrate' | 'Plant';
-    summary: string;
+    category: string;
+    summary?: string;
     care_level: 'Beginner' | 'Intermediate' | 'Advanced';
     diet_type?: 'Herbivore' | 'Carnivore' | 'Omnivore';
     tank_size_minimum?: number;
-    water_type: 'Saltwater' | 'Freshwater';
     reef_safe?: boolean;
     ph_range?: string;
     water_temperature_range?: string;
+    water_type?: string;
+    data_source?: string;
+    gbif_species_key?: number;
+    family?: string;
+    common_names?: any;
+    image_url?: string;
   };
   showAddToList?: boolean;
 }
@@ -51,7 +56,7 @@ const FishCard: React.FC<FishCardProps> = ({ fish, showAddToList = true }) => {
     }
   };
 
-  const getWaterTypeColor = (waterType: string) => {
+  const getWaterTypeColor = (waterType?: string) => {
     return waterType === 'Saltwater' 
       ? 'bg-blue-50 text-blue-700 border-blue-200'
       : 'bg-cyan-50 text-cyan-700 border-cyan-200';
@@ -72,17 +77,41 @@ const FishCard: React.FC<FishCardProps> = ({ fish, showAddToList = true }) => {
     }
   };
 
+  // Parse common names if they're in JSON format
+  const getCommonNames = () => {
+    if (!fish.common_names) return [];
+    
+    try {
+      if (typeof fish.common_names === 'string') {
+        return JSON.parse(fish.common_names);
+      }
+      return Array.isArray(fish.common_names) ? fish.common_names : [];
+    } catch {
+      return [];
+    }
+  };
+
+  const commonNames = getCommonNames();
+  const isGBIFData = fish.data_source === 'gbif';
+
   return (
     <Card className="h-full hover:shadow-lg transition-shadow duration-200">
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
               {getCategoryIcon(fish.category)}
-              <CardTitle className="text-lg">{fish.name}</CardTitle>
+              <CardTitle className="text-lg truncate">{fish.name}</CardTitle>
             </div>
             {fish.scientific_name && (
-              <p className="text-sm text-muted-foreground italic">{fish.scientific_name}</p>
+              <p className="text-sm text-muted-foreground italic mb-2 truncate">
+                {fish.scientific_name}
+              </p>
+            )}
+            {fish.family && (
+              <p className="text-xs text-muted-foreground mb-2">
+                Family: {fish.family}
+              </p>
             )}
           </div>
           {showAddToList && (
@@ -105,6 +134,14 @@ const FishCard: React.FC<FishCardProps> = ({ fish, showAddToList = true }) => {
                   <Fish className="mr-2 h-4 w-4" />
                   Mark as Owned
                 </DropdownMenuItem>
+                {isGBIFData && fish.gbif_species_key && (
+                  <DropdownMenuItem
+                    onClick={() => window.open(`https://www.gbif.org/species/${fish.gbif_species_key}`, '_blank')}
+                  >
+                    <ExternalLink className="mr-2 h-4 w-4" />
+                    View on GBIF
+                  </DropdownMenuItem>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           )}
@@ -114,10 +151,12 @@ const FishCard: React.FC<FishCardProps> = ({ fish, showAddToList = true }) => {
           <Badge className={getCareColor(fish.care_level)}>
             {fish.care_level}
           </Badge>
-          <Badge variant="outline" className={getWaterTypeColor(fish.water_type)}>
-            {fish.water_type === 'Saltwater' ? <Waves className="mr-1 h-3 w-3" /> : <Droplets className="mr-1 h-3 w-3" />}
-            {fish.water_type}
-          </Badge>
+          {fish.water_type && (
+            <Badge variant="outline" className={getWaterTypeColor(fish.water_type)}>
+              {fish.water_type === 'Saltwater' ? <Waves className="mr-1 h-3 w-3" /> : <Droplets className="mr-1 h-3 w-3" />}
+              {fish.water_type}
+            </Badge>
+          )}
           {fish.diet_type && (
             <Badge variant="outline" className={getDietColor(fish.diet_type)}>
               {fish.diet_type}
@@ -128,13 +167,55 @@ const FishCard: React.FC<FishCardProps> = ({ fish, showAddToList = true }) => {
               Reef Safe
             </Badge>
           )}
+          {isGBIFData && (
+            <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
+              <Database className="mr-1 h-3 w-3" />
+              GBIF
+            </Badge>
+          )}
         </div>
       </CardHeader>
 
       <CardContent className="space-y-4">
-        <p className="text-sm text-muted-foreground line-clamp-3">
-          {fish.summary}
-        </p>
+        {/* Image Preview */}
+        {fish.image_url && (
+          <div className="aspect-video bg-gray-100 rounded-md overflow-hidden">
+            <img
+              src={fish.image_url}
+              alt={fish.name}
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.style.display = 'none';
+              }}
+            />
+          </div>
+        )}
+
+        {fish.summary && (
+          <p className="text-sm text-muted-foreground line-clamp-3">
+            {fish.summary}
+          </p>
+        )}
+
+        {/* Common Names */}
+        {commonNames.length > 0 && (
+          <div className="space-y-2">
+            <h4 className="text-xs font-medium text-muted-foreground">COMMON NAMES</h4>
+            <div className="flex flex-wrap gap-1">
+              {commonNames.slice(0, 3).map((nameObj: any, index: number) => (
+                <Badge key={index} variant="outline" className="text-xs">
+                  {typeof nameObj === 'string' ? nameObj : nameObj.name}
+                </Badge>
+              ))}
+              {commonNames.length > 3 && (
+                <Badge variant="outline" className="text-xs">
+                  +{commonNames.length - 3} more
+                </Badge>
+              )}
+            </div>
+          </div>
+        )}
 
         <div className="space-y-2">
           {fish.tank_size_minimum && (
