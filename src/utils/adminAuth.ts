@@ -14,12 +14,12 @@ export const checkAdminStatus = async () => {
 
     console.log('User found:', user.id);
 
-    // Query the profiles table directly with better error handling
+    // Query the profiles table directly 
     const { data: profileData, error: profileError } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', user.id)
-      .maybeSingle(); // Fixed: removed duplicate .single() call
+      .maybeSingle();
 
     if (profileError) {
       console.error('Error fetching profile:', profileError);

@@ -10,9 +10,6 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AdminProtectedRoute } from "@/components/admin/AdminProtectedRoute";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { checkAdminStatus } from "@/utils/adminAuth";
-import { supabase } from "@/integrations/supabase/client";
-import { useEffect } from "react";
 import Index from "./pages/Index";
 import TankDetails from "./pages/TankDetails";
 import LogParameters from "./pages/LogParameters";
@@ -37,30 +34,6 @@ const queryClient = new QueryClient({
   },
 });
 
-const AdminDebugger = () => {
-  useEffect(() => {
-    const debugAdminStatus = async () => {
-      const result = await checkAdminStatus();
-      console.log('ADMIN DEBUG:', result);
-      
-      // Also check profile directly
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', user.id)
-          .maybeSingle();
-        console.log('PROFILE DEBUG:', profile);
-      }
-    };
-    
-    debugAdminStatus();
-  }, []);
-
-  return null;
-};
-
 const App = () => (
   <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
@@ -68,7 +41,6 @@ const App = () => (
         <AuthProvider>
           <AquariumProvider>
             <TooltipProvider>
-              <AdminDebugger />
               <Toaster />
               <Sonner />
               <BrowserRouter>
