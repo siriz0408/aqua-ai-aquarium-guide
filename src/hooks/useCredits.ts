@@ -7,6 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 
 export interface UserProfile {
   id: string;
+  full_name?: string;
   subscription_status: string;
   subscription_tier: string;
   free_credits_remaining: number;
@@ -41,6 +42,7 @@ export const useCredits = () => {
         .from('profiles')
         .select(`
           id,
+          full_name,
           subscription_status,
           subscription_tier,
           free_credits_remaining,
