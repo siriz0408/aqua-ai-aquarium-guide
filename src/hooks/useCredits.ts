@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -62,28 +63,19 @@ export const useCredits = () => {
         if (error) {
           console.error('Error fetching user profile:', error);
           
-          // If it's a recursion error, try a simpler query
-          if (error.code === '42P17') {
-            console.log('Recursion detected, attempting fallback query...');
+          // If it's a recursion error or other RLS issue, return a safe default
+          if (error.code === '42P17' || error.message.includes('infinite recursion')) {
+            console.log('RLS issue detected, returning safe default profile...');
             
-            // Use a direct RPC call to bypass RLS issues
-            const { data: fallbackData, error: fallbackError } = await supabase
-              .rpc('get_user_profile_safe', { user_id: user.id });
-            
-            if (fallbackError) {
-              console.error('Fallback query also failed:', fallbackError);
-              // Return a default profile to prevent app from breaking
-              return {
-                id: user.id,
-                subscription_status: 'free',
-                subscription_tier: 'free',
-                free_credits_remaining: 5,
-                total_credits_used: 0,
-                is_admin: false
-              } as UserProfile;
-            }
-            
-            return fallbackData as UserProfile;
+            // Return a default profile to prevent app from breaking
+            return {
+              id: user.id,
+              subscription_status: 'free',
+              subscription_tier: 'free',
+              free_credits_remaining: 5,
+              total_credits_used: 0,
+              is_admin: false
+            } as UserProfile;
           }
           
           throw error;
@@ -109,25 +101,30 @@ export const useCredits = () => {
     staleTime: 30000, // Cache for 30 seconds
   });
 
-  // Fetch usage logs
+  // Fetch usage logs - Simplified to avoid RLS issues
   const { data: usageLogs = [], isLoading: logsLoading } = useQuery({
     queryKey: ['usageLogs', user?.id],
     queryFn: async () => {
       if (!user) return [];
 
-      const { data, error } = await supabase
-        .from('subscription_usage_logs')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(50);
+      try {
+        const { data, error } = await supabase
+          .from('subscription_usage_logs')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(50);
 
-      if (error) {
-        console.error('Error fetching usage logs:', error);
+        if (error) {
+          console.error('Error fetching usage logs:', error);
+          return [];
+        }
+
+        return data as UsageLog[];
+      } catch (err) {
+        console.error('Exception in usage logs fetch:', err);
         return [];
       }
-
-      return data as UsageLog[];
     },
     enabled: !!user,
   });
@@ -176,7 +173,7 @@ export const useCredits = () => {
     return !hasCredits;
   };
 
-  // Update credits after a successful operation - Now applies to ALL users
+  // Update credits after a successful operation - Simplified for now
   const updateCreditsAfterUse = useMutation({
     mutationFn: async () => {
       if (!user || !profile) throw new Error('User or profile not available');
@@ -250,14 +247,14 @@ export const useCredits = () => {
 
   return {
     profile,
-    usageLogs: [], // Simplified for now to avoid additional RLS issues
+    usageLogs,
     profileLoading,
-    logsLoading: false,
+    logsLoading,
     canUseFeature,
     getRemainingCredits,
     needsUpgrade,
-    updateCreditsAfterUse: () => {}, // Simplified for now
-    isUpdatingCredits: false,
+    updateCreditsAfterUse,
+    isUpdatingCredits: updateCreditsAfterUse.isPending,
     profileError, // Expose error for debugging
   };
 };
