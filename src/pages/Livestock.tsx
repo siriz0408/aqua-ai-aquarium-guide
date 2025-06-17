@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Layout } from '@/components/Layout';
@@ -14,7 +15,7 @@ import { livestockOptions, livestockCategories } from '@/data/livestockOptions';
 const Livestock = () => {
   const { tankId } = useParams<{ tankId: string }>();
   const navigate = useNavigate();
-  const { getTank, addLivestock } = useAquarium();
+  const { getTank, updateTank } = useAquarium();
   const { toast } = useToast();
   
   const tank = tankId ? getTank(tankId) : undefined;
@@ -113,16 +114,23 @@ const Livestock = () => {
     }
 
     const selectedOption = livestockOptions.find(opt => opt.value === selectedLivestock);
-    const mockResults = {
+    const newLivestock = {
+      id: Date.now().toString(),
       name: livestock.name,
       species: livestock.species,
       careLevel: selectedOption?.careLevel || 'Beginner',
       compatibility: selectedOption?.compatibility || 'Peaceful, reef safe, good beginner fish. Compatible with most community fish.',
-      quantity: 1,
-      size: 'Medium'
+      imageUrl: '',
+      healthNotes: ''
     };
 
-    addLivestock(tankId!, mockResults);
+    // Update the tank with the new livestock
+    const updatedTank = {
+      ...tank,
+      livestock: [...(tank.livestock || []), newLivestock]
+    };
+    
+    updateTank(tankId!, updatedTank);
     
     toast({
       title: "Livestock added successfully!",

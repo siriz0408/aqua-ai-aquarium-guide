@@ -16,7 +16,7 @@ import { equipmentOptions, equipmentCategories } from '@/data/equipmentOptions';
 const Equipment = () => {
   const { tankId } = useParams<{ tankId: string }>();
   const navigate = useNavigate();
-  const { getTank, addEquipment } = useAquarium();
+  const { getTank, updateTank } = useAquarium();
   const { toast } = useToast();
   
   const tank = tankId ? getTank(tankId) : undefined;
@@ -109,6 +109,37 @@ const Equipment = () => {
     return mockResults;
   };
 
+  const addSelectedEquipment = () => {
+    if (!selectedEquipment) return;
+    
+    const selectedOption = equipmentOptions.find(opt => opt.value === selectedEquipment);
+    if (!selectedOption) return;
+
+    const newEquipment = {
+      id: Date.now().toString(),
+      name: selectedOption.label,
+      type: selectedOption.category,
+      model: '',
+      imageUrl: '',
+      maintenanceTips: selectedOption.description || '',
+      upgradeNotes: ''
+    };
+    
+    // Update the tank with the new equipment
+    const updatedTank = {
+      ...tank,
+      equipment: [...(tank.equipment || []), newEquipment]
+    };
+    
+    updateTank(tankId!, updatedTank);
+    setSelectedEquipment('');
+    
+    toast({
+      title: "Equipment added successfully!",
+      description: `${selectedOption.label} has been added to your tank.`,
+    });
+  };
+
   const handleSave = () => {
     if (!equipment.name || !equipment.type) {
       toast({
@@ -118,15 +149,23 @@ const Equipment = () => {
       return;
     }
 
-    const mockResults = {
+    const newEquipment = {
+      id: Date.now().toString(),
       name: equipment.name,
       type: equipment.type,
       model: equipment.model,
+      imageUrl: '',
       maintenanceTips: 'Clean collection cup weekly, adjust air flow for dry foam, replace airline tubing every 6 months.',
       upgradeNotes: 'Consider upgrading to a larger model if adding more fish load to the tank.',
     };
 
-    addEquipment(tankId!, mockResults);
+    // Update the tank with the new equipment
+    const updatedTank = {
+      ...tank,
+      equipment: [...(tank.equipment || []), newEquipment]
+    };
+    
+    updateTank(tankId!, updatedTank);
     
     toast({
       title: "Equipment added successfully!",
@@ -337,8 +376,3 @@ const Equipment = () => {
 };
 
 export default Equipment;
-
-// Helper function (fix for missing addSelectedEquipment)
-function addSelectedEquipment() {
-  // This function will be implemented inline in the component
-}
