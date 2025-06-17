@@ -4,13 +4,13 @@ import { useNavigate } from 'react-router-dom';
 import { Layout } from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useAquariums } from '@/contexts/AquariumContext';
+import { useAquarium } from '@/contexts/AquariumContext';
 import { Fish, Droplets, Plus, MessageCircle, BookOpen, Wrench } from 'lucide-react';
 import { SubscriptionBanner } from '@/components/SubscriptionBanner';
 
 const Index = () => {
   const navigate = useNavigate();
-  const { aquariums, isLoading } = useAquariums();
+  const { tanks: aquariums, isLoading } = useAquarium();
 
   const handleAddTank = () => {
     navigate('/add-tank');
@@ -116,18 +116,18 @@ const Index = () => {
                       {aquarium.name}
                     </CardTitle>
                     <CardDescription>
-                      {aquarium.size_gallons} gallons • Setup: {aquarium.setup_date ? new Date(aquarium.setup_date).toLocaleDateString() : 'Not set'}
+                      {aquarium.size} • Created: {new Date(aquarium.createdAt).toLocaleDateString()}
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
-                        <span className="text-muted-foreground">Temperature:</span>
-                        <p className="font-medium">{aquarium.temperature ? `${aquarium.temperature}°F` : 'Not recorded'}</p>
+                        <span className="text-muted-foreground">Type:</span>
+                        <p className="font-medium">{aquarium.type}</p>
                       </div>
                       <div>
-                        <span className="text-muted-foreground">pH:</span>
-                        <p className="font-medium">{aquarium.ph || 'Not recorded'}</p>
+                        <span className="text-muted-foreground">Equipment:</span>
+                        <p className="font-medium">{aquarium.equipment.length} items</p>
                       </div>
                     </div>
                   </CardContent>
