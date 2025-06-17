@@ -26,7 +26,6 @@ export const checkAdminStatus = async () => {
     console.log('Admin check result:', adminCheck);
 
     // If user is admin, we can create a basic profile object
-    // Since we can't query the profiles table directly due to RLS issues
     if (adminCheck) {
       const profile = {
         id: user.id,
@@ -36,9 +35,7 @@ export const checkAdminStatus = async () => {
         admin_role: 'admin',
         admin_permissions: ['user_management', 'ticket_management', 'analytics', 'settings'],
         subscription_status: 'active',
-        subscription_tier: 'admin',
-        free_credits_remaining: 999,
-        total_credits_used: 0,
+        subscription_tier: 'pro', // Admins get pro tier access
         created_at: user.created_at,
         last_active: new Date().toISOString(),
       };

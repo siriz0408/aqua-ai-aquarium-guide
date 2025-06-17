@@ -3,7 +3,7 @@ import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Crown, Zap, Star } from 'lucide-react';
+import { Crown, Star } from 'lucide-react';
 import { useCredits } from '@/hooks/useCredits';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -62,7 +62,35 @@ export const SubscriptionBanner: React.FC = () => {
 
   const subscriptionInfo = getSubscriptionInfo();
   const isProUser = subscriptionInfo.tier === 'pro' && subscriptionInfo.status === 'active';
+  const isAdmin = subscriptionInfo.isAdmin;
 
+  // Admin users get a special banner
+  if (isAdmin) {
+    return (
+      <Card className="mb-6 border-purple-200 bg-purple-50">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Crown className="h-5 w-5 text-purple-600" />
+              <div>
+                <h3 className="font-semibold text-purple-800">
+                  Admin Access
+                </h3>
+                <p className="text-sm text-purple-600">
+                  Full access to all features and admin panel
+                </p>
+              </div>
+            </div>
+            <Badge className="bg-purple-600">
+              Admin
+            </Badge>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Pro users get a success banner
   if (isProUser) {
     return (
       <Card className="mb-6 border-green-200 bg-green-50">
@@ -88,6 +116,7 @@ export const SubscriptionBanner: React.FC = () => {
     );
   }
 
+  // Free users get the upgrade banner
   return (
     <Card className="mb-6 border-blue-200 bg-blue-50">
       <CardContent className="p-6">

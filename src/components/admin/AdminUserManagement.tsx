@@ -24,8 +24,8 @@ interface UserProfile {
   admin_role: string | null;
   subscription_status: string;
   subscription_tier: string;
-  free_credits_remaining: number;
-  total_credits_used: number;
+  free_credits_remaining: number; // This will be 0 but kept for compatibility
+  total_credits_used: number; // This will be 0 but kept for compatibility
   created_at: string;
   last_active: string | null;
   admin_permissions: any;
@@ -50,7 +50,7 @@ export const AdminUserManagement: React.FC = () => {
         throw new Error('User not authenticated');
       }
 
-      // Use the new admin function to get all profiles
+      // Use the updated admin function to get all profiles
       const { data, error: functionError } = await supabase.rpc('admin_get_all_profiles', {
         requesting_admin_id: user.id
       });
@@ -98,7 +98,6 @@ export const AdminUserManagement: React.FC = () => {
       admin_role: string | null; 
       subscription_status: string; 
       subscription_tier: string; 
-      free_credits_remaining: number;
       full_name: string;
     }) => {
       console.log('Updating user with admin function:', updates);
@@ -107,7 +106,7 @@ export const AdminUserManagement: React.FC = () => {
         throw new Error('User not authenticated');
       }
 
-      // Use the new admin function to update the profile
+      // Use the updated admin function to update the profile (credits parameter ignored)
       const { data, error } = await supabase.rpc('admin_update_profile', {
         requesting_admin_id: user.id,
         target_user_id: updates.userId,
@@ -116,7 +115,7 @@ export const AdminUserManagement: React.FC = () => {
         new_admin_role: updates.admin_role,
         new_subscription_status: updates.subscription_status,
         new_subscription_tier: updates.subscription_tier,
-        new_free_credits_remaining: updates.free_credits_remaining
+        new_free_credits_remaining: 0 // Ignored by the function now
       });
 
       if (error) {
@@ -154,7 +153,7 @@ export const AdminUserManagement: React.FC = () => {
         throw new Error('User not authenticated');
       }
 
-      // Use the new admin function to delete the profile
+      // Use the admin function to delete the profile
       const { data, error } = await supabase.rpc('admin_delete_profile', {
         requesting_admin_id: user.id,
         target_user_id: userId
@@ -204,7 +203,6 @@ export const AdminUserManagement: React.FC = () => {
       admin_role: formData.get('admin_role') as string || null,
       subscription_status: formData.get('subscription_status') as string,
       subscription_tier: formData.get('subscription_tier') as string,
-      free_credits_remaining: parseInt(formData.get('free_credits_remaining') as string),
       full_name: formData.get('full_name') as string,
     };
 
@@ -298,7 +296,7 @@ export const AdminUserManagement: React.FC = () => {
               <TableHead>User</TableHead>
               <TableHead>Role</TableHead>
               <TableHead>Subscription</TableHead>
-              <TableHead>Credits</TableHead>
+              <TableHead>Plan Type</TableHead>
               <TableHead>Last Active</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
@@ -331,17 +329,11 @@ export const AdminUserManagement: React.FC = () => {
                     </div>
                   </TableCell>
                   <TableCell>{getRoleBadge(userItem)}</TableCell>
+                  <TableCell>{getSubscriptionBadge(userItem.subscription_status)}</TableCell>
                   <TableCell>
-                    <div className="space-y-1">
-                      {getSubscriptionBadge(userItem.subscription_status)}
-                      <div className="text-xs text-muted-foreground">{userItem.subscription_tier}</div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-sm">
-                      <div>{userItem.free_credits_remaining} remaining</div>
-                      <div className="text-muted-foreground">{userItem.total_credits_used} used</div>
-                    </div>
+                    <Badge variant={userItem.subscription_tier === 'pro' ? 'default' : 'secondary'}>
+                      {userItem.subscription_tier === 'pro' ? 'Pro' : 'Free'}
+                    </Badge>
                   </TableCell>
                   <TableCell>
                     <div className="text-sm text-muted-foreground">
@@ -404,13 +396,13 @@ export const AdminUserManagement: React.FC = () => {
         }}
       />
 
-      {/* Edit User Dialog - Keep the existing quick edit for backward compatibility */}
+      {/* Edit User Dialog - Simplified for new model */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle>Quick Edit User</DialogTitle>
             <DialogDescription>
-              Make quick changes to user information. For detailed editing, click on the user row.
+              Update user subscription and admin settings.
             </DialogDescription>
           </DialogHeader>
           {selectedUser && (
@@ -467,8 +459,6 @@ export const AdminUserManagement: React.FC = () => {
                     <SelectContent>
                       <SelectItem value="free">Free</SelectItem>
                       <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="expired">Expired</SelectItem>
-                      <SelectItem value="cancelled">Cancelled</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -479,21 +469,11 @@ export const AdminUserManagement: React.FC = () => {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="basic">Basic</SelectItem>
+                      <SelectItem value="free">Free</SelectItem>
                       <SelectItem value="pro">Pro</SelectItem>
-                      <SelectItem value="premium">Premium</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="free_credits_remaining">Free Credits Remaining</Label>
-                <Input
-                  name="free_credits_remaining"
-                  type="number"
-                  defaultValue={selectedUser.free_credits_remaining}
-                  min="0"
-                />
               </div>
               <div className="flex justify-end gap-2">
                 <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
