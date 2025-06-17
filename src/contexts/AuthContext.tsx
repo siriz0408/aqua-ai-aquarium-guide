@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User, Session, AuthChangeEvent } from '@supabase/supabase-js';
+import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -38,7 +38,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setLoading(false);
         
         // Handle successful sign up
-        if (event === AuthChangeEvent.SIGNED_UP && session?.user) {
+        if (event === 'SIGNED_UP' && session?.user) {
           toast({
             title: "Welcome to AquaAI!",
             description: "Your 1-day free trial has started. Enjoy full access to all features!",
@@ -46,7 +46,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
         
         // Handle successful sign in
-        if (event === AuthChangeEvent.SIGNED_IN && session?.user) {
+        if (event === 'SIGNED_IN' && session?.user) {
           toast({
             title: "Welcome back!",
             description: "You've successfully signed in to AquaAI.",
