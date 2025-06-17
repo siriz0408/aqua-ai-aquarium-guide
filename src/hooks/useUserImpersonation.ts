@@ -17,6 +17,19 @@ interface ImpersonationResult {
   user_data: UserData;
 }
 
+// Type guard to check if the data matches UserData interface
+const isUserData = (data: unknown): data is UserData => {
+  return (
+    typeof data === 'object' &&
+    data !== null &&
+    typeof (data as any).id === 'string' &&
+    typeof (data as any).email === 'string' &&
+    typeof (data as any).full_name === 'string' &&
+    typeof (data as any).is_admin === 'boolean' &&
+    ((data as any).admin_role === null || typeof (data as any).admin_role === 'string')
+  );
+};
+
 export const useUserImpersonation = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -53,11 +66,15 @@ export const useUserImpersonation = () => {
         throw new Error('Invalid user data format');
       }
 
-      // Parse the user_data from Json to our UserData interface
-      const userData = result.user_data as UserData;
+      // Convert Json to unknown first, then validate and cast to UserData
+      const rawUserData = result.user_data as unknown;
+      
+      if (!isUserData(rawUserData)) {
+        throw new Error('Invalid user data structure received from server');
+      }
       
       return {
-        user_data: userData
+        user_data: rawUserData
       } as ImpersonationResult;
     },
     onSuccess: async (data) => {
