@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,7 +7,7 @@ import { useTasks } from '@/hooks/useTasks';
 import { Sparkles, AlertTriangle, Clock } from 'lucide-react';
 import TaskActionButton from '@/components/TaskActionButton';
 import TaskDetailModal from '@/components/TaskDetailModal';
-import { Task } from '@/hooks/useTasks';
+import { Task, TaskStep } from '@/hooks/useTasks';
 import { useToast } from '@/hooks/use-toast';
 
 const TaskRecommendations = () => {
