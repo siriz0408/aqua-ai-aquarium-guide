@@ -18,10 +18,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { FloatingActionButton } from '@/components/ui/floating-action-button';
 import { useAquarium, Tank } from '@/contexts/AquariumContext';
 import { useNavigate } from 'react-router-dom';
-import { MessageCircle, Plus, Trash2, BookOpen } from 'lucide-react';
+import { MessageCircle, Plus, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import TaskRecommendations from '@/components/TaskRecommendations';
 import SavedPlans from '@/components/SavedPlans';
@@ -270,11 +269,6 @@ const Index = () => {
           )}
         </div>
       </div>
-
-      {/* Research FAB */}
-      <FloatingActionButton onClick={() => navigate('/education')}>
-        <BookOpen className="h-6 w-6" />
-      </FloatingActionButton>
     </Layout>
   );
 };

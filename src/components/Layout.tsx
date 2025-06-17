@@ -3,7 +3,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { ArrowUp, MessageCircle, Plus, Save, LogOut, Home } from 'lucide-react';
+import { ArrowUp, MessageCircle, Plus, Save, LogOut, Home, BookOpen, Fish } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { OfflineIndicator } from '@/components/OfflineIndicator';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
@@ -108,7 +108,7 @@ export function Layout({ children, title, showBackButton = false, actions, loadi
         )}
       </main>
 
-      {/* Bottom Navigation - Enhanced for mobile */}
+      {/* Bottom Navigation - Enhanced for mobile with 5 buttons */}
       {user && (
         <nav className="sticky bottom-0 left-0 right-0 bg-background/95 backdrop-blur border-t border-border/40 supports-[backdrop-filter]:bg-background/60 safe-area-inset-bottom">
           <div className="container px-2 sm:px-4">
@@ -118,7 +118,7 @@ export function Layout({ children, title, showBackButton = false, actions, loadi
                 size="sm"
                 onClick={() => navigate('/')}
                 className={cn(
-                  "flex flex-col gap-0.5 sm:gap-1 h-10 sm:h-12 text-xs min-w-0 px-2 sm:px-3",
+                  "flex flex-col gap-0.5 sm:gap-1 h-10 sm:h-12 text-xs min-w-0 px-1 sm:px-2",
                   isTouch && "min-h-[44px]"
                 )}
               >
@@ -131,7 +131,7 @@ export function Layout({ children, title, showBackButton = false, actions, loadi
                 size="sm"
                 onClick={() => navigate('/aquabot')}
                 className={cn(
-                  "flex flex-col gap-0.5 sm:gap-1 h-10 sm:h-12 text-xs min-w-0 px-2 sm:px-3",
+                  "flex flex-col gap-0.5 sm:gap-1 h-10 sm:h-12 text-xs min-w-0 px-1 sm:px-2",
                   isTouch && "min-h-[44px]"
                 )}
               >
@@ -144,7 +144,7 @@ export function Layout({ children, title, showBackButton = false, actions, loadi
                 size="sm"
                 onClick={() => navigate('/setup-planner')}
                 className={cn(
-                  "flex flex-col gap-0.5 sm:gap-1 h-10 sm:h-12 text-xs min-w-0 px-2 sm:px-3",
+                  "flex flex-col gap-0.5 sm:gap-1 h-10 sm:h-12 text-xs min-w-0 px-1 sm:px-2",
                   isTouch && "min-h-[44px]"
                 )}
               >
@@ -157,12 +157,38 @@ export function Layout({ children, title, showBackButton = false, actions, loadi
                 size="sm"
                 onClick={() => navigate('/reminders')}
                 className={cn(
-                  "flex flex-col gap-0.5 sm:gap-1 h-10 sm:h-12 text-xs min-w-0 px-2 sm:px-3",
+                  "flex flex-col gap-0.5 sm:gap-1 h-10 sm:h-12 text-xs min-w-0 px-1 sm:px-2",
                   isTouch && "min-h-[44px]"
                 )}
               >
                 <Save className="h-4 w-4 flex-shrink-0" />
                 <span className="truncate">Tasks</span>
+              </Button>
+
+              <Button
+                variant={location.pathname.startsWith('/tank/') ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => navigate('/')}
+                className={cn(
+                  "flex flex-col gap-0.5 sm:gap-1 h-10 sm:h-12 text-xs min-w-0 px-1 sm:px-2",
+                  isTouch && "min-h-[44px]"
+                )}
+              >
+                <Fish className="h-4 w-4 flex-shrink-0" />
+                <span className="truncate">Tanks</span>
+              </Button>
+
+              <Button
+                variant={location.pathname === '/education' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => navigate('/education')}
+                className={cn(
+                  "flex flex-col gap-0.5 sm:gap-1 h-10 sm:h-12 text-xs min-w-0 px-1 sm:px-2",
+                  isTouch && "min-h-[44px]"
+                )}
+              >
+                <BookOpen className="h-4 w-4 flex-shrink-0" />
+                <span className="truncate">Learn</span>
               </Button>
             </div>
           </div>
