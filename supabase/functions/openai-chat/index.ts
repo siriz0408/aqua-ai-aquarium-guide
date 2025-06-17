@@ -43,38 +43,8 @@ serve(async (req) => {
 
     console.log('User authenticated successfully:', user.id)
 
-    // Check user's profile and credits
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('subscription_status, subscription_tier, free_credits_remaining, total_credits_used, is_admin')
-      .eq('id', user.id)
-      .single()
-
-    if (profileError) {
-      console.error('Error fetching user profile:', profileError)
-      return new Response('Error fetching user profile', { status: 500, headers: corsHeaders })
-    }
-
-    console.log('User profile:', profile)
-
-    // Check if non-admin user has credits available
-    const isAdmin = profile.is_admin === true
-    const hasCredits = profile.free_credits_remaining > 0
-
-    if (!isAdmin && !hasCredits) {
-      console.log('Non-admin user has no credits remaining')
-      return new Response(
-        JSON.stringify({
-          error: 'No credits remaining',
-          message: 'You have used all your free credits. Please upgrade to continue using AquaBot.',
-          requiresUpgrade: true
-        }),
-        {
-          status: 402, // Payment Required
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      )
-    }
+    // Since we've removed all restrictions, skip profile checks and proceed directly
+    console.log('Proceeding with unrestricted access for user:', user.id)
 
     // Check if OpenAI API key is available
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY')
@@ -303,45 +273,12 @@ Remember: NO ### headers, use tables for parameters, checkboxes for tasks! 🌊`
       .update({ last_message_at: new Date().toISOString() })
       .eq('id', currentConversationId)
 
-    // Track credit usage for ALL users (admins, paid users, and free users)
-    const creditsAfter = Math.max(0, profile.free_credits_remaining - 1)
-    const totalCreditsUsed = profile.total_credits_used + 1
-
-    // Update user's credit count for ALL users
-    const { error: updateError } = await supabase
-      .from('profiles')
-      .update({
-        free_credits_remaining: creditsAfter,
-        total_credits_used: totalCreditsUsed
-      })
-      .eq('id', user.id)
-
-    if (updateError) {
-      console.error('Error updating user credits:', updateError)
-    }
-
-    // Log the usage for ALL users
-    const { error: logError } = await supabase
-      .from('subscription_usage_logs')
-      .insert({
-        user_id: user.id,
-        feature_used: 'chat_message',
-        credits_before: profile.free_credits_remaining,
-        credits_after: creditsAfter,
-        subscription_status: profile.subscription_status
-      })
-
-    if (logError) {
-      console.error('Error logging usage:', logError)
-    }
-
-    console.log(`Credit used for user ${isAdmin ? '(admin)' : ''}. Remaining: ${creditsAfter}`)
+    console.log(`Chat message processed successfully for user: ${user.id}`)
 
     return new Response(
       JSON.stringify({
         message: assistantMessage,
-        conversationId: currentConversationId,
-        creditsRemaining: creditsAfter
+        conversationId: currentConversationId
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
