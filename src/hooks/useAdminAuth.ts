@@ -29,39 +29,59 @@ export const useAdminAuth = () => {
   }, [user]);
 
   const checkAdminStatus = async () => {
+    if (!user?.id) {
+      setLoading(false);
+      return;
+    }
+
     try {
+      console.log('Checking admin status for user:', user.id);
+      
       const { data, error } = await supabase
         .from('profiles')
         .select('id, is_admin, admin_role, admin_permissions')
-        .eq('id', user?.id)
-        .single();
+        .eq('id', user.id)
+        .maybeSingle();
 
-      if (error) throw error;
-
-      setAdminProfile(data);
-      setIsAdmin(data?.is_admin || false);
-      
-      // Update last admin login if user is admin
-      if (data?.is_admin) {
-        await supabase
-          .from('profiles')
-          .update({ last_admin_login: new Date().toISOString() })
-          .eq('id', user?.id);
+      if (error) {
+        console.error('Error checking admin status:', error);
+        setIsAdmin(false);
+        setAdminProfile(null);
+      } else if (data) {
+        console.log('Profile data:', data);
+        setAdminProfile(data);
+        setIsAdmin(data.is_admin || false);
+        
+        // Update last admin login if user is admin
+        if (data.is_admin) {
+          supabase
+            .from('profiles')
+            .update({ last_admin_login: new Date().toISOString() })
+            .eq('id', user.id)
+            .then(({ error }) => {
+              if (error) console.error('Error updating last admin login:', error);
+            });
+        }
+      } else {
+        console.log('No profile found for user');
+        setIsAdmin(false);
+        setAdminProfile(null);
       }
     } catch (error) {
-      console.error('Error checking admin status:', error);
+      console.error('Error in checkAdminStatus:', error);
       setIsAdmin(false);
+      setAdminProfile(null);
     } finally {
       setLoading(false);
     }
   };
 
   const logAdminActivity = async (action: string, targetType?: string, targetId?: string, details?: any) => {
-    if (!isAdmin) return;
+    if (!isAdmin || !user?.id) return;
 
     try {
       await supabase.from('admin_activity_logs').insert({
-        admin_user_id: user?.id,
+        admin_user_id: user.id,
         action,
         target_type: targetType,
         target_id: targetId,

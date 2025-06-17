@@ -17,6 +17,8 @@ export const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({
 }) => {
   const { isAdmin, loading, hasPermission, adminProfile } = useAdminAuth();
 
+  console.log('AdminProtectedRoute:', { isAdmin, loading, adminProfile });
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
