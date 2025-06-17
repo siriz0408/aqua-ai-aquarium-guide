@@ -24,8 +24,8 @@ interface UserProfile {
   admin_role: string | null;
   subscription_status: string;
   subscription_tier: string;
-  free_credits_remaining: number; // This will be 0 but kept for compatibility
-  total_credits_used: number; // This will be 0 but kept for compatibility
+  free_credits_remaining: number;
+  total_credits_used: number;
   created_at: string;
   last_active: string | null;
   admin_permissions: any;
@@ -40,17 +40,17 @@ export const AdminUserManagement: React.FC = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch users using the admin function that bypasses RLS
+  // Fetch users using the fixed admin function
   const { data: users = [], isLoading, error, refetch } = useQuery({
     queryKey: ['admin-users', searchTerm],
     queryFn: async () => {
-      console.log('Fetching users using admin function...');
+      console.log('Fetching users using fixed admin function...');
       
       if (!user?.id) {
         throw new Error('User not authenticated');
       }
 
-      // Use the updated admin function to get all profiles
+      // Use the fixed admin function to get all profiles
       const { data, error: functionError } = await supabase.rpc('admin_get_all_profiles', {
         requesting_admin_id: user.id
       });
@@ -60,7 +60,7 @@ export const AdminUserManagement: React.FC = () => {
         throw functionError;
       }
       
-      console.log('Raw data from admin function:', data);
+      console.log('Successfully fetched user data:', data);
       
       // Filter by search term if provided
       let filteredData = data || [];
@@ -74,10 +74,10 @@ export const AdminUserManagement: React.FC = () => {
       console.log('Filtered data:', filteredData);
       return filteredData as UserProfile[];
     },
-    retry: 2,
+    retry: 3,
     enabled: !!user?.id,
     refetchOnWindowFocus: false,
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 1000 * 60 * 2, // 2 minutes
   });
 
   // Force refresh function
@@ -90,7 +90,7 @@ export const AdminUserManagement: React.FC = () => {
     });
   };
 
-  // Update user mutation using the admin function
+  // Update user mutation using the fixed admin function
   const updateUserMutation = useMutation({
     mutationFn: async (updates: { 
       userId: string; 
@@ -100,13 +100,13 @@ export const AdminUserManagement: React.FC = () => {
       subscription_tier: string; 
       full_name: string;
     }) => {
-      console.log('Updating user with admin function:', updates);
+      console.log('Updating user with fixed admin function:', updates);
       
       if (!user?.id) {
         throw new Error('User not authenticated');
       }
 
-      // Use the updated admin function to update the profile (credits parameter ignored)
+      // Use the fixed admin function to update the profile
       const { data, error } = await supabase.rpc('admin_update_profile', {
         requesting_admin_id: user.id,
         target_user_id: updates.userId,
@@ -115,7 +115,7 @@ export const AdminUserManagement: React.FC = () => {
         new_admin_role: updates.admin_role,
         new_subscription_status: updates.subscription_status,
         new_subscription_tier: updates.subscription_tier,
-        new_free_credits_remaining: 0 // Ignored by the function now
+        new_free_credits_remaining: 0 // Default value since this field is no longer used
       });
 
       if (error) {
@@ -144,7 +144,7 @@ export const AdminUserManagement: React.FC = () => {
     },
   });
 
-  // Delete user mutation using the admin function
+  // Delete user mutation using the fixed admin function
   const deleteUserMutation = useMutation({
     mutationFn: async (userId: string) => {
       console.log('Deleting user with admin function:', userId);
@@ -249,7 +249,10 @@ export const AdminUserManagement: React.FC = () => {
     console.error('AdminUserManagement error:', error);
     return (
       <div className="text-center py-8">
-        <p className="text-red-600">Error loading users: {error.message}</p>
+        <p className="text-red-600 mb-4">Error loading users: {error.message}</p>
+        <p className="text-sm text-muted-foreground mb-4">
+          This usually indicates a database or permissions issue.
+        </p>
         <Button 
           onClick={handleRefresh}
           className="mt-4"
@@ -396,11 +399,11 @@ export const AdminUserManagement: React.FC = () => {
         }}
       />
 
-      {/* Edit User Dialog - Simplified for new model */}
+      {/* Edit User Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>Quick Edit User</DialogTitle>
+            <DialogTitle>Edit User</DialogTitle>
             <DialogDescription>
               Update user subscription and admin settings.
             </DialogDescription>

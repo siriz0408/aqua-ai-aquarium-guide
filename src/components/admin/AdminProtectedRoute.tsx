@@ -11,26 +11,29 @@ interface AdminProtectedRouteProps {
 
 export const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({ children }) => {
   const { user } = useAuth();
-  const [isAdmin, setIsAdmin] = useState<boolean>(true); // Default to true
-  const [loading, setLoading] = useState<boolean>(false); // No loading needed
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
     const verifyAdminStatus = async () => {
       try {
-        // Only check admin status if user is logged in
+        setLoading(true);
+        
         if (!user) {
+          console.log('No user found, denying admin access');
           setIsAdmin(false);
           setLoading(false);
           return;
         }
         
-        // Always grant admin access
-        console.log('Granting admin access to all authenticated users');
-        setIsAdmin(true);
+        console.log('Verifying admin status for user:', user.id);
+        const { isAdmin: adminStatus } = await checkAdminStatus();
+        
+        console.log('Admin verification result:', adminStatus);
+        setIsAdmin(adminStatus);
       } catch (error) {
         console.error('Error verifying admin status:', error);
-        // Grant access even on error
-        setIsAdmin(true);
+        setIsAdmin(false);
       } finally {
         setLoading(false);
       }
@@ -39,7 +42,6 @@ export const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({ childr
     verifyAdminStatus();
   }, [user]);
 
-  // No loading screen needed
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -51,9 +53,13 @@ export const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({ childr
     );
   }
 
-  // Always allow access for authenticated users
   if (!user) {
     console.log('User not authenticated, redirecting to home page');
+    return <Navigate to="/" replace />;
+  }
+
+  if (!isAdmin) {
+    console.log('User is not admin, redirecting to home page');
     return <Navigate to="/" replace />;
   }
 
