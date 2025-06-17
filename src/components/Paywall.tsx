@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,9 +14,8 @@ interface PaywallProps {
   showUpgradeOnly?: boolean;
 }
 
-// TODO: Replace this with your actual Stripe price ID from your Stripe dashboard
-// You can find price IDs at: https://dashboard.stripe.com/products
-const STRIPE_PRICE_ID = "price_1QUIgKJNcmPzuSeKKiKvtLQH"; // ⚠️ REPLACE WITH YOUR ACTUAL PRICE ID
+// Updated with your actual Stripe price ID
+const STRIPE_PRICE_ID = "price_1Rb8vR1d1AvgoBGoNIjxLKRR";
 
 const PaywallModal: React.FC<PaywallProps> = ({ 
   isOpen, 
