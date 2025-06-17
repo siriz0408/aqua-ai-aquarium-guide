@@ -1283,6 +1283,14 @@ export type Database = {
         Args: { user_id: string }
         Returns: boolean
       }
+      check_user_trial_status: {
+        Args: { user_id: string }
+        Returns: {
+          subscription_status: string
+          trial_hours_remaining: number
+          is_trial_expired: boolean
+        }[]
+      }
       get_user_admin_status: {
         Args: { user_id: string }
         Returns: boolean
@@ -1294,6 +1302,10 @@ export type Database = {
       promote_user_to_admin: {
         Args: { user_email: string; role?: string }
         Returns: boolean
+      }
+      update_expired_trials: {
+        Args: Record<PropertyKey, never>
+        Returns: number
       }
     }
     Enums: {

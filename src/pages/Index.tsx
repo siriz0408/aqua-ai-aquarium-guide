@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Layout } from '@/components/Layout';
 import { Button } from '@/components/ui/button';
@@ -7,15 +6,28 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useAquarium } from '@/contexts/AquariumContext';
 import { Fish, Droplets, Plus, MessageCircle, BookOpen, Wrench, TestTube2, Calendar } from 'lucide-react';
 import { SubscriptionBanner } from '@/components/SubscriptionBanner';
+import { TrialBanner } from '@/components/TrialBanner';
 import { Badge } from '@/components/ui/badge';
 import TaskRecommendations from '@/components/TaskRecommendations';
+import PaywallModal from '@/components/Paywall';
+import { useCredits } from '@/hooks/useCredits';
 
 const Index = () => {
   const navigate = useNavigate();
   const { tanks: aquariums, isLoading } = useAquarium();
+  const { canUseFeature, needsUpgrade } = useCredits();
+  const [showPaywall, setShowPaywall] = useState(false);
 
   const handleAddTank = () => {
     navigate('/add-tank');
+  };
+
+  const handleFeatureClick = (route: string, requiresAccess: boolean = true) => {
+    if (requiresAccess && !canUseFeature()) {
+      setShowPaywall(true);
+      return;
+    }
+    navigate(route);
   };
 
   const quickActions = [
@@ -23,22 +35,25 @@ const Index = () => {
       title: 'Chat with AquaBot',
       description: 'Get expert advice for your aquarium',
       icon: MessageCircle,
-      action: () => navigate('/aquabot'),
+      action: () => handleFeatureClick('/aquabot', true),
       color: 'bg-blue-500 hover:bg-blue-600',
+      requiresAccess: true,
     },
     {
       title: 'Setup Planner',
       description: 'Plan your next aquarium setup',
       icon: Wrench,
-      action: () => navigate('/setup-planner'),
+      action: () => handleFeatureClick('/setup-planner', false),
       color: 'bg-green-500 hover:bg-green-600',
+      requiresAccess: false,
     },
     {
       title: 'Learn & Explore',
       description: 'Browse fish and equipment guides',
       icon: BookOpen,
-      action: () => navigate('/education'),
+      action: () => handleFeatureClick('/education', false),
       color: 'bg-purple-500 hover:bg-purple-600',
+      requiresAccess: false,
     },
   ];
 
@@ -64,6 +79,7 @@ const Index = () => {
     <Layout title="My Aquariums">
       <div className="space-y-6">
         <SubscriptionBanner />
+        <TrialBanner onUpgrade={() => setShowPaywall(true)} />
         
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
@@ -85,7 +101,18 @@ const Index = () => {
         {/* Quick Actions */}
         <div className="grid gap-4 md:grid-cols-3">
           {quickActions.map((action) => (
-            <Card key={action.title} className="cursor-pointer hover:shadow-lg transition-shadow" onClick={action.action}>
+            <Card 
+              key={action.title} 
+              className="cursor-pointer hover:shadow-lg transition-shadow relative" 
+              onClick={action.action}
+            >
+              {action.requiresAccess && needsUpgrade() && (
+                <div className="absolute top-2 right-2">
+                  <Badge variant="secondary" className="text-xs">
+                    Pro
+                  </Badge>
+                </div>
+              )}
               <CardHeader className="pb-3">
                 <div className={`w-10 h-10 rounded-full ${action.color} flex items-center justify-center mb-2`}>
                   <action.icon className="h-5 w-5 text-white" />
@@ -226,6 +253,12 @@ const Index = () => {
           )}
         </div>
       </div>
+
+      <PaywallModal 
+        isOpen={showPaywall}
+        onClose={() => setShowPaywall(false)}
+        showUpgradeOnly={needsUpgrade()}
+      />
     </Layout>
   );
 };
