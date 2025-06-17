@@ -621,7 +621,11 @@ export type Database = {
           is_admin: boolean | null
           last_active: string | null
           last_admin_login: string | null
+          last_credit_reset: string | null
+          monthly_credits_limit: number | null
+          monthly_credits_used: number | null
           stripe_customer_id: string | null
+          stripe_price_id: string | null
           stripe_subscription_id: string | null
           subscription_end_date: string | null
           subscription_start_date: string | null
@@ -645,7 +649,11 @@ export type Database = {
           is_admin?: boolean | null
           last_active?: string | null
           last_admin_login?: string | null
+          last_credit_reset?: string | null
+          monthly_credits_limit?: number | null
+          monthly_credits_used?: number | null
           stripe_customer_id?: string | null
+          stripe_price_id?: string | null
           stripe_subscription_id?: string | null
           subscription_end_date?: string | null
           subscription_start_date?: string | null
@@ -669,7 +677,11 @@ export type Database = {
           is_admin?: boolean | null
           last_active?: string | null
           last_admin_login?: string | null
+          last_credit_reset?: string | null
+          monthly_credits_limit?: number | null
+          monthly_credits_used?: number | null
           stripe_customer_id?: string | null
+          stripe_price_id?: string | null
           stripe_subscription_id?: string | null
           subscription_end_date?: string | null
           subscription_start_date?: string | null
@@ -770,6 +782,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      subscribers: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          subscribed: boolean
+          subscription_end: string | null
+          subscription_tier: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          subscribed?: boolean
+          subscription_end?: string | null
+          subscription_tier?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          subscribed?: boolean
+          subscription_end?: string | null
+          subscription_tier?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
       }
       subscription_usage_logs: {
         Row: {
@@ -1192,6 +1243,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      can_use_feature: {
+        Args: { user_id: string }
+        Returns: boolean
+      }
       is_admin: {
         Args: { user_id: string }
         Returns: boolean
@@ -1199,6 +1254,10 @@ export type Database = {
       promote_user_to_admin: {
         Args: { user_email: string; role?: string }
         Returns: boolean
+      }
+      reset_monthly_credits: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
     }
     Enums: {

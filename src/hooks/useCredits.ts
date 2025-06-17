@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -10,6 +11,9 @@ export interface UserProfile {
   subscription_tier: string;
   free_credits_remaining: number;
   total_credits_used: number;
+  monthly_credits_limit?: number;
+  monthly_credits_used?: number;
+  last_credit_reset?: string;
   subscription_start_date?: string;
   subscription_end_date?: string;
   is_admin?: boolean;
@@ -43,6 +47,9 @@ export const useCredits = () => {
           subscription_tier,
           free_credits_remaining,
           total_credits_used,
+          monthly_credits_limit,
+          monthly_credits_used,
+          last_credit_reset,
           subscription_start_date,
           subscription_end_date,
           is_admin
@@ -88,9 +95,20 @@ export const useCredits = () => {
     if (!profile) return false;
     
     const isPaidUser = profile.subscription_status === 'active';
-    const hasCredits = profile.free_credits_remaining > 0;
     
-    return isPaidUser || hasCredits;
+    if (profile.subscription_tier === 'pro_unlimited' && isPaidUser) {
+      return true; // Unlimited usage
+    }
+    
+    if (profile.subscription_tier === 'pro_limited' && isPaidUser) {
+      const monthlyUsed = profile.monthly_credits_used || 0;
+      const monthlyLimit = profile.monthly_credits_limit || 50;
+      return monthlyUsed < monthlyLimit;
+    }
+    
+    // Free tier
+    const hasCredits = profile.free_credits_remaining > 0;
+    return hasCredits;
   };
 
   // Get remaining credits for display
@@ -98,7 +116,18 @@ export const useCredits = () => {
     if (!profile) return 0;
     
     const isPaidUser = profile.subscription_status === 'active';
-    return isPaidUser ? null : profile.free_credits_remaining; // null means unlimited
+    
+    if (profile.subscription_tier === 'pro_unlimited' && isPaidUser) {
+      return null; // Unlimited
+    }
+    
+    if (profile.subscription_tier === 'pro_limited' && isPaidUser) {
+      const monthlyUsed = profile.monthly_credits_used || 0;
+      const monthlyLimit = profile.monthly_credits_limit || 50;
+      return monthlyLimit - monthlyUsed;
+    }
+    
+    return profile.free_credits_remaining;
   };
 
   // Check if user needs to upgrade
@@ -106,19 +135,42 @@ export const useCredits = () => {
     if (!profile) return false;
     
     const isPaidUser = profile.subscription_status === 'active';
-    const hasCredits = profile.free_credits_remaining > 0;
     
-    return !isPaidUser && !hasCredits;
+    if (isPaidUser) return false;
+    
+    const hasCredits = profile.free_credits_remaining > 0;
+    return !hasCredits;
   };
 
-  // Update credits after a successful operation (called from frontend)
+  // Update credits after a successful operation
   const updateCreditsAfterUse = useMutation({
     mutationFn: async () => {
       if (!user || !profile) throw new Error('User or profile not available');
       
       const isPaidUser = profile.subscription_status === 'active';
-      if (isPaidUser) return; // Paid users don't consume credits
       
+      if (profile.subscription_tier === 'pro_unlimited' && isPaidUser) {
+        return; // No credit deduction for unlimited users
+      }
+      
+      if (profile.subscription_tier === 'pro_limited' && isPaidUser) {
+        const newMonthlyUsed = (profile.monthly_credits_used || 0) + 1;
+        const newTotalUsed = profile.total_credits_used + 1;
+
+        const { error } = await supabase
+          .from('profiles')
+          .update({
+            monthly_credits_used: newMonthlyUsed,
+            total_credits_used: newTotalUsed
+          })
+          .eq('id', user.id);
+
+        if (error) throw error;
+
+        return { creditsRemaining: (profile.monthly_credits_limit || 50) - newMonthlyUsed };
+      }
+      
+      // Free tier
       const newCreditsRemaining = Math.max(0, profile.free_credits_remaining - 1);
       const newTotalUsed = profile.total_credits_used + 1;
 
@@ -142,7 +194,7 @@ export const useCredits = () => {
       if (data?.creditsRemaining === 0) {
         toast({
           title: "Credits Exhausted",
-          description: "You've used all your free credits. Upgrade to continue using AquaBot!",
+          description: "You've used all your credits. Upgrade to continue using AquaBot!",
           variant: "destructive",
         });
       } else if (data?.creditsRemaining && data.creditsRemaining <= 2) {
@@ -161,6 +213,26 @@ export const useCredits = () => {
       });
     },
   });
+
+  // Auto-refresh subscription status
+  useEffect(() => {
+    const refreshSubscription = async () => {
+      if (!user) return;
+      
+      try {
+        await supabase.functions.invoke('check-subscription');
+        queryClient.invalidateQueries({ queryKey: ['userProfile', user.id] });
+      } catch (error) {
+        console.error('Error refreshing subscription:', error);
+      }
+    };
+
+    // Refresh on component mount and periodically
+    refreshSubscription();
+    const interval = setInterval(refreshSubscription, 60000); // Every minute
+
+    return () => clearInterval(interval);
+  }, [user, queryClient]);
 
   return {
     profile,
