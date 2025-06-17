@@ -26,7 +26,7 @@ export const useAutoSpecies = () => {
       const cachedData = SpeciesCache.getCacheData();
       
       if (cachedData && cachedData.length > 0) {
-        console.log('Loading species from cache');
+        console.log('Loading species from cache:', cachedData.length, 'species');
         setSpecies(cachedData);
         setIsLoading(false);
         
@@ -60,32 +60,42 @@ export const useAutoSpecies = () => {
   };
 
   const fetchFreshSpecies = async () => {
-    const autoService = new AutoSpeciesService(gbifApi);
-    const freshData = await autoService.loadPopularSpecies();
-    
-    if (freshData.length > 0) {
-      setSpecies(freshData);
-      SpeciesCache.setCacheData(freshData);
-      console.log(`Loaded ${freshData.length} species and cached them`);
+    try {
+      const autoService = new AutoSpeciesService(gbifApi);
+      console.log('Starting fresh species fetch...');
+      const freshData = await autoService.loadPopularSpecies();
       
-      toast({
-        title: "Species data updated",
-        description: `Loaded ${freshData.length} species from GBIF database.`,
-      });
-    } else {
-      throw new Error('No species data could be loaded');
+      console.log('Fresh species data received:', freshData.length, 'species');
+      
+      if (freshData.length > 0) {
+        setSpecies(freshData);
+        SpeciesCache.setCacheData(freshData);
+        console.log(`Loaded ${freshData.length} species and cached them`);
+        
+        toast({
+          title: "Species data updated",
+          description: `Loaded ${freshData.length} species from GBIF database.`,
+        });
+      } else {
+        console.warn('No species data received from service');
+        throw new Error('No species data could be loaded from GBIF');
+      }
+    } catch (err) {
+      console.error('fetchFreshSpecies error:', err);
+      throw err;
     }
   };
 
   const refreshSpeciesInBackground = async () => {
     try {
+      console.log('Starting background refresh...');
       const autoService = new AutoSpeciesService(gbifApi);
       const freshData = await autoService.loadPopularSpecies();
       
       if (freshData.length > 0) {
         setSpecies(freshData);
         SpeciesCache.setCacheData(freshData);
-        console.log('Background refresh completed');
+        console.log('Background refresh completed with', freshData.length, 'species');
       }
     } catch (err) {
       console.warn('Background refresh failed:', err);
@@ -97,6 +107,7 @@ export const useAutoSpecies = () => {
     setError(null);
     
     try {
+      console.log('Manual refresh initiated');
       await fetchFreshSpecies();
     } catch (err) {
       console.error('Manual refresh failed:', err);
@@ -112,6 +123,7 @@ export const useAutoSpecies = () => {
   };
 
   const clearCacheAndRefresh = async () => {
+    console.log('Clearing cache and refreshing...');
     SpeciesCache.clearCache();
     await manualRefresh();
   };

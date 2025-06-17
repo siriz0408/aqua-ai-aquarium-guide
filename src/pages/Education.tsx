@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Layout } from '@/components/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -30,6 +30,16 @@ const Education = () => {
     equipmentLoading 
   } = useEducationalEquipment();
 
+  // Add debugging
+  useEffect(() => {
+    console.log('Education page - Species state:', {
+      speciesCount: species.length,
+      isLoading: speciesLoading,
+      error: speciesError,
+      species: species
+    });
+  }, [species, speciesLoading, speciesError]);
+
   // Filter species based on search term and category
   const filteredSpecies = species.filter(f => {
     const matchesSearch = searchTerm === '' || 
@@ -40,6 +50,13 @@ const Education = () => {
     const matchesCategory = selectedCategory === 'all' || f.category === selectedCategory;
     
     return matchesSearch && matchesCategory;
+  });
+
+  console.log('Education page - Filtered species:', {
+    originalCount: species.length,
+    filteredCount: filteredSpecies.length,
+    searchTerm,
+    selectedCategory
   });
 
   // Filter equipment based on search term
@@ -156,6 +173,20 @@ const Education = () => {
               })}
             </div>
 
+            {/* Debug Info */}
+            {process.env.NODE_ENV === 'development' && (
+              <Card className="p-4 bg-yellow-50 border-yellow-200">
+                <div className="text-sm text-yellow-800">
+                  <div>Debug Info:</div>
+                  <div>Species loaded: {species.length}</div>
+                  <div>Filtered species: {filteredSpecies.length}</div>
+                  <div>Loading: {speciesLoading ? 'Yes' : 'No'}</div>
+                  <div>Error: {speciesError || 'None'}</div>
+                  <div>Cache size: {cacheInfo.size}</div>
+                </div>
+              </Card>
+            )}
+
             {/* Species Grid */}
             {speciesLoading ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -175,18 +206,20 @@ const Education = () => {
               <Card className="p-8 text-center">
                 <Fish className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                 <h3 className="text-lg font-medium mb-2">
-                  {searchTerm ? 'No species found' : 'Loading species data...'}
+                  {species.length === 0 ? 'Loading species data...' : 'No species found'}
                 </h3>
                 <p className="text-muted-foreground mb-4">
-                  {searchTerm 
+                  {species.length === 0 
+                    ? 'Auto-populating species from GBIF database' 
+                    : searchTerm 
                     ? 'Try adjusting your search terms' 
-                    : 'Auto-populating species from GBIF database'
+                    : 'No species match the current filters'
                   }
                 </p>
-                {!speciesLoading && (
+                {!speciesLoading && species.length === 0 && (
                   <Button onClick={manualRefresh}>
                     <RefreshCw className="h-4 w-4 mr-2" />
-                    Refresh Species Data
+                    Load Species Data
                   </Button>
                 )}
               </Card>

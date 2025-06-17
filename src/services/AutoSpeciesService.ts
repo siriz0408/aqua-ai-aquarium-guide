@@ -1,3 +1,4 @@
+
 import { GBIFSpecies, useGBIFApi } from '@/hooks/useGBIFApi';
 
 export interface AutoPopulatedSpecies {
@@ -50,8 +51,7 @@ export class AutoSpeciesService {
     'Pseudanthias squamipinnis', // Anthias
     'Synchiropus splendidus', // Mandarin Fish
     'Chrysiptera parasema', // Yellowtail Damselfish
-    'Banggai cardinalfish',
-    'Pterapogon kauderni'
+    'Pterapogon kauderni' // Banggai Cardinalfish
   ];
 
   private gbifApi: ReturnType<typeof useGBIFApi>;
@@ -62,6 +62,10 @@ export class AutoSpeciesService {
 
   async loadPopularSpecies(): Promise<AutoPopulatedSpecies[]> {
     const speciesData: AutoPopulatedSpecies[] = [];
+    let successCount = 0;
+    let failCount = 0;
+    
+    console.log(`Starting to load ${this.popularAquariumSpecies.length} species from GBIF...`);
     
     for (const scientificName of this.popularAquariumSpecies) {
       try {
@@ -70,28 +74,42 @@ export class AutoSpeciesService {
         
         if (searchResult && searchResult.results.length > 0) {
           const gbifSpecies = searchResult.results[0];
+          console.log(`Successfully found GBIF data for ${scientificName}:`, gbifSpecies);
+          
           const enhancedSpecies = this.enhanceWithAquariumData(gbifSpecies);
+          console.log(`Enhanced species data:`, enhancedSpecies);
+          
           speciesData.push(enhancedSpecies);
+          successCount++;
+        } else {
+          console.warn(`No results found for ${scientificName}`);
+          failCount++;
         }
         
         // Add delay to respect rate limits
-        await this.delay(600);
+        await this.delay(800);
       } catch (error) {
-        console.warn(`Failed to load ${scientificName}:`, error);
+        console.error(`Failed to load ${scientificName}:`, error);
+        failCount++;
+        
+        // Continue with next species even if one fails
+        await this.delay(500);
       }
     }
     
-    console.log(`Loaded ${speciesData.length} species`);
+    console.log(`Species loading complete. Success: ${successCount}, Failed: ${failCount}, Total loaded: ${speciesData.length}`);
     return speciesData;
   }
 
   private enhanceWithAquariumData(gbifSpecies: GBIFSpecies): AutoPopulatedSpecies {
+    console.log(`Enhancing species data for:`, gbifSpecies.scientificName);
+    
     const commonNames = gbifSpecies.vernacularNames || [];
     const primaryName = commonNames.find(cn => cn.language === 'en')?.vernacularName || 
                        gbifSpecies.canonicalName || 
                        gbifSpecies.scientificName;
 
-    return {
+    const enhanced: AutoPopulatedSpecies = {
       id: `gbif-${gbifSpecies.key}`,
       name: primaryName,
       scientific_name: gbifSpecies.scientificName,
@@ -113,6 +131,9 @@ export class AutoSpeciesService {
       data_source: 'gbif-auto',
       gbif_species_key: gbifSpecies.key
     };
+
+    console.log(`Enhanced species:`, enhanced);
+    return enhanced;
   }
 
   private inferCareLevel(species: GBIFSpecies): 'Beginner' | 'Intermediate' | 'Advanced' {
