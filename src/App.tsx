@@ -19,6 +19,7 @@ import AquaBot from "./pages/AquaBot";
 import Reminders from "./pages/Reminders";
 import Education from "./pages/Education";
 import Auth from "./pages/Auth";
+import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -86,6 +87,11 @@ const App = () => (
                     <Route path="/education" element={
                       <ProtectedRoute>
                         <Education />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin" element={
+                      <ProtectedRoute>
+                        <Admin />
                       </ProtectedRoute>
                     } />
                     <Route path="*" element={<NotFound />} />
