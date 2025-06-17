@@ -2,7 +2,6 @@
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCredits } from '@/hooks/useCredits';
-import { Navigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Users, CreditCard, Settings, Activity } from 'lucide-react';
@@ -10,6 +9,7 @@ import { AdminUserManagement } from '@/components/admin/AdminUserManagement';
 import { AdminSubscriptionManagement } from '@/components/admin/AdminSubscriptionManagement';
 import { AdminSystemSettings } from '@/components/admin/AdminSystemSettings';
 import { AdminActivityLogs } from '@/components/admin/AdminActivityLogs';
+import { Layout } from '@/components/Layout';
 
 const Admin = () => {
   const { user } = useAuth();
@@ -18,25 +18,16 @@ const Admin = () => {
   // Show loading while checking permissions
   if (profileLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-          <p className="text-muted-foreground">Loading admin panel...</p>
-        </div>
-      </div>
+      <Layout title="Admin Dashboard" loading>
+        <div />
+      </Layout>
     );
   }
 
-  // Redirect if not admin
-  if (!profile?.is_admin) {
-    return <Navigate to="/" replace />;
-  }
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-cyan-50 dark:from-slate-900 dark:via-blue-900 dark:to-cyan-900">
-      <div className="container mx-auto px-4 py-8">
+    <Layout title="Admin Dashboard">
+      <div className="space-y-6">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">Admin Dashboard</h1>
           <p className="text-muted-foreground">
             Manage users, subscriptions, and system settings for AquaAI
           </p>
@@ -119,7 +110,7 @@ const Admin = () => {
           </TabsContent>
         </Tabs>
       </div>
-    </div>
+    </Layout>
   );
 };
 

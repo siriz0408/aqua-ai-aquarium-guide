@@ -3,7 +3,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { ArrowUp, MessageCircle, Plus, Save, LogOut, Home, BookOpen, Fish } from 'lucide-react';
+import { ArrowUp, MessageCircle, Plus, Save, LogOut, Home, BookOpen, Fish, Settings } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { OfflineIndicator } from '@/components/OfflineIndicator';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
@@ -71,6 +71,21 @@ export function Layout({ children, title, showBackButton = false, actions, loadi
           
           <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
             {actions}
+            {/* Admin Settings Button */}
+            {user && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate('/admin')}
+                className={cn(
+                  "h-8 w-8 p-0",
+                  isTouch && "min-h-[40px] min-w-[40px]"
+                )}
+                title="Admin Settings"
+              >
+                <Settings className="h-4 w-4" />
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="sm"
