@@ -23,9 +23,9 @@ import SavedPlansPage from "./pages/SavedPlans";
 import Reminders from "./pages/Reminders";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
-import ProtectedRoute from "./components/ProtectedRoute";
-import AdminProtectedRoute from "./components/admin/AdminProtectedRoute";
-import ErrorBoundary from "./components/ErrorBoundary";
+import { ProtectedRoute } from "./components/ProtectedRoute";
+import { AdminProtectedRoute } from "./components/admin/AdminProtectedRoute";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 
 const queryClient = new QueryClient();
 
