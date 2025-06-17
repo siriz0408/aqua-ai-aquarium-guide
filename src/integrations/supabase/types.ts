@@ -615,15 +615,11 @@ export type Database = {
           created_at: string
           created_by_admin_id: string | null
           email: string | null
-          free_credits_remaining: number | null
           full_name: string | null
           id: string
           is_admin: boolean | null
           last_active: string | null
           last_admin_login: string | null
-          last_credit_reset: string | null
-          monthly_credits_limit: number | null
-          monthly_credits_used: number | null
           stripe_customer_id: string | null
           stripe_price_id: string | null
           stripe_subscription_id: string | null
@@ -631,7 +627,6 @@ export type Database = {
           subscription_start_date: string | null
           subscription_status: string | null
           subscription_tier: string | null
-          total_credits_used: number | null
           trial_end_date: string | null
           trial_start_date: string | null
           updated_at: string
@@ -643,15 +638,11 @@ export type Database = {
           created_at?: string
           created_by_admin_id?: string | null
           email?: string | null
-          free_credits_remaining?: number | null
           full_name?: string | null
           id: string
           is_admin?: boolean | null
           last_active?: string | null
           last_admin_login?: string | null
-          last_credit_reset?: string | null
-          monthly_credits_limit?: number | null
-          monthly_credits_used?: number | null
           stripe_customer_id?: string | null
           stripe_price_id?: string | null
           stripe_subscription_id?: string | null
@@ -659,7 +650,6 @@ export type Database = {
           subscription_start_date?: string | null
           subscription_status?: string | null
           subscription_tier?: string | null
-          total_credits_used?: number | null
           trial_end_date?: string | null
           trial_start_date?: string | null
           updated_at?: string
@@ -671,15 +661,11 @@ export type Database = {
           created_at?: string
           created_by_admin_id?: string | null
           email?: string | null
-          free_credits_remaining?: number | null
           full_name?: string | null
           id?: string
           is_admin?: boolean | null
           last_active?: string | null
           last_admin_login?: string | null
-          last_credit_reset?: string | null
-          monthly_credits_limit?: number | null
-          monthly_credits_used?: number | null
           stripe_customer_id?: string | null
           stripe_price_id?: string | null
           stripe_subscription_id?: string | null
@@ -687,7 +673,6 @@ export type Database = {
           subscription_start_date?: string | null
           subscription_status?: string | null
           subscription_tier?: string | null
-          total_credits_used?: number | null
           trial_end_date?: string | null
           trial_start_date?: string | null
           updated_at?: string
@@ -818,36 +803,6 @@ export type Database = {
           subscription_end?: string | null
           subscription_tier?: string | null
           updated_at?: string
-          user_id?: string | null
-        }
-        Relationships: []
-      }
-      subscription_usage_logs: {
-        Row: {
-          created_at: string
-          credits_after: number | null
-          credits_before: number | null
-          feature_used: string
-          id: string
-          subscription_status: string | null
-          user_id: string | null
-        }
-        Insert: {
-          created_at?: string
-          credits_after?: number | null
-          credits_before?: number | null
-          feature_used: string
-          id?: string
-          subscription_status?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          created_at?: string
-          credits_after?: number | null
-          credits_before?: number | null
-          feature_used?: string
-          id?: string
-          subscription_status?: string | null
           user_id?: string | null
         }
         Relationships: []
@@ -1243,7 +1198,7 @@ export type Database = {
         }
         Returns: boolean
       }
-      can_use_feature: {
+      can_access_ai_features: {
         Args: { user_id: string }
         Returns: boolean
       }
@@ -1254,10 +1209,6 @@ export type Database = {
       promote_user_to_admin: {
         Args: { user_email: string; role?: string }
         Returns: boolean
-      }
-      reset_monthly_credits: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
       }
     }
     Enums: {

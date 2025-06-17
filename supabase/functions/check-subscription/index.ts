@@ -54,7 +54,6 @@ serve(async (req) => {
         email: user.email,
         subscription_status: "free",
         subscription_tier: "free",
-        monthly_credits_limit: 5,
         updated_at: new Date().toISOString(),
       }, { onConflict: 'id' });
 
@@ -103,14 +102,8 @@ serve(async (req) => {
         priceId: stripePriceId 
       });
 
-      // Map price IDs to tiers - these should match your Stripe dashboard
-      const priceToTier: { [key: string]: string } = {
-        "price_pro_limited_monthly": "pro_limited",
-        "price_pro_unlimited_monthly": "pro_unlimited",
-        // Add your actual Stripe price IDs here
-      };
-
-      subscriptionTier = priceToTier[stripePriceId] || "pro_unlimited";
+      // All active subscriptions are Pro tier in the new model
+      subscriptionTier = "pro";
       logStep("Determined subscription tier", { stripePriceId, subscriptionTier });
     } else {
       logStep("No active subscription found");
@@ -126,8 +119,6 @@ serve(async (req) => {
       stripe_customer_id: customerId,
       stripe_subscription_id: hasActiveSub ? subscriptions.data[0].id : null,
       stripe_price_id: stripePriceId,
-      monthly_credits_limit: subscriptionTier === "pro_limited" ? 50 : 
-                            subscriptionTier === "free" ? 5 : null,
       updated_at: new Date().toISOString(),
     };
 

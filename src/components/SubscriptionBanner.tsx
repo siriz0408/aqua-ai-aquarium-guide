@@ -9,12 +9,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 const PRICE_IDS = {
-  pro_limited: "price_pro_limited_monthly",  // Replace with your actual Stripe price ID
-  pro_unlimited: "price_pro_unlimited_monthly", // Replace with your actual Stripe price ID
+  pro: "price_pro_monthly",  // Replace with your actual Stripe price ID
 };
 
 export const SubscriptionBanner: React.FC = () => {
-  const { profile, profileLoading } = useCredits();
+  const { profile, profileLoading, getSubscriptionInfo } = useCredits();
   const { toast } = useToast();
 
   const handleUpgrade = async (priceId: string) => {
@@ -61,8 +60,8 @@ export const SubscriptionBanner: React.FC = () => {
     return null;
   }
 
-  const isProUser = profile.subscription_status === 'active' && 
-                   (profile.subscription_tier === 'pro_limited' || profile.subscription_tier === 'pro_unlimited');
+  const subscriptionInfo = getSubscriptionInfo();
+  const isProUser = subscriptionInfo.tier === 'pro' && subscriptionInfo.status === 'active';
 
   if (isProUser) {
     return (
@@ -73,13 +72,10 @@ export const SubscriptionBanner: React.FC = () => {
               <Crown className="h-5 w-5 text-green-600" />
               <div>
                 <h3 className="font-semibold text-green-800">
-                  {profile.subscription_tier === 'pro_unlimited' ? 'Pro Unlimited' : 'Pro Limited'} Active
+                  Pro Plan Active
                 </h3>
                 <p className="text-sm text-green-600">
-                  {profile.subscription_tier === 'pro_unlimited' 
-                    ? 'Unlimited AI conversations' 
-                    : `${50 - (profile.monthly_credits_used || 0)} conversations remaining this month`
-                  }
+                  Unlimited AI conversations and premium features
                 </p>
               </div>
             </div>
@@ -98,51 +94,30 @@ export const SubscriptionBanner: React.FC = () => {
         <div className="text-center space-y-4">
           <h2 className="text-xl font-bold text-blue-900">Upgrade to Pro</h2>
           <p className="text-blue-700">
-            You have {profile.free_credits_remaining || 0} free conversations remaining
+            Get unlimited access to AquaBot's AI-powered aquarium assistance
           </p>
           
-          <div className="grid md:grid-cols-2 gap-4 mt-6">
-            {/* Pro Limited Plan */}
-            <Card className="border-blue-300">
-              <CardContent className="p-4 text-center">
-                <Zap className="h-8 w-8 text-blue-600 mx-auto mb-3" />
-                <h3 className="font-bold text-lg mb-2">Pro Limited</h3>
-                <div className="text-2xl font-bold text-blue-600 mb-2">$9.99/month</div>
-                <ul className="text-sm text-gray-600 space-y-1 mb-4">
-                  <li>50 AI conversations per month</li>
-                  <li>Advanced aquarium insights</li>
-                  <li>Priority support</li>
-                </ul>
-                <Button 
-                  onClick={() => handleUpgrade(PRICE_IDS.pro_limited)}
-                  className="w-full"
-                  variant="outline"
-                >
-                  Upgrade to Pro Limited
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* Pro Unlimited Plan */}
+          <div className="max-w-md mx-auto">
             <Card className="border-purple-300 relative">
               <Badge className="absolute -top-2 left-1/2 transform -translate-x-1/2 bg-purple-600">
-                Most Popular
+                Best Value
               </Badge>
-              <CardContent className="p-4 text-center">
+              <CardContent className="p-6 text-center">
                 <Star className="h-8 w-8 text-purple-600 mx-auto mb-3" />
-                <h3 className="font-bold text-lg mb-2">Pro Unlimited</h3>
-                <div className="text-2xl font-bold text-purple-600 mb-2">$19.99/month</div>
-                <ul className="text-sm text-gray-600 space-y-1 mb-4">
-                  <li>Unlimited AI conversations</li>
-                  <li>Advanced aquarium insights</li>
-                  <li>Priority support</li>
-                  <li>Early access to new features</li>
+                <h3 className="font-bold text-lg mb-2">Pro Plan</h3>
+                <div className="text-3xl font-bold text-purple-600 mb-2">$9.99/month</div>
+                <ul className="text-sm text-gray-600 space-y-2 mb-6">
+                  <li>✓ Unlimited AI conversations</li>
+                  <li>✓ Advanced aquarium insights</li>
+                  <li>✓ Real-time web search integration</li>
+                  <li>✓ Priority support</li>
+                  <li>✓ Early access to new features</li>
                 </ul>
                 <Button 
-                  onClick={() => handleUpgrade(PRICE_IDS.pro_unlimited)}
+                  onClick={() => handleUpgrade(PRICE_IDS.pro)}
                   className="w-full bg-purple-600 hover:bg-purple-700"
                 >
-                  Upgrade to Pro Unlimited
+                  Upgrade to Pro
                 </Button>
               </CardContent>
             </Card>

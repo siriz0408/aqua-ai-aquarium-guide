@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -36,7 +35,6 @@ export const useChat = () => {
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showPaywall, setShowPaywall] = useState(false);
-  const [creditsRemaining, setCreditsRemaining] = useState<number | null>(null);
 
   // Fetch conversations
   const { data: conversations = [], isLoading: conversationsLoading } = useQuery({
@@ -81,7 +79,7 @@ export const useChat = () => {
     enabled: !!currentConversationId,
   });
 
-  // Send message mutation
+  // Send message mutation - Updated for new subscription model
   const sendMessageMutation = useMutation({
     mutationFn: async ({ message, isNewConversation, attachments }: { 
       message: string; 
@@ -129,11 +127,6 @@ export const useChat = () => {
         setCurrentConversationId(data.conversationId);
       }
       
-      // Update credits remaining if returned
-      if (typeof data.creditsRemaining === 'number') {
-        setCreditsRemaining(data.creditsRemaining);
-      }
-      
       // Invalidate and refetch conversations and messages
       queryClient.invalidateQueries({ queryKey: ['conversations'] });
       queryClient.invalidateQueries({ queryKey: ['messages', data.conversationId] });
@@ -142,14 +135,14 @@ export const useChat = () => {
     onError: (error) => {
       console.error('Error sending message:', error);
       
-      // Handle credit exhaustion specifically
+      // Handle subscription access specifically
       if (error instanceof Error) {
         try {
           const errorData = JSON.parse(error.message);
           if (errorData.requiresUpgrade) {
             setShowPaywall(true);
             toast({
-              title: "Credits Exhausted",
+              title: "Upgrade Required",
               description: errorData.message,
               variant: "destructive",
             });
@@ -227,6 +220,5 @@ export const useChat = () => {
     deleteConversation: deleteConversationMutation.mutate,
     showPaywall,
     setShowPaywall,
-    creditsRemaining,
   };
 };

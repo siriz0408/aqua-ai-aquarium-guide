@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import { Layout } from '@/components/Layout';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -51,14 +50,13 @@ const AquaBot = () => {
     deleteConversation,
     showPaywall,
     setShowPaywall,
-    creditsRemaining,
   } = useChat();
 
   const { 
     profile, 
     canUseFeature, 
-    getRemainingCredits, 
     needsUpgrade,
+    getSubscriptionInfo,
     profileLoading 
   } = useCredits();
 
@@ -120,9 +118,8 @@ const AquaBot = () => {
     await handleSendMessage(prompt);
   };
 
-  // Get display credits - always show actual database value
-  const displayCredits = getRemainingCredits();
-  const isAdmin = profile?.is_admin === true;
+  // Get subscription info for display
+  const subscriptionInfo = getSubscriptionInfo();
 
   return (
     <Layout title="AquaBot" showBackButton>
@@ -207,13 +204,13 @@ const AquaBot = () => {
             </h2>
             
             <div className="flex items-center gap-1 sm:gap-2">
-              {/* Credits display - Updated to show actual database credits */}
+              {/* Subscription status display */}
               {!profileLoading && (
                 <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="flex items-center gap-1">
+                  <Badge variant={subscriptionInfo.hasAccess ? "default" : "secondary"} className="flex items-center gap-1">
                     <Zap className="h-3 w-3" />
                     <span className="text-xs">
-                      {isAdmin ? `${displayCredits} (Admin)` : `${displayCredits} credits`}
+                      {subscriptionInfo.isAdmin ? 'Admin' : subscriptionInfo.tier === 'pro' ? 'Pro' : 'Free'}
                     </span>
                   </Badge>
                 </div>
@@ -292,14 +289,14 @@ const AquaBot = () => {
                         I'm your marine aquarium assistant with access to real-time web data. 
                         Ask me anything about water chemistry, fish care, equipment, or troubleshooting!
                       </p>
-                      {!isAdmin && (
+                      {subscriptionInfo.tier === 'free' && (
                         <p className="text-xs text-muted-foreground mt-2">
-                          You have {displayCredits} messages remaining
+                          Upgrade to Pro for unlimited AI conversations
                         </p>
                       )}
-                      {isAdmin && (
+                      {subscriptionInfo.isAdmin && (
                         <p className="text-xs text-blue-600 mt-2">
-                          Admin access: {displayCredits} credits available
+                          Admin access: Full features available
                         </p>
                       )}
                     </div>
@@ -324,11 +321,11 @@ const AquaBot = () => {
         </div>
       </div>
 
-      {/* Paywall Modal - Only for non-admin users */}
+      {/* Paywall Modal - Only for non-admin users who need upgrade */}
       <PaywallModal
         isOpen={showPaywall}
         onClose={() => setShowPaywall(false)}
-        currentCredits={displayCredits}
+        currentCredits={0}
         showUpgradeOnly={needsUpgrade()}
       />
     </Layout>
