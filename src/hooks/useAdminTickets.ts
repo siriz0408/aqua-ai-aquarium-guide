@@ -16,7 +16,7 @@ export const useAdminTickets = () => {
         .from('support_tickets')
         .select(`
           *,
-          profiles!support_tickets_user_id_fkey(full_name, email)
+          profiles!fk_support_tickets_user_id(full_name, email)
         `)
         .order('created_at', { ascending: false });
 
@@ -82,7 +82,7 @@ export const useAdminTickets = () => {
           .from('support_ticket_responses')
           .select(`
             *,
-            profiles!support_ticket_responses_user_id_fkey(full_name, email)
+            profiles!fk_support_ticket_responses_user_id(full_name, email)
           `)
           .eq('ticket_id', ticketId)
           .order('created_at', { ascending: true });
