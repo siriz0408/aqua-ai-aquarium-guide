@@ -1,9 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { useUserImpersonation } from '@/hooks/useUserImpersonation';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { User, Crown, CreditCard, Shield, Database } from 'lucide-react';
+import { User, Crown, CreditCard, Shield, Database, UserCheck } from 'lucide-react';
 
 interface UserProfile {
   id: string;
@@ -40,9 +40,32 @@ export const UserDetailModal: React.FC<UserDetailModalProps> = ({ user, isOpen, 
   const { user: currentUser } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { impersonateUser, isPending: isImpersonating } = useUserImpersonation();
   
   const [formData, setFormData] = useState<Partial<UserProfile>>({});
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [currentUserProfile, setCurrentUserProfile] = useState<any>(null);
+
+  // Get current user's profile to check admin role
+  useEffect(() => {
+    const fetchCurrentUserProfile = async () => {
+      if (currentUser?.id) {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('admin_role, is_admin')
+          .eq('id', currentUser.id)
+          .single();
+        
+        if (!error && data) {
+          setCurrentUserProfile(data);
+        }
+      }
+    };
+
+    if (isOpen && currentUser) {
+      fetchCurrentUserProfile();
+    }
+  }, [currentUser, isOpen]);
 
   // Reset form data when user changes or modal opens
   useEffect(() => {
@@ -133,6 +156,17 @@ export const UserDetailModal: React.FC<UserDetailModalProps> = ({ user, isOpen, 
     setHasUnsavedChanges(false);
     onClose();
   };
+
+  const handleImpersonateUser = () => {
+    if (!user?.id) return;
+    
+    console.log('Initiating impersonation for user:', user.email);
+    impersonateUser(user.id);
+  };
+
+  const canImpersonate = currentUserProfile?.is_admin && 
+                        currentUserProfile?.admin_role === 'super_admin' && 
+                        user?.id !== currentUser?.id;
 
   const getRoleBadge = (isAdmin: boolean, adminRole: string | null) => {
     if (isAdmin) {
@@ -412,6 +446,34 @@ export const UserDetailModal: React.FC<UserDetailModalProps> = ({ user, isOpen, 
                       {user.id}
                     </div>
                   </div>
+                  
+                  {canImpersonate && (
+                    <>
+                      <Separator />
+                      
+                      <div className="space-y-2">
+                        <Label>Super Admin Actions</Label>
+                        <div className="p-4 bg-purple-50 rounded-lg">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h4 className="font-medium text-purple-900">Login as User</h4>
+                              <p className="text-sm text-purple-700 mt-1">
+                                Impersonate this user to see their experience. You can return to admin mode at any time.
+                              </p>
+                            </div>
+                            <Button
+                              onClick={handleImpersonateUser}
+                              disabled={isImpersonating}
+                              className="bg-purple-600 hover:bg-purple-700"
+                            >
+                              <UserCheck className="h-4 w-4 mr-2" />
+                              {isImpersonating ? 'Starting...' : 'Login as User'}
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  )}
                   
                   <Separator />
                   

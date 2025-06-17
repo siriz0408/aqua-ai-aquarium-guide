@@ -1171,6 +1171,14 @@ export type Database = {
           admin_permissions: Json
         }[]
       }
+      admin_impersonate_user: {
+        Args: { requesting_admin_id: string; target_user_id: string }
+        Returns: {
+          access_token: string
+          refresh_token: string
+          user_data: Json
+        }[]
+      }
       admin_update_profile: {
         Args: {
           requesting_admin_id: string
