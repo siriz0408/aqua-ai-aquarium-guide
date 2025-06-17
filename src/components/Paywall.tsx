@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -76,7 +75,6 @@ const PaywallModal: React.FC<PaywallProps> = ({
     }
   };
 
-  // ... keep existing code (getHeaderMessage function)
   const getHeaderMessage = () => {
     if (subscriptionInfo.isTrial) {
       const hoursRemaining = Math.max(0, subscriptionInfo.trialHoursRemaining);
