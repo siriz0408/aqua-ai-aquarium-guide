@@ -43,10 +43,10 @@ serve(async (req) => {
 
     console.log('User authenticated successfully:', user.id)
 
-    // Check user's subscription status and credits
+    // Check user's profile and credits
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('subscription_status, subscription_tier, free_credits_remaining, total_credits_used')
+      .select('subscription_status, subscription_tier, free_credits_remaining, total_credits_used, is_admin')
       .eq('id', user.id)
       .single()
 
@@ -57,12 +57,12 @@ serve(async (req) => {
 
     console.log('User profile:', profile)
 
-    // Check if user has credits available
-    const isPaidUser = profile.subscription_status === 'active'
+    // Check if non-admin user has credits available
+    const isAdmin = profile.is_admin === true
     const hasCredits = profile.free_credits_remaining > 0
 
-    if (!isPaidUser && !hasCredits) {
-      console.log('User has no credits remaining')
+    if (!isAdmin && !hasCredits) {
+      console.log('Non-admin user has no credits remaining')
       return new Response(
         JSON.stringify({
           error: 'No credits remaining',
@@ -303,47 +303,45 @@ Remember: NO ### headers, use tables for parameters, checkboxes for tasks! 🌊`
       .update({ last_message_at: new Date().toISOString() })
       .eq('id', currentConversationId)
 
-    // Track credit usage for free users
-    if (!isPaidUser) {
-      const creditsAfter = profile.free_credits_remaining - 1
-      const totalCreditsUsed = profile.total_credits_used + 1
+    // Track credit usage for ALL users (admins, paid users, and free users)
+    const creditsAfter = Math.max(0, profile.free_credits_remaining - 1)
+    const totalCreditsUsed = profile.total_credits_used + 1
 
-      // Update user's credit count
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({
-          free_credits_remaining: creditsAfter,
-          total_credits_used: totalCreditsUsed
-        })
-        .eq('id', user.id)
+    // Update user's credit count for ALL users
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .update({
+        free_credits_remaining: creditsAfter,
+        total_credits_used: totalCreditsUsed
+      })
+      .eq('id', user.id)
 
-      if (updateError) {
-        console.error('Error updating user credits:', updateError)
-      }
-
-      // Log the usage
-      const { error: logError } = await supabase
-        .from('subscription_usage_logs')
-        .insert({
-          user_id: user.id,
-          feature_used: 'chat_message',
-          credits_before: profile.free_credits_remaining,
-          credits_after: creditsAfter,
-          subscription_status: profile.subscription_status
-        })
-
-      if (logError) {
-        console.error('Error logging usage:', logError)
-      }
-
-      console.log(`Credit used. Remaining: ${creditsAfter}`)
+    if (updateError) {
+      console.error('Error updating user credits:', updateError)
     }
+
+    // Log the usage for ALL users
+    const { error: logError } = await supabase
+      .from('subscription_usage_logs')
+      .insert({
+        user_id: user.id,
+        feature_used: 'chat_message',
+        credits_before: profile.free_credits_remaining,
+        credits_after: creditsAfter,
+        subscription_status: profile.subscription_status
+      })
+
+    if (logError) {
+      console.error('Error logging usage:', logError)
+    }
+
+    console.log(`Credit used for user ${isAdmin ? '(admin)' : ''}. Remaining: ${creditsAfter}`)
 
     return new Response(
       JSON.stringify({
         message: assistantMessage,
         conversationId: currentConversationId,
-        creditsRemaining: !isPaidUser ? Math.max(0, profile.free_credits_remaining - 1) : null
+        creditsRemaining: creditsAfter
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

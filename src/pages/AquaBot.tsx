@@ -120,8 +120,9 @@ const AquaBot = () => {
     await handleSendMessage(prompt);
   };
 
+  // Get display credits - always show actual database value
   const displayCredits = getRemainingCredits();
-  const isPaidUser = profile?.subscription_status === 'active';
+  const isAdmin = profile?.is_admin === true;
 
   return (
     <Layout title="AquaBot" showBackButton>
@@ -206,23 +207,15 @@ const AquaBot = () => {
             </h2>
             
             <div className="flex items-center gap-1 sm:gap-2">
-              {/* Credits display */}
+              {/* Credits display - Updated to show actual database credits */}
               {!profileLoading && (
                 <div className="flex items-center gap-2">
-                  {!isPaidUser && (
-                    <Badge variant="outline" className="flex items-center gap-1">
-                      <Zap className="h-3 w-3" />
-                      <span className="text-xs">
-                        {displayCredits !== null ? `${displayCredits} credits` : 'Loading...'}
-                      </span>
-                    </Badge>
-                  )}
-                  {isPaidUser && (
-                    <Badge variant="default" className="flex items-center gap-1">
-                      <Zap className="h-3 w-3" />
-                      <span className="text-xs">Pro</span>
-                    </Badge>
-                  )}
+                  <Badge variant="outline" className="flex items-center gap-1">
+                    <Zap className="h-3 w-3" />
+                    <span className="text-xs">
+                      {isAdmin ? `${displayCredits} (Admin)` : `${displayCredits} credits`}
+                    </span>
+                  </Badge>
                 </div>
               )}
               
@@ -299,9 +292,14 @@ const AquaBot = () => {
                         I'm your marine aquarium assistant with access to real-time web data. 
                         Ask me anything about water chemistry, fish care, equipment, or troubleshooting!
                       </p>
-                      {!isPaidUser && displayCredits !== null && (
+                      {!isAdmin && (
                         <p className="text-xs text-muted-foreground mt-2">
-                          You have {displayCredits} free messages remaining
+                          You have {displayCredits} messages remaining
+                        </p>
+                      )}
+                      {isAdmin && (
+                        <p className="text-xs text-blue-600 mt-2">
+                          Admin access: {displayCredits} credits available
                         </p>
                       )}
                     </div>
@@ -326,11 +324,11 @@ const AquaBot = () => {
         </div>
       </div>
 
-      {/* Paywall Modal */}
+      {/* Paywall Modal - Only for non-admin users */}
       <PaywallModal
         isOpen={showPaywall}
         onClose={() => setShowPaywall(false)}
-        currentCredits={5}
+        currentCredits={displayCredits}
         showUpgradeOnly={needsUpgrade()}
       />
     </Layout>

@@ -90,87 +90,45 @@ export const useCredits = () => {
     enabled: !!user,
   });
 
-  // Check if user can use features
+  // Check if user can use features - Updated logic for admin privileges
   const canUseFeature = (feature: string = 'chat') => {
     if (!profile) return false;
     
-    const isPaidUser = profile.subscription_status === 'active';
-    
-    if (profile.subscription_tier === 'pro_unlimited' && isPaidUser) {
-      return true; // Unlimited usage
+    // Admins can always use features regardless of credit count
+    if (profile.is_admin) {
+      return true;
     }
     
-    if (profile.subscription_tier === 'pro_limited' && isPaidUser) {
-      const monthlyUsed = profile.monthly_credits_used || 0;
-      const monthlyLimit = profile.monthly_credits_limit || 50;
-      return monthlyUsed < monthlyLimit;
-    }
-    
-    // Free tier
+    // For non-admin users, check if they have credits remaining
     const hasCredits = profile.free_credits_remaining > 0;
     return hasCredits;
   };
 
-  // Get remaining credits for display
+  // Get remaining credits for display - Always return actual database value
   const getRemainingCredits = () => {
     if (!profile) return 0;
     
-    const isPaidUser = profile.subscription_status === 'active';
-    
-    if (profile.subscription_tier === 'pro_unlimited' && isPaidUser) {
-      return null; // Unlimited
-    }
-    
-    if (profile.subscription_tier === 'pro_limited' && isPaidUser) {
-      const monthlyUsed = profile.monthly_credits_used || 0;
-      const monthlyLimit = profile.monthly_credits_limit || 50;
-      return monthlyLimit - monthlyUsed;
-    }
-    
+    // Always return the actual credit count from database
     return profile.free_credits_remaining;
   };
 
-  // Check if user needs to upgrade
+  // Check if user needs to upgrade - Only for non-admin users
   const needsUpgrade = () => {
     if (!profile) return false;
     
-    const isPaidUser = profile.subscription_status === 'active';
-    
-    if (isPaidUser) return false;
+    // Admins never need to upgrade
+    if (profile.is_admin) return false;
     
     const hasCredits = profile.free_credits_remaining > 0;
     return !hasCredits;
   };
 
-  // Update credits after a successful operation
+  // Update credits after a successful operation - Now applies to ALL users
   const updateCreditsAfterUse = useMutation({
     mutationFn: async () => {
       if (!user || !profile) throw new Error('User or profile not available');
       
-      const isPaidUser = profile.subscription_status === 'active';
-      
-      if (profile.subscription_tier === 'pro_unlimited' && isPaidUser) {
-        return; // No credit deduction for unlimited users
-      }
-      
-      if (profile.subscription_tier === 'pro_limited' && isPaidUser) {
-        const newMonthlyUsed = (profile.monthly_credits_used || 0) + 1;
-        const newTotalUsed = profile.total_credits_used + 1;
-
-        const { error } = await supabase
-          .from('profiles')
-          .update({
-            monthly_credits_used: newMonthlyUsed,
-            total_credits_used: newTotalUsed
-          })
-          .eq('id', user.id);
-
-        if (error) throw error;
-
-        return { creditsRemaining: (profile.monthly_credits_limit || 50) - newMonthlyUsed };
-      }
-      
-      // Free tier
+      // Deduct 1 credit for ALL users (including admins and paid users)
       const newCreditsRemaining = Math.max(0, profile.free_credits_remaining - 1);
       const newTotalUsed = profile.total_credits_used + 1;
 
@@ -191,17 +149,20 @@ export const useCredits = () => {
       queryClient.invalidateQueries({ queryKey: ['userProfile', user?.id] });
       queryClient.invalidateQueries({ queryKey: ['usageLogs', user?.id] });
       
-      if (data?.creditsRemaining === 0) {
-        toast({
-          title: "Credits Exhausted",
-          description: "You've used all your credits. Upgrade to continue using AquaBot!",
-          variant: "destructive",
-        });
-      } else if (data?.creditsRemaining && data.creditsRemaining <= 2) {
-        toast({
-          title: "Low Credits",
-          description: `Only ${data.creditsRemaining} credits remaining. Consider upgrading soon.`,
-        });
+      // Only show upgrade prompts for non-admin users
+      if (!profile?.is_admin) {
+        if (data?.creditsRemaining === 0) {
+          toast({
+            title: "Credits Exhausted",
+            description: "You've used all your credits. Upgrade to continue using AquaBot!",
+            variant: "destructive",
+          });
+        } else if (data?.creditsRemaining && data.creditsRemaining <= 2) {
+          toast({
+            title: "Low Credits",
+            description: `Only ${data.creditsRemaining} credits remaining. Consider upgrading soon.`,
+          });
+        }
       }
     },
     onError: (error) => {
