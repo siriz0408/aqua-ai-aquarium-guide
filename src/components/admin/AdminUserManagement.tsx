@@ -13,6 +13,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Label } from '@/components/ui/label';
 import { Search, Edit, UserPlus, Crown, User, Trash2 } from 'lucide-react';
 import { UserInviteDialog } from './UserInviteDialog';
+import { UserDetailModal } from './UserDetailModal';
 
 interface UserProfile {
   id: string;
@@ -34,6 +35,7 @@ export const AdminUserManagement: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -171,6 +173,11 @@ export const AdminUserManagement: React.FC = () => {
     setIsEditDialogOpen(true);
   };
 
+  const handleViewUserDetail = (user: UserProfile) => {
+    setSelectedUser(user);
+    setIsDetailModalOpen(true);
+  };
+
   const handleUpdateUser = (formData: FormData) => {
     if (!selectedUser) return;
 
@@ -282,40 +289,44 @@ export const AdminUserManagement: React.FC = () => {
                 </TableCell>
               </TableRow>
             ) : (
-              users.map((user) => (
-                <TableRow key={user.id}>
+              users.map((userItem) => (
+                <TableRow 
+                  key={userItem.id} 
+                  className="cursor-pointer hover:bg-muted/50"
+                  onClick={() => handleViewUserDetail(userItem)}
+                >
                   <TableCell>
                     <div>
-                      <div className="font-medium">{user.full_name || 'No name'}</div>
-                      <div className="text-sm text-muted-foreground">{user.email}</div>
+                      <div className="font-medium">{userItem.full_name || 'No name'}</div>
+                      <div className="text-sm text-muted-foreground">{userItem.email}</div>
                     </div>
                   </TableCell>
-                  <TableCell>{getRoleBadge(user)}</TableCell>
+                  <TableCell>{getRoleBadge(userItem)}</TableCell>
                   <TableCell>
                     <div className="space-y-1">
-                      {getSubscriptionBadge(user.subscription_status)}
-                      <div className="text-xs text-muted-foreground">{user.subscription_tier}</div>
+                      {getSubscriptionBadge(userItem.subscription_status)}
+                      <div className="text-xs text-muted-foreground">{userItem.subscription_tier}</div>
                     </div>
                   </TableCell>
                   <TableCell>
                     <div className="text-sm">
-                      <div>{user.free_credits_remaining} remaining</div>
-                      <div className="text-muted-foreground">{user.total_credits_used} used</div>
+                      <div>{userItem.free_credits_remaining} remaining</div>
+                      <div className="text-muted-foreground">{userItem.total_credits_used} used</div>
                     </div>
                   </TableCell>
                   <TableCell>
                     <div className="text-sm text-muted-foreground">
-                      {user.last_active
-                        ? new Date(user.last_active).toLocaleDateString()
+                      {userItem.last_active
+                        ? new Date(userItem.last_active).toLocaleDateString()
                         : 'Never'}
                     </div>
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => handleEditUser(user)}
+                        onClick={() => handleEditUser(userItem)}
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
@@ -329,13 +340,13 @@ export const AdminUserManagement: React.FC = () => {
                           <AlertDialogHeader>
                             <AlertDialogTitle>Delete User</AlertDialogTitle>
                             <AlertDialogDescription>
-                              Are you sure you want to delete {user.email}? This action cannot be undone.
+                              Are you sure you want to delete {userItem.email}? This action cannot be undone.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
                             <AlertDialogCancel>Cancel</AlertDialogCancel>
                             <AlertDialogAction
-                              onClick={() => handleDeleteUser(user.id)}
+                              onClick={() => handleDeleteUser(userItem.id)}
                               className="bg-red-600 hover:bg-red-700"
                             >
                               Delete
@@ -352,13 +363,23 @@ export const AdminUserManagement: React.FC = () => {
         </Table>
       </div>
 
-      {/* Edit User Dialog */}
+      {/* User Detail Modal */}
+      <UserDetailModal
+        user={selectedUser}
+        isOpen={isDetailModalOpen}
+        onClose={() => {
+          setIsDetailModalOpen(false);
+          setSelectedUser(null);
+        }}
+      />
+
+      {/* Edit User Dialog - Keep the existing quick edit for backward compatibility */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>Edit User</DialogTitle>
+            <DialogTitle>Quick Edit User</DialogTitle>
             <DialogDescription>
-              Update user information, permissions, and subscription details.
+              Make quick changes to user information. For detailed editing, click on the user row.
             </DialogDescription>
           </DialogHeader>
           {selectedUser && (
