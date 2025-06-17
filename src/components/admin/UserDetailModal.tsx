@@ -51,7 +51,7 @@ export const UserDetailModal: React.FC<UserDetailModalProps> = ({ user, isOpen, 
       const initialData = {
         full_name: user.full_name || '',
         is_admin: user.is_admin,
-        admin_role: user.admin_role,
+        admin_role: user.admin_role || 'none',
         subscription_status: user.subscription_status,
         subscription_tier: user.subscription_tier,
         free_credits_remaining: user.free_credits_remaining,
@@ -75,7 +75,7 @@ export const UserDetailModal: React.FC<UserDetailModalProps> = ({ user, isOpen, 
         target_user_id: user.id,
         new_full_name: updates.full_name || user.full_name || '',
         new_is_admin: updates.is_admin ?? user.is_admin,
-        new_admin_role: updates.admin_role || user.admin_role,
+        new_admin_role: updates.admin_role === 'none' ? null : (updates.admin_role || user.admin_role),
         new_subscription_status: updates.subscription_status || user.subscription_status,
         new_subscription_tier: updates.subscription_tier || user.subscription_tier,
         new_free_credits_remaining: updates.free_credits_remaining ?? user.free_credits_remaining
@@ -179,7 +179,7 @@ export const UserDetailModal: React.FC<UserDetailModalProps> = ({ user, isOpen, 
             <div>
               <div className="flex items-center gap-2">
                 Edit User Details
-                {getRoleBadge(formData.is_admin ?? user.is_admin, formData.admin_role ?? user.admin_role)}
+                {getRoleBadge(formData.is_admin ?? user.is_admin, formData.admin_role === 'none' ? null : (formData.admin_role ?? user.admin_role))}
                 {hasUnsavedChanges && (
                   <Badge variant="secondary" className="text-xs bg-orange-100 text-orange-800">
                     Unsaved Changes
@@ -297,15 +297,15 @@ export const UserDetailModal: React.FC<UserDetailModalProps> = ({ user, isOpen, 
                   <div className="space-y-2">
                     <Label htmlFor="admin_role">Admin Role</Label>
                     <Select
-                      value={formData.admin_role ?? user.admin_role ?? ''}
-                      onValueChange={(value) => handleInputChange('admin_role', value || null)}
+                      value={formData.admin_role ?? user.admin_role ?? 'none'}
+                      onValueChange={(value) => handleInputChange('admin_role', value)}
                       disabled={!(formData.is_admin ?? user.is_admin)}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select role" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">None</SelectItem>
+                        <SelectItem value="none">None</SelectItem>
                         <SelectItem value="admin">Admin</SelectItem>
                         <SelectItem value="super_admin">Super Admin</SelectItem>
                       </SelectContent>
