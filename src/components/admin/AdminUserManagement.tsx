@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,51 +27,55 @@ interface UserProfile {
   total_credits_used: number;
   created_at: string;
   last_active: string | null;
+  admin_permissions: any;
 }
 
 export const AdminUserManagement: React.FC = () => {
+  const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch users with improved query
+  // Fetch users using the admin function
   const { data: users = [], isLoading, error } = useQuery({
     queryKey: ['admin-users', searchTerm],
     queryFn: async () => {
-      console.log('Fetching users with search term:', searchTerm);
+      console.log('Fetching users with admin function...');
       
-      // First check if current user is admin
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        throw new Error('Not authenticated');
+      if (!user?.id) {
+        throw new Error('User not authenticated');
       }
 
-      let query = supabase
-        .from('profiles')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (searchTerm) {
-        query = query.or(`email.ilike.%${searchTerm}%,full_name.ilike.%${searchTerm}%`);
-      }
-
-      const { data, error } = await query;
+      // Use the admin function to get all profiles
+      const { data, error } = await supabase.rpc('admin_get_all_profiles', {
+        requesting_admin_id: user.id
+      });
       
-      console.log('Users query result:', { data, error });
+      console.log('Admin function result:', { data, error });
       
       if (error) {
-        console.error('Error fetching users:', error);
+        console.error('Error fetching users via admin function:', error);
         throw error;
       }
       
-      return data as UserProfile[];
+      // Filter by search term if provided
+      let filteredData = data || [];
+      if (searchTerm) {
+        filteredData = filteredData.filter((profile: UserProfile) => 
+          profile.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          profile.full_name?.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+      }
+      
+      return filteredData as UserProfile[];
     },
     retry: 1,
+    enabled: !!user?.id,
   });
 
-  // Update user mutation
+  // Update user mutation using admin function
   const updateUserMutation = useMutation({
     mutationFn: async (updates: { 
       userId: string; 
@@ -81,24 +86,29 @@ export const AdminUserManagement: React.FC = () => {
       free_credits_remaining: number;
       full_name: string;
     }) => {
-      console.log('Updating user:', updates);
+      console.log('Updating user with admin function:', updates);
       
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          is_admin: updates.is_admin,
-          admin_role: updates.admin_role,
-          subscription_status: updates.subscription_status,
-          subscription_tier: updates.subscription_tier,
-          free_credits_remaining: updates.free_credits_remaining,
-          full_name: updates.full_name,
-        })
-        .eq('id', updates.userId);
+      if (!user?.id) {
+        throw new Error('User not authenticated');
+      }
+
+      const { data, error } = await supabase.rpc('admin_update_profile', {
+        requesting_admin_id: user.id,
+        target_user_id: updates.userId,
+        new_full_name: updates.full_name,
+        new_is_admin: updates.is_admin,
+        new_admin_role: updates.admin_role,
+        new_subscription_status: updates.subscription_status,
+        new_subscription_tier: updates.subscription_tier,
+        new_free_credits_remaining: updates.free_credits_remaining
+      });
 
       if (error) {
         console.error('Error updating user:', error);
         throw error;
       }
+
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-users'] });
@@ -119,21 +129,26 @@ export const AdminUserManagement: React.FC = () => {
     },
   });
 
-  // Delete user mutation
+  // Delete user mutation using admin function
   const deleteUserMutation = useMutation({
     mutationFn: async (userId: string) => {
-      console.log('Deleting user:', userId);
+      console.log('Deleting user with admin function:', userId);
       
-      // Delete user profile (this will cascade to auth.users due to foreign key)
-      const { error } = await supabase
-        .from('profiles')
-        .delete()
-        .eq('id', userId);
+      if (!user?.id) {
+        throw new Error('User not authenticated');
+      }
+
+      const { data, error } = await supabase.rpc('admin_delete_profile', {
+        requesting_admin_id: user.id,
+        target_user_id: userId
+      });
 
       if (error) {
         console.error('Error deleting user:', error);
         throw error;
       }
+
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-users'] });
