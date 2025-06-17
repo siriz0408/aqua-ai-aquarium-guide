@@ -3,7 +3,10 @@ import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Zap, Star, Crown, Check } from 'lucide-react';
+import { Zap, Star, Crown, Check, Loader2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { useState } from 'react';
 
 interface PaywallProps {
   isOpen: boolean;
@@ -18,13 +21,43 @@ const PaywallModal: React.FC<PaywallProps> = ({
   currentCredits = 0,
   showUpgradeOnly = false 
 }) => {
+  const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState<string | null>(null);
+
   if (!isOpen) return null;
 
-  const handleUpgrade = (plan: string) => {
-    // This will be implemented with Stripe integration
-    console.log(`Upgrading to ${plan} plan`);
-    // For now, just close the modal
-    onClose();
+  const handleUpgrade = async (plan: string) => {
+    setIsLoading(plan);
+    try {
+      const { data, error } = await supabase.functions.invoke('create-checkout', {
+        body: { plan }
+      });
+
+      if (error) {
+        console.error('Error creating checkout:', error);
+        toast({
+          title: "Error",
+          description: "Failed to create checkout session. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (data.url) {
+        // Open Stripe checkout in a new tab
+        window.open(data.url, '_blank');
+        onClose();
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      toast({
+        title: "Error",
+        description: "Something went wrong. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(null);
+    }
   };
 
   return (
@@ -126,8 +159,16 @@ const PaywallModal: React.FC<PaywallProps> = ({
                 <Button 
                   className="w-full" 
                   onClick={() => handleUpgrade('pro')}
+                  disabled={isLoading === 'pro'}
                 >
-                  Upgrade to Pro
+                  {isLoading === 'pro' ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Loading...
+                    </>
+                  ) : (
+                    'Upgrade to Pro'
+                  )}
                 </Button>
               </CardContent>
             </Card>
@@ -176,8 +217,16 @@ const PaywallModal: React.FC<PaywallProps> = ({
                   variant="secondary" 
                   className="w-full" 
                   onClick={() => handleUpgrade('premium')}
+                  disabled={isLoading === 'premium'}
                 >
-                  Upgrade to Premium
+                  {isLoading === 'premium' ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Loading...
+                    </>
+                  ) : (
+                    'Upgrade to Premium'
+                  )}
                 </Button>
               </CardContent>
             </Card>
