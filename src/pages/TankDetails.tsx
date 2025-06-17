@@ -26,7 +26,7 @@ import {
 const TankDetails = () => {
   const { tankId } = useParams<{ tankId: string }>();
   const navigate = useNavigate();
-  const { getTank, updateTank, deleteParameters, loadWaterTestLogs } = useAquarium();
+  const { getTank, updateTank, deleteParameters, loadWaterTestLogs, updateEquipment, deleteEquipment, updateLivestock, deleteLivestock } = useAquarium();
   const { toast } = useToast();
   
   const tank = tankId ? getTank(tankId) : undefined;
@@ -94,14 +94,8 @@ const TankDetails = () => {
     navigate('/aqua-bot');
   };
 
-  const updateLivestock = (id: string, updates: any) => {
-    const updatedLivestock = livestock.map(item =>
-      item.id === id ? { ...item, ...updates } : item
-    );
-    setLivestock(updatedLivestock);
-    
-    // Update tank in context
-    updateTank(tankId!, { livestock: updatedLivestock });
+  const updateLivestockLocal = async (id: string, updates: any) => {
+    await updateLivestock(tankId!, id, updates);
     
     toast({
       title: "Livestock updated",
@@ -109,12 +103,8 @@ const TankDetails = () => {
     });
   };
 
-  const deleteLivestock = (id: string) => {
-    const updatedLivestock = livestock.filter(item => item.id !== id);
-    setLivestock(updatedLivestock);
-    
-    // Update tank in context
-    updateTank(tankId!, { livestock: updatedLivestock });
+  const deleteLivestockLocal = async (id: string) => {
+    await deleteLivestock(tankId!, id);
     
     toast({
       title: "Livestock removed",
@@ -122,14 +112,8 @@ const TankDetails = () => {
     });
   };
 
-  const updateEquipment = (id: string, updates: any) => {
-    const updatedEquipment = equipment.map(item =>
-      item.id === id ? { ...item, ...updates } : item
-    );
-    setEquipment(updatedEquipment);
-    
-    // Update tank in context
-    updateTank(tankId!, { equipment: updatedEquipment });
+  const updateEquipmentLocal = async (id: string, updates: any) => {
+    await updateEquipment(tankId!, id, updates);
     
     toast({
       title: "Equipment updated",
@@ -137,12 +121,8 @@ const TankDetails = () => {
     });
   };
 
-  const deleteEquipment = (id: string) => {
-    const updatedEquipment = equipment.filter(item => item.id !== id);
-    setEquipment(updatedEquipment);
-    
-    // Update tank in context
-    updateTank(tankId!, { equipment: updatedEquipment });
+  const deleteEquipmentLocal = async (id: string) => {
+    await deleteEquipment(tankId!, id);
     
     toast({
       title: "Equipment removed",
@@ -196,11 +176,11 @@ const TankDetails = () => {
           <CardContent>
             <div className="grid grid-cols-3 gap-4 text-center">
               <div>
-                <p className="text-2xl font-bold text-primary">{livestock.length}</p>
+                <p className="text-2xl font-bold text-primary">{tank.livestock.length}</p>
                 <p className="text-sm text-muted-foreground">Livestock</p>
               </div>
               <div>
-                <p className="text-2xl font-bold text-accent">{equipment.length}</p>
+                <p className="text-2xl font-bold text-accent">{tank.equipment.length}</p>
                 <p className="text-sm text-muted-foreground">Equipment</p>
               </div>
               <div>
@@ -241,14 +221,14 @@ const TankDetails = () => {
               </Button>
             </div>
             
-            {equipment.length > 0 ? (
+            {tank.equipment.length > 0 ? (
               <div className="space-y-3">
-                {equipment.map((item) => (
+                {tank.equipment.map((item) => (
                   <EnhancedEquipmentCard
                     key={item.id}
                     equipment={item}
-                    onUpdate={updateEquipment}
-                    onDelete={deleteEquipment}
+                    onUpdate={updateEquipmentLocal}
+                    onDelete={deleteEquipmentLocal}
                   />
                 ))}
               </div>
@@ -282,14 +262,14 @@ const TankDetails = () => {
               </Button>
             </div>
 
-            {livestock.length > 0 ? (
+            {tank.livestock.length > 0 ? (
               <div className="space-y-3">
-                {livestock.map((animal) => (
+                {tank.livestock.map((animal) => (
                   <EnhancedLivestockCard
                     key={animal.id}
                     livestock={animal}
-                    onUpdate={updateLivestock}
-                    onDelete={deleteLivestock}
+                    onUpdate={updateLivestockLocal}
+                    onDelete={deleteLivestockLocal}
                   />
                 ))}
               </div>

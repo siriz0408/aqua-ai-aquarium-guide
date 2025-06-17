@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Layout } from '@/components/Layout';
@@ -15,7 +14,7 @@ import { livestockOptions, livestockCategories } from '@/data/livestockOptions';
 const Livestock = () => {
   const { tankId } = useParams<{ tankId: string }>();
   const navigate = useNavigate();
-  const { getTank, updateTank } = useAquarium();
+  const { getTank, addLivestock } = useAquarium();
   const { toast } = useToast();
   
   const tank = tankId ? getTank(tankId) : undefined;
@@ -104,7 +103,7 @@ const Livestock = () => {
     return mockResults;
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!livestock.name || !livestock.species) {
       toast({
         title: "Please fill in livestock details",
@@ -115,7 +114,6 @@ const Livestock = () => {
 
     const selectedOption = livestockOptions.find(opt => opt.value === selectedLivestock);
     const newLivestock = {
-      id: Date.now().toString(),
       name: livestock.name,
       species: livestock.species,
       careLevel: selectedOption?.careLevel || 'Beginner',
@@ -124,18 +122,7 @@ const Livestock = () => {
       healthNotes: ''
     };
 
-    // Update the tank with the new livestock
-    const updatedTank = {
-      ...tank,
-      livestock: [...(tank.livestock || []), newLivestock]
-    };
-    
-    updateTank(tankId!, updatedTank);
-    
-    toast({
-      title: "Livestock added successfully!",
-      description: `${livestock.name} has been added to your tank.`,
-    });
+    await addLivestock(tankId!, newLivestock);
 
     // Reset form and show continue actions
     setLivestock({ name: '', species: '' });

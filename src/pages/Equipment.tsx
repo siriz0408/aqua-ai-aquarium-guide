@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Layout } from '@/components/Layout';
@@ -16,7 +15,7 @@ import { equipmentOptions, equipmentCategories } from '@/data/equipmentOptions';
 const Equipment = () => {
   const { tankId } = useParams<{ tankId: string }>();
   const navigate = useNavigate();
-  const { getTank, updateTank } = useAquarium();
+  const { getTank, addEquipment } = useAquarium();
   const { toast } = useToast();
   
   const tank = tankId ? getTank(tankId) : undefined;
@@ -109,14 +108,13 @@ const Equipment = () => {
     return mockResults;
   };
 
-  const addSelectedEquipment = () => {
+  const addSelectedEquipment = async () => {
     if (!selectedEquipment) return;
     
     const selectedOption = equipmentOptions.find(opt => opt.value === selectedEquipment);
     if (!selectedOption) return;
 
     const newEquipment = {
-      id: Date.now().toString(),
       name: selectedOption.label,
       type: selectedOption.category,
       model: '',
@@ -125,22 +123,11 @@ const Equipment = () => {
       upgradeNotes: ''
     };
     
-    // Update the tank with the new equipment
-    const updatedTank = {
-      ...tank,
-      equipment: [...(tank.equipment || []), newEquipment]
-    };
-    
-    updateTank(tankId!, updatedTank);
+    await addEquipment(tankId!, newEquipment);
     setSelectedEquipment('');
-    
-    toast({
-      title: "Equipment added successfully!",
-      description: `${selectedOption.label} has been added to your tank.`,
-    });
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!equipment.name || !equipment.type) {
       toast({
         title: "Please fill in equipment details",
@@ -150,7 +137,6 @@ const Equipment = () => {
     }
 
     const newEquipment = {
-      id: Date.now().toString(),
       name: equipment.name,
       type: equipment.type,
       model: equipment.model,
@@ -159,19 +145,7 @@ const Equipment = () => {
       upgradeNotes: 'Consider upgrading to a larger model if adding more fish load to the tank.',
     };
 
-    // Update the tank with the new equipment
-    const updatedTank = {
-      ...tank,
-      equipment: [...(tank.equipment || []), newEquipment]
-    };
-    
-    updateTank(tankId!, updatedTank);
-    
-    toast({
-      title: "Equipment added successfully!",
-      description: `${equipment.name} has been added to your tank.`,
-    });
-    
+    await addEquipment(tankId!, newEquipment);
     navigate(`/tank/${tankId}`);
   };
 

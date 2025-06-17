@@ -435,6 +435,53 @@ export type Database = {
         }
         Relationships: []
       }
+      equipment: {
+        Row: {
+          aquarium_id: string
+          created_at: string
+          id: string
+          image_url: string | null
+          maintenance_tips: string | null
+          model: string | null
+          name: string
+          type: string
+          updated_at: string
+          upgrade_notes: string | null
+        }
+        Insert: {
+          aquarium_id: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          maintenance_tips?: string | null
+          model?: string | null
+          name: string
+          type: string
+          updated_at?: string
+          upgrade_notes?: string | null
+        }
+        Update: {
+          aquarium_id?: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          maintenance_tips?: string | null
+          model?: string | null
+          name?: string
+          type?: string
+          updated_at?: string
+          upgrade_notes?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "equipment_aquarium_id_fkey"
+            columns: ["aquarium_id"]
+            isOneToOne: false
+            referencedRelation: "aquariums"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fish: {
         Row: {
           aquarium_id: string
@@ -526,6 +573,53 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      livestock: {
+        Row: {
+          aquarium_id: string
+          care_level: string
+          compatibility: string | null
+          created_at: string
+          health_notes: string | null
+          id: string
+          image_url: string | null
+          name: string
+          species: string
+          updated_at: string
+        }
+        Insert: {
+          aquarium_id: string
+          care_level?: string
+          compatibility?: string | null
+          created_at?: string
+          health_notes?: string | null
+          id?: string
+          image_url?: string | null
+          name: string
+          species: string
+          updated_at?: string
+        }
+        Update: {
+          aquarium_id?: string
+          care_level?: string
+          compatibility?: string | null
+          created_at?: string
+          health_notes?: string | null
+          id?: string
+          image_url?: string | null
+          name?: string
+          species?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "livestock_aquarium_id_fkey"
+            columns: ["aquarium_id"]
+            isOneToOne: false
+            referencedRelation: "aquariums"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       messages: {
         Row: {

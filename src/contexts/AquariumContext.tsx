@@ -57,8 +57,12 @@ interface AquariumContextType {
   addParameters: (tankId: string, parameters: Omit<WaterParameters, 'id'>) => Promise<void>;
   deleteParameters: (tankId: string, parametersId: string) => Promise<void>;
   loadWaterTestLogs: (tankId: string) => Promise<void>;
-  addEquipment: (tankId: string, equipment: Omit<Equipment, 'id'>) => void;
-  addLivestock: (tankId: string, livestock: Omit<Livestock, 'id'>) => void;
+  addEquipment: (tankId: string, equipment: Omit<Equipment, 'id'>) => Promise<void>;
+  updateEquipment: (tankId: string, equipmentId: string, updates: Partial<Equipment>) => Promise<void>;
+  deleteEquipment: (tankId: string, equipmentId: string) => Promise<void>;
+  addLivestock: (tankId: string, livestock: Omit<Livestock, 'id'>) => Promise<void>;
+  updateLivestock: (tankId: string, livestockId: string, updates: Partial<Livestock>) => Promise<void>;
+  deleteLivestock: (tankId: string, livestockId: string) => Promise<void>;
   getTank: (tankId: string) => Tank | undefined;
   isLoading: boolean;
 }
@@ -119,6 +123,26 @@ export function AquariumProvider({ children }: { children: React.ReactNode }) {
           console.error('Error loading water tests:', waterTestError);
         }
 
+        // Load equipment for each tank
+        const { data: equipmentData, error: equipmentError } = await supabase
+          .from('equipment')
+          .select('*')
+          .eq('aquarium_id', aquarium.id);
+
+        if (equipmentError) {
+          console.error('Error loading equipment:', equipmentError);
+        }
+
+        // Load livestock for each tank
+        const { data: livestockData, error: livestockError } = await supabase
+          .from('livestock')
+          .select('*')
+          .eq('aquarium_id', aquarium.id);
+
+        if (livestockError) {
+          console.error('Error loading livestock:', livestockError);
+        }
+
         // Convert water test logs to WaterParameters format
         const parameters: WaterParameters[] = (waterTests || []).map(test => ({
           id: test.id,
@@ -135,13 +159,35 @@ export function AquariumProvider({ children }: { children: React.ReactNode }) {
           aiInsights: test.notes || undefined,
         }));
 
+        // Convert equipment data
+        const equipment: Equipment[] = (equipmentData || []).map(eq => ({
+          id: eq.id,
+          name: eq.name,
+          type: eq.type,
+          model: eq.model || '',
+          imageUrl: eq.image_url || '',
+          maintenanceTips: eq.maintenance_tips || '',
+          upgradeNotes: eq.upgrade_notes || ''
+        }));
+
+        // Convert livestock data
+        const livestock: Livestock[] = (livestockData || []).map(ls => ({
+          id: ls.id,
+          name: ls.name,
+          species: ls.species,
+          careLevel: ls.care_level,
+          compatibility: ls.compatibility || '',
+          imageUrl: ls.image_url || '',
+          healthNotes: ls.health_notes || ''
+        }));
+
         return {
           id: aquarium.id,
           name: aquarium.name,
           size: `${aquarium.size_gallons || 0} gallons`,
           type: 'Mixed' as const, // Default type for now
-          equipment: [],
-          livestock: [],
+          equipment,
+          livestock,
           parameters,
           createdAt: aquarium.created_at
         };
@@ -448,19 +494,67 @@ export function AquariumProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const addEquipment = (tankId: string, equipmentData: Omit<Equipment, 'id'>) => {
-    const newEquipment: Equipment = {
-      ...equipmentData,
-      id: Date.now().toString(),
-    };
-    
-    setTanks(prev => prev.map(tank => 
-      tank.id === tankId 
-        ? { ...tank, equipment: [...tank.equipment, newEquipment] }
-        : tank
-    ));
+  const addEquipment = async (tankId: string, equipmentData: Omit<Equipment, 'id'>) => {
+    if (user) {
+      try {
+        const { data, error } = await supabase
+          .from('equipment')
+          .insert({
+            aquarium_id: tankId,
+            name: equipmentData.name,
+            type: equipmentData.type,
+            model: equipmentData.model,
+            image_url: equipmentData.imageUrl,
+            maintenance_tips: equipmentData.maintenanceTips,
+            upgrade_notes: equipmentData.upgradeNotes
+          })
+          .select()
+          .single();
 
-    if (!user) {
+        if (error) throw error;
+
+        const newEquipment: Equipment = {
+          id: data.id,
+          name: data.name,
+          type: data.type,
+          model: data.model || '',
+          imageUrl: data.image_url || '',
+          maintenanceTips: data.maintenance_tips || '',
+          upgradeNotes: data.upgrade_notes || ''
+        };
+
+        // Update local state
+        setTanks(prev => prev.map(tank => 
+          tank.id === tankId 
+            ? { ...tank, equipment: [...tank.equipment, newEquipment] }
+            : tank
+        ));
+
+        toast({
+          title: "Equipment added successfully!",
+          description: `${equipmentData.name} has been added to your tank.`,
+        });
+      } catch (error: any) {
+        console.error('Error adding equipment:', error);
+        toast({
+          title: "Error adding equipment",
+          description: error.message || "Failed to add equipment",
+          variant: "destructive",
+        });
+      }
+    } else {
+      // Local storage fallback
+      const newEquipment: Equipment = {
+        ...equipmentData,
+        id: Date.now().toString(),
+      };
+      
+      setTanks(prev => prev.map(tank => 
+        tank.id === tankId 
+          ? { ...tank, equipment: [...tank.equipment, newEquipment] }
+          : tank
+      ));
+
       const updatedTanks = tanks.map(tank => 
         tank.id === tankId 
           ? { ...tank, equipment: [...tank.equipment, newEquipment] }
@@ -470,22 +564,252 @@ export function AquariumProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const addLivestock = (tankId: string, livestockData: Omit<Livestock, 'id'>) => {
-    const newLivestock: Livestock = {
-      ...livestockData,
-      id: Date.now().toString(),
-    };
-    
+  const updateEquipment = async (tankId: string, equipmentId: string, updates: Partial<Equipment>) => {
+    if (user) {
+      try {
+        const { error } = await supabase
+          .from('equipment')
+          .update({
+            name: updates.name,
+            type: updates.type,
+            model: updates.model,
+            image_url: updates.imageUrl,
+            maintenance_tips: updates.maintenanceTips,
+            upgrade_notes: updates.upgradeNotes
+          })
+          .eq('id', equipmentId);
+
+        if (error) throw error;
+      } catch (error: any) {
+        console.error('Error updating equipment:', error);
+        toast({
+          title: "Error updating equipment",
+          description: error.message || "Failed to update equipment",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
+    // Update local state
     setTanks(prev => prev.map(tank => 
       tank.id === tankId 
-        ? { ...tank, livestock: [...tank.livestock, newLivestock] }
+        ? {
+            ...tank, 
+            equipment: tank.equipment.map(eq => 
+              eq.id === equipmentId ? { ...eq, ...updates } : eq
+            )
+          }
         : tank
     ));
 
     if (!user) {
       const updatedTanks = tanks.map(tank => 
         tank.id === tankId 
+          ? {
+              ...tank, 
+              equipment: tank.equipment.map(eq => 
+                eq.id === equipmentId ? { ...eq, ...updates } : eq
+              )
+            }
+          : tank
+      );
+      localStorage.setItem('aqua-ai-tanks', JSON.stringify(updatedTanks));
+    }
+  };
+
+  const deleteEquipment = async (tankId: string, equipmentId: string) => {
+    if (user) {
+      try {
+        const { error } = await supabase
+          .from('equipment')
+          .delete()
+          .eq('id', equipmentId);
+
+        if (error) throw error;
+      } catch (error: any) {
+        console.error('Error deleting equipment:', error);
+        toast({
+          title: "Error deleting equipment",
+          description: error.message || "Failed to delete equipment",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
+    // Update local state
+    setTanks(prev => prev.map(tank => 
+      tank.id === tankId 
+        ? { ...tank, equipment: tank.equipment.filter(eq => eq.id !== equipmentId) }
+        : tank
+    ));
+
+    if (!user) {
+      const updatedTanks = tanks.map(tank => 
+        tank.id === tankId 
+          ? { ...tank, equipment: tank.equipment.filter(eq => eq.id !== equipmentId) }
+          : tank
+      );
+      localStorage.setItem('aqua-ai-tanks', JSON.stringify(updatedTanks));
+    }
+  };
+
+  const addLivestock = async (tankId: string, livestockData: Omit<Livestock, 'id'>) => {
+    if (user) {
+      try {
+        const { data, error } = await supabase
+          .from('livestock')
+          .insert({
+            aquarium_id: tankId,
+            name: livestockData.name,
+            species: livestockData.species,
+            care_level: livestockData.careLevel,
+            compatibility: livestockData.compatibility,
+            image_url: livestockData.imageUrl,
+            health_notes: livestockData.healthNotes
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        const newLivestock: Livestock = {
+          id: data.id,
+          name: data.name,
+          species: data.species,
+          careLevel: data.care_level,
+          compatibility: data.compatibility || '',
+          imageUrl: data.image_url || '',
+          healthNotes: data.health_notes || ''
+        };
+
+        // Update local state
+        setTanks(prev => prev.map(tank => 
+          tank.id === tankId 
+            ? { ...tank, livestock: [...tank.livestock, newLivestock] }
+            : tank
+        ));
+
+        toast({
+          title: "Livestock added successfully!",
+          description: `${livestockData.name} has been added to your tank.`,
+        });
+      } catch (error: any) {
+        console.error('Error adding livestock:', error);
+        toast({
+          title: "Error adding livestock",
+          description: error.message || "Failed to add livestock",
+          variant: "destructive",
+        });
+      }
+    } else {
+      // Local storage fallback
+      const newLivestock: Livestock = {
+        ...livestockData,
+        id: Date.now().toString(),
+      };
+      
+      setTanks(prev => prev.map(tank => 
+        tank.id === tankId 
           ? { ...tank, livestock: [...tank.livestock, newLivestock] }
+          : tank
+      ));
+
+      const updatedTanks = tanks.map(tank => 
+        tank.id === tankId 
+          ? { ...tank, livestock: [...tank.livestock, newLivestock] }
+          : tank
+      );
+      localStorage.setItem('aqua-ai-tanks', JSON.stringify(updatedTanks));
+    }
+  };
+
+  const updateLivestock = async (tankId: string, livestockId: string, updates: Partial<Livestock>) => {
+    if (user) {
+      try {
+        const { error } = await supabase
+          .from('livestock')
+          .update({
+            name: updates.name,
+            species: updates.species,
+            care_level: updates.careLevel,
+            compatibility: updates.compatibility,
+            image_url: updates.imageUrl,
+            health_notes: updates.healthNotes
+          })
+          .eq('id', livestockId);
+
+        if (error) throw error;
+      } catch (error: any) {
+        console.error('Error updating livestock:', error);
+        toast({
+          title: "Error updating livestock",
+          description: error.message || "Failed to update livestock",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
+    // Update local state
+    setTanks(prev => prev.map(tank => 
+      tank.id === tankId 
+        ? {
+            ...tank, 
+            livestock: tank.livestock.map(ls => 
+              ls.id === livestockId ? { ...ls, ...updates } : ls
+            )
+          }
+        : tank
+    ));
+
+    if (!user) {
+      const updatedTanks = tanks.map(tank => 
+        tank.id === tankId 
+          ? {
+              ...tank, 
+              livestock: tank.livestock.map(ls => 
+                ls.id === livestockId ? { ...ls, ...updates } : ls
+              )
+            }
+          : tank
+      );
+      localStorage.setItem('aqua-ai-tanks', JSON.stringify(updatedTanks));
+    }
+  };
+
+  const deleteLivestock = async (tankId: string, livestockId: string) => {
+    if (user) {
+      try {
+        const { error } = await supabase
+          .from('livestock')
+          .delete()
+          .eq('id', livestockId);
+
+        if (error) throw error;
+      } catch (error: any) {
+        console.error('Error deleting livestock:', error);
+        toast({
+          title: "Error deleting livestock",
+          description: error.message || "Failed to delete livestock",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
+    // Update local state
+    setTanks(prev => prev.map(tank => 
+      tank.id === tankId 
+        ? { ...tank, livestock: tank.livestock.filter(ls => ls.id !== livestockId) }
+        : tank
+    ));
+
+    if (!user) {
+      const updatedTanks = tanks.map(tank => 
+        tank.id === tankId 
+          ? { ...tank, livestock: tank.livestock.filter(ls => ls.id !== livestockId) }
           : tank
       );
       localStorage.setItem('aqua-ai-tanks', JSON.stringify(updatedTanks));
@@ -506,7 +830,11 @@ export function AquariumProvider({ children }: { children: React.ReactNode }) {
       deleteParameters,
       loadWaterTestLogs,
       addEquipment,
+      updateEquipment,
+      deleteEquipment,
       addLivestock,
+      updateLivestock,
+      deleteLivestock,
       getTank,
       isLoading,
     }}>
