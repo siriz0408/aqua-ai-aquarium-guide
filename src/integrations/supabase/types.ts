@@ -892,46 +892,70 @@ export type Database = {
           conversation_id: string | null
           created_at: string
           description: string | null
+          detailed_instructions: string | null
+          difficulty: string | null
           due_date: string | null
+          estimated_time: string | null
           frequency: string | null
           id: string
           list_id: string | null
           priority: string
+          required_tools: string[] | null
+          resources: Json | null
           status: string
+          steps: Json | null
           task_type: string
+          tips: string[] | null
           title: string
           updated_at: string
           user_id: string
+          warnings: string[] | null
         }
         Insert: {
           conversation_id?: string | null
           created_at?: string
           description?: string | null
+          detailed_instructions?: string | null
+          difficulty?: string | null
           due_date?: string | null
+          estimated_time?: string | null
           frequency?: string | null
           id?: string
           list_id?: string | null
           priority?: string
+          required_tools?: string[] | null
+          resources?: Json | null
           status?: string
+          steps?: Json | null
           task_type?: string
+          tips?: string[] | null
           title: string
           updated_at?: string
           user_id: string
+          warnings?: string[] | null
         }
         Update: {
           conversation_id?: string | null
           created_at?: string
           description?: string | null
+          detailed_instructions?: string | null
+          difficulty?: string | null
           due_date?: string | null
+          estimated_time?: string | null
           frequency?: string | null
           id?: string
           list_id?: string | null
           priority?: string
+          required_tools?: string[] | null
+          resources?: Json | null
           status?: string
+          steps?: Json | null
           task_type?: string
+          tips?: string[] | null
           title?: string
           updated_at?: string
           user_id?: string
+          warnings?: string[] | null
         }
         Relationships: [
           {
