@@ -4,29 +4,36 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "@/contexts/AuthContext";
-import { AquariumProvider } from "@/contexts/AquariumContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
+import { AquariumProvider } from "@/contexts/AquariumContext";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { AdminProtectedRoute } from "@/components/admin/AdminProtectedRoute";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import Index from "./pages/Index";
-import Auth from "./pages/Auth";
-import AquaBot from "./pages/AquaBot";
-import Profile from "./pages/Profile";
-import AddTank from "./pages/AddTank";
-import EditTank from "./pages/EditTank";
 import TankDetails from "./pages/TankDetails";
 import LogParameters from "./pages/LogParameters";
-import SetupPlanner from "./pages/SetupPlanner";
-import Education from "./pages/Education";
-import Livestock from "./pages/Livestock";
 import Equipment from "./pages/Equipment";
+import Livestock from "./pages/Livestock";
+import SetupPlanner from "./pages/SetupPlanner";
+import AquaBot from "./pages/AquaBot";
 import Reminders from "./pages/Reminders";
+import Education from "./pages/Education";
+import Auth from "./pages/Auth";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
-function App() {
-  return (
+const App = () => (
+  <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <AuthProvider>
@@ -35,30 +42,71 @@ function App() {
               <Toaster />
               <Sonner />
               <BrowserRouter>
-                <Routes>
-                  <Route path="/" element={<Index />} />
-                  <Route path="/auth" element={<Auth />} />
-                  <Route path="/aquabot" element={<AquaBot />} />
-                  <Route path="/profile" element={<Profile />} />
-                  <Route path="/add-tank" element={<AddTank />} />
-                  <Route path="/edit-tank/:tankId" element={<EditTank />} />
-                  <Route path="/tank/:tankId" element={<TankDetails />} />
-                  <Route path="/log-parameters/:tankId" element={<LogParameters />} />
-                  <Route path="/setup-planner" element={<SetupPlanner />} />
-                  <Route path="/education" element={<Education />} />
-                  <Route path="/livestock" element={<Livestock />} />
-                  <Route path="/equipment" element={<Equipment />} />
-                  <Route path="/reminders" element={<Reminders />} />
-                  <Route path="/admin" element={<Admin />} />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
+                <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-cyan-50 dark:from-slate-900 dark:via-blue-900 dark:to-cyan-900">
+                  <Routes>
+                    <Route path="/auth" element={<Auth />} />
+                    <Route path="/" element={
+                      <ProtectedRoute>
+                        <Index />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/tank/:tankId" element={
+                      <ProtectedRoute>
+                        <TankDetails />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/tank/:tankId/log-parameters" element={
+                      <ProtectedRoute>
+                        <LogParameters />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/tank/:tankId/equipment" element={
+                      <ProtectedRoute>
+                        <Equipment />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/tank/:tankId/livestock" element={
+                      <ProtectedRoute>
+                        <Livestock />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/setup-planner" element={
+                      <ProtectedRoute>
+                        <SetupPlanner />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/aquabot" element={
+                      <ProtectedRoute>
+                        <AquaBot />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/reminders" element={
+                      <ProtectedRoute>
+                        <Reminders />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/education" element={
+                      <ProtectedRoute>
+                        <Education />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin" element={
+                      <ProtectedRoute>
+                        <AdminProtectedRoute>
+                          <Admin />
+                        </AdminProtectedRoute>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </div>
               </BrowserRouter>
             </TooltipProvider>
           </AquariumProvider>
         </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>
-  );
-}
+  </ErrorBoundary>
+);
 
 export default App;
