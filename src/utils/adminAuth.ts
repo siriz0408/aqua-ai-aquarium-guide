@@ -11,7 +11,7 @@ export const checkAdminStatus = async () => {
 
     const { data: profile, error } = await supabase
       .from('profiles')
-      .select('id, is_admin, admin_role, admin_permissions')
+      .select('id, is_admin, admin_role, admin_permissions, email, full_name')
       .eq('id', user.id)
       .single();
 
