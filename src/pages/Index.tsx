@@ -1,262 +1,187 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+
+import React, { useEffect } from 'react';
 import { Layout } from '@/components/Layout';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useAquarium } from '@/contexts/AquariumContext';
-import { Fish, Droplets, Plus, MessageCircle, BookOpen, Wrench, TestTube2, Calendar } from 'lucide-react';
-import { SubscriptionBanner } from '@/components/SubscriptionBanner';
+import { Button } from '@/components/ui/button';
+import { DropletIcon, FishIcon, Thermometer, Zap, MessageSquare, Calculator } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 import { TrialBanner } from '@/components/TrialBanner';
-import { Badge } from '@/components/ui/badge';
-import TaskRecommendations from '@/components/TaskRecommendations';
 import PaywallModal from '@/components/Paywall';
 import { useCredits } from '@/hooks/useCredits';
+import { useState } from 'react';
 
 const Index = () => {
   const navigate = useNavigate();
-  const { tanks: aquariums, isLoading } = useAquarium();
-  const { canUseFeature, needsUpgrade } = useCredits();
+  const { user } = useAuth();
+  const { needsUpgrade } = useCredits();
   const [showPaywall, setShowPaywall] = useState(false);
 
-  const handleAddTank = () => {
-    navigate('/add-tank');
-  };
-
-  const handleFeatureClick = (route: string, requiresAccess: boolean = true) => {
-    if (requiresAccess && !canUseFeature()) {
+  const handleFeatureClick = (path: string) => {
+    if (!user) {
+      navigate('/auth');
+      return;
+    }
+    
+    if (needsUpgrade()) {
       setShowPaywall(true);
       return;
     }
-    navigate(route);
+    
+    navigate(path);
   };
 
-  const quickActions = [
-    {
-      title: 'Chat with AquaBot',
-      description: 'Get expert advice for your aquarium',
-      icon: MessageCircle,
-      action: () => handleFeatureClick('/aquabot', true),
-      color: 'bg-blue-500 hover:bg-blue-600',
-      requiresAccess: true,
-    },
-    {
-      title: 'Setup Planner',
-      description: 'Plan your next aquarium setup',
-      icon: Wrench,
-      action: () => handleFeatureClick('/setup-planner', false),
-      color: 'bg-green-500 hover:bg-green-600',
-      requiresAccess: false,
-    },
-    {
-      title: 'Learn & Explore',
-      description: 'Browse fish and equipment guides',
-      icon: BookOpen,
-      action: () => handleFeatureClick('/education', false),
-      color: 'bg-purple-500 hover:bg-purple-600',
-      requiresAccess: false,
-    },
-  ];
-
-  const getParameterStatus = (tank: any) => {
-    if (!tank.parameters || tank.parameters.length === 0) {
-      return { status: 'warning', text: 'No tests' };
-    }
-    
-    const latestTest = tank.parameters[tank.parameters.length - 1];
-    const testDate = new Date(latestTest.date);
-    const daysSinceTest = Math.floor((Date.now() - testDate.getTime()) / (1000 * 60 * 60 * 24));
-    
-    if (daysSinceTest > 14) {
-      return { status: 'error', text: 'Overdue' };
-    } else if (daysSinceTest > 7) {
-      return { status: 'warning', text: 'Due soon' };
-    } else {
-      return { status: 'success', text: 'Recent' };
-    }
+  const handleUpgrade = () => {
+    setShowPaywall(true);
   };
 
   return (
-    <Layout title="My Aquariums">
-      <div className="space-y-6">
-        <SubscriptionBanner />
-        <TrialBanner onUpgrade={() => setShowPaywall(true)} />
-        
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h1 className="text-2xl font-bold">Welcome to AquaAI</h1>
-            <p className="text-muted-foreground">Manage your aquariums and get AI-powered advice</p>
-          </div>
-          <div className="flex gap-2">
-            <Button onClick={() => navigate('/tanks')} variant="outline" className="gap-2">
-              <Fish className="h-4 w-4" />
-              View All Tanks
-            </Button>
-            <Button onClick={handleAddTank} className="gap-2">
-              <Plus className="h-4 w-4" />
-              Add Tank
-            </Button>
-          </div>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="grid gap-4 md:grid-cols-3">
-          {quickActions.map((action) => (
-            <Card 
-              key={action.title} 
-              className="cursor-pointer hover:shadow-lg transition-shadow relative" 
-              onClick={action.action}
-            >
-              {action.requiresAccess && needsUpgrade() && (
-                <div className="absolute top-2 right-2">
-                  <Badge variant="secondary" className="text-xs">
-                    Pro
-                  </Badge>
-                </div>
-              )}
-              <CardHeader className="pb-3">
-                <div className={`w-10 h-10 rounded-full ${action.color} flex items-center justify-center mb-2`}>
-                  <action.icon className="h-5 w-5 text-white" />
-                </div>
-                <CardTitle className="text-lg">{action.title}</CardTitle>
-                <CardDescription>{action.description}</CardDescription>
-              </CardHeader>
-            </Card>
-          ))}
-        </div>
-
-        {/* Task Reminders Section - Full Width */}
-        <div className="w-full">
-          <TaskRecommendations />
-        </div>
-
-        {/* Your Aquariums Section - Full Width */}
-        <div className="w-full">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold">Your Aquariums</h2>
-            {aquariums.length > 0 && (
-              <Button variant="ghost" onClick={() => navigate('/tanks')}>
-                View All ({aquariums.length})
-              </Button>
+    <Layout>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-gray-900 dark:to-blue-900">
+        <div className="container mx-auto px-4 py-8">
+          {user && <TrialBanner onUpgrade={handleUpgrade} />}
+          
+          <div className="text-center mb-12">
+            <div className="flex items-center justify-center mb-6">
+              <div className="h-16 w-16 rounded-full ocean-gradient flex items-center justify-center mr-4">
+                <span className="text-white text-2xl font-bold">🐠</span>
+              </div>
+              <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
+                AquaAI
+              </h1>
+            </div>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              Your intelligent aquarium companion. Track water parameters, get AI-powered advice, 
+              and keep your aquatic friends healthy and happy.
+            </p>
+            {!user && (
+              <div className="mt-6 space-x-4">
+                <Button 
+                  size="lg" 
+                  className="ocean-gradient hover:opacity-90"
+                  onClick={() => navigate('/auth')}
+                >
+                  Start Free Trial
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="lg"
+                  onClick={() => navigate('/auth')}
+                >
+                  Sign In
+                </Button>
+              </div>
             )}
           </div>
-          
-          {isLoading ? (
-            <div className="grid gap-4 md:grid-cols-2">
-              {[...Array(2)].map((_, i) => (
-                <Card key={i} className="animate-pulse">
-                  <CardHeader>
-                    <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                    <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="h-20 bg-gray-200 rounded"></div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : aquariums.length === 0 ? (
-            <Card className="text-center p-8">
-              <div className="flex flex-col items-center gap-4">
-                <Fish className="h-12 w-12 text-muted-foreground" />
-                <div>
-                  <h3 className="text-lg font-semibold">No aquariums yet</h3>
-                  <p className="text-muted-foreground mb-4">Get started by adding your first tank</p>
-                  <Button onClick={handleAddTank} className="gap-2">
-                    <Plus className="h-4 w-4" />
-                    Add Your First Tank
-                  </Button>
-                </div>
-              </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => handleFeatureClick('/tanks')}>
+              <CardHeader>
+                <DropletIcon className="h-8 w-8 text-blue-500 mb-2" />
+                <CardTitle>Tank Management</CardTitle>
+                <CardDescription>
+                  Track multiple aquariums, monitor water parameters, and maintain detailed logs.
+                </CardDescription>
+              </CardHeader>
             </Card>
-          ) : (
-            <div className="grid gap-4 md:grid-cols-2">
-              {aquariums.slice(0, 4).map((aquarium) => {
-                const parameterStatus = getParameterStatus(aquarium);
-                
-                return (
-                  <Card 
-                    key={aquarium.id} 
-                    className="cursor-pointer hover:shadow-lg transition-shadow group"
-                    onClick={() => navigate(`/tank/${aquarium.id}`)}
-                  >
-                    <CardHeader className="pb-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Droplets className="h-5 w-5 text-blue-500" />
-                          <div>
-                            <CardTitle className="text-base">{aquarium.name}</CardTitle>
-                            <CardDescription>{aquarium.size}</CardDescription>
-                          </div>
-                        </div>
-                        <Badge variant="secondary" className="text-xs">
-                          {aquarium.type}
-                        </Badge>
-                      </div>
-                    </CardHeader>
-                    
-                    <CardContent className="space-y-3">
-                      {/* Quick Stats */}
-                      <div className="grid grid-cols-3 gap-2 text-center">
-                        <div>
-                          <p className="text-sm font-medium text-blue-600">
-                            {aquarium.livestock?.length || 0}
-                          </p>
-                          <p className="text-xs text-muted-foreground">Fish</p>
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-purple-600">
-                            {aquarium.equipment?.length || 0}
-                          </p>
-                          <p className="text-xs text-muted-foreground">Equipment</p>
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-green-600">
-                            {aquarium.parameters?.length || 0}
-                          </p>
-                          <p className="text-xs text-muted-foreground">Tests</p>
-                        </div>
-                      </div>
-                      
-                      {/* Test Status */}
-                      <div className="flex items-center justify-between p-2 bg-muted rounded">
-                        <div className="flex items-center gap-2">
-                          <TestTube2 className="h-3 w-3" />
-                          <span className="text-sm">Tests</span>
-                        </div>
-                        <Badge 
-                          variant={parameterStatus.status === 'success' ? 'default' : 
-                                 parameterStatus.status === 'warning' ? 'secondary' : 'destructive'}
-                          className="text-xs"
-                        >
-                          {parameterStatus.text}
-                        </Badge>
-                      </div>
-                      
-                      {/* Quick Action */}
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        className="w-full opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          navigate(`/tank/${aquarium.id}/log-parameters`);
-                        }}
-                      >
-                        <TestTube2 className="h-3 w-3 mr-1" />
-                        Log Water Test
-                      </Button>
-                    </CardContent>
-                  </Card>
-                );
-              })}
+
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => handleFeatureClick('/aquabot')}>
+              <CardHeader>
+                <MessageSquare className="h-8 w-8 text-green-500 mb-2" />
+                <CardTitle>AquaBot AI Assistant</CardTitle>
+                <CardDescription>
+                  Get expert advice on fish care, troubleshooting, and aquarium maintenance.
+                </CardDescription>
+              </CardHeader>
+            </Card>
+
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => handleFeatureClick('/education')}>
+              <CardHeader>
+                <FishIcon className="h-8 w-8 text-orange-500 mb-2" />
+                <CardTitle>Fish & Equipment Guide</CardTitle>
+                <CardDescription>
+                  Explore comprehensive databases of fish species and aquarium equipment.
+                </CardDescription>
+              </CardHeader>
+            </Card>
+
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => handleFeatureClick('/setup-planner')}>
+              <CardHeader>
+                <Calculator className="h-8 w-8 text-purple-500 mb-2" />
+                <CardTitle>Setup Planner</CardTitle>
+                <CardDescription>
+                  Plan your dream aquarium with AI-generated equipment and livestock recommendations.
+                </CardDescription>
+              </CardHeader>
+            </Card>
+
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => handleFeatureClick('/reminders')}>
+              <CardHeader>
+                <Thermometer className="h-8 w-8 text-red-500 mb-2" />
+                <CardTitle>Smart Reminders</CardTitle>
+                <CardDescription>
+                  Never miss water changes, feedings, or equipment maintenance with intelligent alerts.
+                </CardDescription>
+              </CardHeader>
+            </Card>
+
+            <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => handleFeatureClick('/log-parameters')}>
+              <CardHeader>
+                <Zap className="h-8 w-8 text-yellow-500 mb-2" />
+                <CardTitle>Water Testing</CardTitle>
+                <CardDescription>
+                  Log water test results and get automated analysis and recommendations.
+                </CardDescription>
+              </CardHeader>
+            </Card>
+          </div>
+
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-8 shadow-lg">
+            <div className="text-center mb-8">
+              <h2 className="text-3xl font-bold mb-4">Why Choose AquaAI?</h2>
+              <p className="text-muted-foreground">
+                Join thousands of aquarists who trust AquaAI to keep their aquariums thriving.
+              </p>
             </div>
-          )}
+            
+            <div className="grid md:grid-cols-3 gap-6">
+              <div className="text-center">
+                <div className="h-12 w-12 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center mx-auto mb-4">
+                  <Zap className="h-6 w-6 text-blue-600" />
+                </div>
+                <h3 className="font-semibold mb-2">AI-Powered Insights</h3>
+                <p className="text-sm text-muted-foreground">
+                  Get personalized recommendations based on your specific aquarium setup and parameters.
+                </p>
+              </div>
+              
+              <div className="text-center">
+                <div className="h-12 w-12 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center mx-auto mb-4">
+                  <DropletIcon className="h-6 w-6 text-green-600" />
+                </div>
+                <h3 className="font-semibold mb-2">Comprehensive Tracking</h3>
+                <p className="text-sm text-muted-foreground">
+                  Monitor all aspects of your aquarium health with detailed logs and trend analysis.
+                </p>
+              </div>
+              
+              <div className="text-center">
+                <div className="h-12 w-12 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center mx-auto mb-4">
+                  <FishIcon className="h-6 w-6 text-purple-600" />
+                </div>
+                <h3 className="font-semibold mb-2">Expert Knowledge</h3>
+                <p className="text-sm text-muted-foreground">
+                  Access a vast database of fish species, equipment guides, and care instructions.
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
       <PaywallModal 
-        isOpen={showPaywall}
-        onClose={() => setShowPaywall(false)}
+        isOpen={showPaywall} 
+        onClose={() => setShowPaywall(false)} 
         showUpgradeOnly={needsUpgrade()}
       />
     </Layout>
