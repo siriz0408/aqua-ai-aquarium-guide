@@ -2,8 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
-import { checkAdminStatus } from '@/utils/adminAuth';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
 interface AdminProtectedRouteProps {
   children: React.ReactNode;
@@ -27,10 +27,18 @@ export const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({ childr
         }
         
         console.log('Verifying admin status for user:', user.id);
-        const { isAdmin: adminStatus } = await checkAdminStatus();
         
-        console.log('Admin verification result:', adminStatus);
-        setIsAdmin(adminStatus);
+        // Use the safe admin check function directly
+        const { data: adminStatus, error } = await supabase
+          .rpc('check_user_admin_status', { user_id: user.id });
+        
+        if (error) {
+          console.error('Error checking admin status:', error);
+          setIsAdmin(false);
+        } else {
+          console.log('Admin verification result:', adminStatus);
+          setIsAdmin(adminStatus || false);
+        }
       } catch (error) {
         console.error('Error verifying admin status:', error);
         setIsAdmin(false);
@@ -54,8 +62,8 @@ export const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({ childr
   }
 
   if (!user) {
-    console.log('User not authenticated, redirecting to home page');
-    return <Navigate to="/" replace />;
+    console.log('User not authenticated, redirecting to auth page');
+    return <Navigate to="/auth" replace />;
   }
 
   if (!isAdmin) {
@@ -63,5 +71,6 @@ export const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({ childr
     return <Navigate to="/" replace />;
   }
 
+  console.log('Admin access granted, rendering admin content');
   return <>{children}</>;
 };

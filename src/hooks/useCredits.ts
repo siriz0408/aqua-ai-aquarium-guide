@@ -28,28 +28,26 @@ export const useCredits = () => {
       
       console.log('Fetching user profile for credits hook...');
       
-      // First check if user is admin using the safe function
+      // Check if user is admin using the safe function
       const { data: isAdmin, error: adminError } = await supabase
         .rpc('check_user_admin_status', { user_id: user.id });
 
       if (adminError) {
         console.error('Error checking admin status:', adminError);
+        // Continue with non-admin profile instead of throwing
       }
 
-      // Then get the profile data
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, subscription_status, subscription_tier, subscription_start_date, subscription_end_date, is_admin, admin_role')
-        .eq('id', user.id)
-        .single();
+      // Return a minimal profile based on admin status
+      const profile: UserProfile = {
+        id: user.id,
+        subscription_status: isAdmin ? 'active' : 'free',
+        subscription_tier: isAdmin ? 'pro' : 'free',
+        is_admin: isAdmin || false,
+        admin_role: isAdmin ? 'admin' : undefined,
+      };
 
-      if (error) {
-        console.error('Error fetching user profile:', error);
-        throw error;
-      }
-
-      console.log('User profile fetched:', data);
-      return data as UserProfile;
+      console.log('User profile constructed:', profile);
+      return profile;
     },
     enabled: !!user?.id,
     retry: 2,
