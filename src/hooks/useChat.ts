@@ -88,6 +88,17 @@ export const useChat = () => {
     }) => {
       console.log('Sending message with attachments:', attachments?.length || 0);
       
+      // Check if user is authenticated before attempting to send
+      if (!user) {
+        throw new Error('Please sign in to use the chat feature');
+      }
+
+      // Verify we have a valid session
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !session) {
+        throw new Error('Your session has expired. Please sign in again.');
+      }
+      
       const { data, error } = await supabase.functions.invoke('openai-chat', {
         body: {
           message,
@@ -99,6 +110,10 @@ export const useChat = () => {
 
       if (error) {
         console.error('Error invoking chat function:', error);
+        // Provide more specific error messages based on the error type
+        if (error.message?.includes('Auth session missing') || error.message?.includes('Unauthorized')) {
+          throw new Error('Your session has expired. Please sign in again.');
+        }
         throw error;
       }
 
@@ -114,9 +129,11 @@ export const useChat = () => {
     },
     onError: (error) => {
       console.error('Error sending message:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to send message. Please try again.';
+      
       toast({
         title: "Error",
-        description: "Failed to send message. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     },

@@ -13,6 +13,8 @@ import { ChatInput } from '@/components/chat/ChatInput';
 import { QuickPrompts } from '@/components/chat/QuickPrompts';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 interface FileAttachment {
   name: string;
@@ -23,6 +25,17 @@ interface FileAttachment {
 }
 
 const AquaBot = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  
+  // Redirect to auth if not logged in
+  useEffect(() => {
+    if (!user) {
+      navigate('/auth');
+      return;
+    }
+  }, [user, navigate]);
+
   const {
     conversations,
     messages,
@@ -56,6 +69,11 @@ const AquaBot = () => {
       setShowSidebar(false);
     }
   }, [isMobile]);
+
+  // Don't render if user is not authenticated
+  if (!user) {
+    return null;
+  }
 
   const handleSendMessage = async (message: string, attachments?: FileAttachment[]) => {
     console.log('Handling send message with attachments:', attachments?.length || 0);
