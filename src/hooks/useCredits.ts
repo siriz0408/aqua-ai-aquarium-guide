@@ -42,7 +42,7 @@ export const useCredits = () => {
             admin_role
           `)
           .eq('id', user.id)
-          .maybeSingle(); // Use maybeSingle to handle missing profiles gracefully
+          .maybeSingle();
 
         if (error) {
           console.error('Error fetching user profile:', error);
@@ -80,8 +80,8 @@ export const useCredits = () => {
       }
     },
     enabled: !!user,
-    retry: 3, // Increase retry count
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
+    retry: 2,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000),
     staleTime: 30000,
   });
 
