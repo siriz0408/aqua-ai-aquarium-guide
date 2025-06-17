@@ -3,19 +3,29 @@ import React, { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { checkAdminStatus } from '@/utils/adminAuth';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface AdminProtectedRouteProps {
   children: React.ReactNode;
 }
 
 export const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({ children }) => {
+  const { user } = useAuth();
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
     const verifyAdminStatus = async () => {
       try {
+        // Only check admin status if user is logged in
+        if (!user) {
+          setIsAdmin(false);
+          setLoading(false);
+          return;
+        }
+        
         const { isAdmin: adminStatus } = await checkAdminStatus();
+        console.log('Admin status verification result:', adminStatus);
         setIsAdmin(adminStatus);
       } catch (error) {
         console.error('Error verifying admin status:', error);
@@ -26,7 +36,7 @@ export const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({ childr
     };
 
     verifyAdminStatus();
-  }, []);
+  }, [user]);
 
   // Show loading while checking permissions
   if (loading) {

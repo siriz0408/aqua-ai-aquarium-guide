@@ -14,39 +14,29 @@ export const checkAdminStatus = async () => {
 
     console.log('User found:', user.id);
 
-    // Use the security definer function to check admin status
-    const { data: adminCheck, error: adminError } = await supabase
-      .rpc('is_admin', { user_id: user.id });
+    // Query the profiles table directly to avoid recursion issues
+    const { data: profileData, error: profileError } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .single();
 
-    if (adminError) {
-      console.error('Error checking admin status with RPC:', adminError);
+    if (profileError) {
+      console.error('Error fetching profile:', profileError);
       return { isAdmin: false, profile: null };
     }
 
-    console.log('Admin check result:', adminCheck);
+    console.log('Profile data:', profileData);
 
-    // If user is admin, we can create a basic profile object
-    if (adminCheck) {
-      const profile = {
-        id: user.id,
-        email: user.email,
-        full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Admin User',
-        is_admin: true,
-        admin_role: 'admin',
-        admin_permissions: ['user_management', 'ticket_management', 'analytics', 'settings'],
-        subscription_status: 'active',
-        subscription_tier: 'pro', // Admins get pro tier access
-        created_at: user.created_at,
-        last_active: new Date().toISOString(),
-      };
-
+    // If user is admin, return the profile with admin status
+    if (profileData?.is_admin) {
       return { 
         isAdmin: true, 
-        profile 
+        profile: profileData
       };
     }
 
-    return { isAdmin: false, profile: null };
+    return { isAdmin: false, profile: profileData };
   } catch (error) {
     console.error('Error in checkAdminStatus:', error);
     return { isAdmin: false, profile: null };

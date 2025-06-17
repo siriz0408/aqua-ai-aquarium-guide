@@ -32,11 +32,14 @@ export const useCredits = () => {
           .from('profiles')
           .select(`
             id,
+            email,
+            full_name,
             subscription_status,
             subscription_tier,
             subscription_start_date,
             subscription_end_date,
-            is_admin
+            is_admin,
+            admin_role
           `)
           .eq('id', user.id)
           .single();
