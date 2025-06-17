@@ -1,9 +1,9 @@
+
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { useUserImpersonation } from '@/hooks/useUserImpersonation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Label } from '@/components/ui/label';
-import { Search, Edit, UserPlus, Crown, User, Trash2, RefreshCw, UserCheck } from 'lucide-react';
+import { Search, Edit, UserPlus, Crown, User, Trash2, RefreshCw } from 'lucide-react';
 import { UserInviteDialog } from './UserInviteDialog';
 import { UserDetailModal } from './UserDetailModal';
 
@@ -37,29 +37,8 @@ export const AdminUserManagement: React.FC = () => {
   const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
-  const [currentUserProfile, setCurrentUserProfile] = useState<any>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { impersonateUser, isPending: isImpersonating } = useUserImpersonation();
-
-  // Get current user's profile to check admin role
-  React.useEffect(() => {
-    const fetchCurrentUserProfile = async () => {
-      if (user?.id) {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('admin_role, is_admin')
-          .eq('id', user.id)
-          .single();
-        
-        if (!error && data) {
-          setCurrentUserProfile(data);
-        }
-      }
-    };
-
-    fetchCurrentUserProfile();
-  }, [user]);
 
   // Fetch users using the admin function that bypasses RLS
   const { data: users = [], isLoading, error, refetch } = useQuery({
@@ -236,17 +215,6 @@ export const AdminUserManagement: React.FC = () => {
     deleteUserMutation.mutate(userId);
   };
 
-  const handleQuickImpersonate = (userToImpersonate: UserProfile) => {
-    console.log('Quick impersonating user:', userToImpersonate.email);
-    impersonateUser(userToImpersonate.id);
-  };
-
-  const canImpersonate = (userToCheck: UserProfile) => {
-    return currentUserProfile?.is_admin && 
-           currentUserProfile?.admin_role === 'super_admin' && 
-           userToCheck.id !== user?.id;
-  };
-
   const getRoleBadge = (user: UserProfile) => {
     if (user.is_admin) {
       return (
@@ -391,17 +359,6 @@ export const AdminUserManagement: React.FC = () => {
                       >
                         <Edit className="h-4 w-4" />
                       </Button>
-                      {canImpersonate(userItem) && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleQuickImpersonate(userItem)}
-                          disabled={isImpersonating}
-                          className="text-purple-600 border-purple-300 hover:bg-purple-50"
-                        >
-                          <UserCheck className="h-4 w-4" />
-                        </Button>
-                      )}
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <Button variant="outline" size="sm">
