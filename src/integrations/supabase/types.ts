@@ -134,6 +134,123 @@ export type Database = {
         }
         Relationships: []
       }
+      educational_equipment: {
+        Row: {
+          category: string
+          compatibility_equipment: string[] | null
+          created_at: string
+          difficulty_level: string
+          id: string
+          image_gallery: string[] | null
+          image_url: string | null
+          installation_notes: string | null
+          maintenance_frequency: string | null
+          name: string
+          price_range: string | null
+          recommended_tank_sizes: string[] | null
+          specifications: Json | null
+          summary: string | null
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          compatibility_equipment?: string[] | null
+          created_at?: string
+          difficulty_level?: string
+          id?: string
+          image_gallery?: string[] | null
+          image_url?: string | null
+          installation_notes?: string | null
+          maintenance_frequency?: string | null
+          name: string
+          price_range?: string | null
+          recommended_tank_sizes?: string[] | null
+          specifications?: Json | null
+          summary?: string | null
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          compatibility_equipment?: string[] | null
+          created_at?: string
+          difficulty_level?: string
+          id?: string
+          image_gallery?: string[] | null
+          image_url?: string | null
+          installation_notes?: string | null
+          maintenance_frequency?: string | null
+          name?: string
+          price_range?: string | null
+          recommended_tank_sizes?: string[] | null
+          specifications?: Json | null
+          summary?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      educational_fish: {
+        Row: {
+          care_level: string
+          category: string
+          compatibility_notes: string | null
+          created_at: string
+          diet_type: string | null
+          food_details: string | null
+          id: string
+          image_gallery: string[] | null
+          image_url: string | null
+          name: string
+          ph_range: string | null
+          reef_safe: boolean | null
+          scientific_name: string | null
+          similar_species: string[] | null
+          summary: string | null
+          tank_size_minimum: number | null
+          updated_at: string
+          water_temperature_range: string | null
+        }
+        Insert: {
+          care_level?: string
+          category?: string
+          compatibility_notes?: string | null
+          created_at?: string
+          diet_type?: string | null
+          food_details?: string | null
+          id?: string
+          image_gallery?: string[] | null
+          image_url?: string | null
+          name: string
+          ph_range?: string | null
+          reef_safe?: boolean | null
+          scientific_name?: string | null
+          similar_species?: string[] | null
+          summary?: string | null
+          tank_size_minimum?: number | null
+          updated_at?: string
+          water_temperature_range?: string | null
+        }
+        Update: {
+          care_level?: string
+          category?: string
+          compatibility_notes?: string | null
+          created_at?: string
+          diet_type?: string | null
+          food_details?: string | null
+          id?: string
+          image_gallery?: string[] | null
+          image_url?: string | null
+          name?: string
+          ph_range?: string | null
+          reef_safe?: boolean | null
+          scientific_name?: string | null
+          similar_species?: string[] | null
+          summary?: string | null
+          tank_size_minimum?: number | null
+          updated_at?: string
+          water_temperature_range?: string | null
+        }
+        Relationships: []
+      }
       fish: {
         Row: {
           aquarium_id: string
@@ -383,6 +500,76 @@ export type Database = {
             columns: ["list_id"]
             isOneToOne: false
             referencedRelation: "task_lists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_equipment_lists: {
+        Row: {
+          added_at: string
+          equipment_id: string
+          id: string
+          list_type: string
+          notes: string | null
+          user_id: string
+        }
+        Insert: {
+          added_at?: string
+          equipment_id: string
+          id?: string
+          list_type?: string
+          notes?: string | null
+          user_id: string
+        }
+        Update: {
+          added_at?: string
+          equipment_id?: string
+          id?: string
+          list_type?: string
+          notes?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_equipment_lists_equipment_id_fkey"
+            columns: ["equipment_id"]
+            isOneToOne: false
+            referencedRelation: "educational_equipment"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_fish_lists: {
+        Row: {
+          added_at: string
+          fish_id: string
+          id: string
+          list_type: string
+          notes: string | null
+          user_id: string
+        }
+        Insert: {
+          added_at?: string
+          fish_id: string
+          id?: string
+          list_type?: string
+          notes?: string | null
+          user_id: string
+        }
+        Update: {
+          added_at?: string
+          fish_id?: string
+          id?: string
+          list_type?: string
+          notes?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_fish_lists_fish_id_fkey"
+            columns: ["fish_id"]
+            isOneToOne: false
+            referencedRelation: "educational_fish"
             referencedColumns: ["id"]
           },
         ]
