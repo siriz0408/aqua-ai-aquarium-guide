@@ -21,6 +21,11 @@ export interface EducationalFish {
   image_url?: string;
   image_gallery?: string[];
   reef_safe?: boolean;
+  water_type?: string;
+  data_source?: string; // Added missing property
+  gbif_species_key?: number;
+  family?: string;
+  common_names?: any;
   created_at: string;
   updated_at: string;
 }

@@ -8,7 +8,7 @@ export interface EducationalEquipment {
   id: string;
   name: string;
   category: string;
-  summary?: string;
+  summary: string; // Changed from optional to required
   difficulty_level: 'Easy' | 'Moderate' | 'Advanced';
   recommended_tank_sizes?: string[];
   installation_notes?: string;
