@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -13,6 +12,7 @@ export interface UserProfile {
   total_credits_used: number;
   subscription_start_date?: string;
   subscription_end_date?: string;
+  is_admin?: boolean;
 }
 
 export interface UsageLog {
@@ -44,7 +44,8 @@ export const useCredits = () => {
           free_credits_remaining,
           total_credits_used,
           subscription_start_date,
-          subscription_end_date
+          subscription_end_date,
+          is_admin
         `)
         .eq('id', user.id)
         .single();
