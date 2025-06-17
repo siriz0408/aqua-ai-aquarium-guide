@@ -5,6 +5,21 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
+export interface TaskStep {
+  id: string;
+  description: string;
+  completed: boolean;
+  notes?: string;
+}
+
+export interface TaskResource {
+  id: string;
+  title: string;
+  url?: string;
+  type: 'link' | 'image' | 'document' | 'video';
+  description?: string;
+}
+
 export interface Task {
   id: string;
   user_id: string;
@@ -17,6 +32,14 @@ export interface Task {
   due_date?: string;
   list_id?: string;
   conversation_id?: string;
+  detailed_instructions?: string;
+  steps?: TaskStep[];
+  estimated_time?: string;
+  difficulty?: 'beginner' | 'intermediate' | 'advanced';
+  resources?: TaskResource[];
+  tips?: string[];
+  warnings?: string[];
+  required_tools?: string[];
   created_at: string;
   updated_at: string;
 }
@@ -38,6 +61,14 @@ interface CreateTaskData {
   task_type: string;
   priority: 'low' | 'medium' | 'high' | 'urgent';
   conversation_id?: string;
+  detailed_instructions?: string;
+  steps?: TaskStep[];
+  estimated_time?: string;
+  difficulty?: 'beginner' | 'intermediate' | 'advanced';
+  resources?: TaskResource[];
+  tips?: string[];
+  warnings?: string[];
+  required_tools?: string[];
 }
 
 export const useTasks = () => {
@@ -100,6 +131,14 @@ export const useTasks = () => {
           task_type: taskData.task_type,
           priority: taskData.priority,
           conversation_id: taskData.conversation_id,
+          detailed_instructions: taskData.detailed_instructions,
+          steps: taskData.steps || [],
+          estimated_time: taskData.estimated_time,
+          difficulty: taskData.difficulty,
+          resources: taskData.resources || [],
+          tips: taskData.tips || [],
+          warnings: taskData.warnings || [],
+          required_tools: taskData.required_tools || [],
           user_id: user.id,
         })
         .select()
