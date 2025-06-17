@@ -5,8 +5,9 @@ import { Layout } from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAquarium } from '@/contexts/AquariumContext';
-import { Fish, Droplets, Plus, MessageCircle, BookOpen, Wrench } from 'lucide-react';
+import { Fish, Droplets, Plus, MessageCircle, BookOpen, Wrench, TestTube2, Calendar } from 'lucide-react';
 import { SubscriptionBanner } from '@/components/SubscriptionBanner';
+import { Badge } from '@/components/ui/badge';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -40,6 +41,24 @@ const Index = () => {
     },
   ];
 
+  const getParameterStatus = (tank: any) => {
+    if (!tank.parameters || tank.parameters.length === 0) {
+      return { status: 'warning', text: 'No tests' };
+    }
+    
+    const latestTest = tank.parameters[tank.parameters.length - 1];
+    const testDate = new Date(latestTest.date);
+    const daysSinceTest = Math.floor((Date.now() - testDate.getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (daysSinceTest > 14) {
+      return { status: 'error', text: 'Overdue' };
+    } else if (daysSinceTest > 7) {
+      return { status: 'warning', text: 'Due soon' };
+    } else {
+      return { status: 'success', text: 'Recent' };
+    }
+  };
+
   return (
     <Layout title="My Aquariums">
       <div className="space-y-6">
@@ -50,10 +69,16 @@ const Index = () => {
             <h1 className="text-2xl font-bold">Welcome to AquaAI</h1>
             <p className="text-muted-foreground">Manage your aquariums and get AI-powered advice</p>
           </div>
-          <Button onClick={handleAddTank} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Add Tank
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={() => navigate('/tanks')} variant="outline" className="gap-2">
+              <Fish className="h-4 w-4" />
+              View All Tanks
+            </Button>
+            <Button onClick={handleAddTank} className="gap-2">
+              <Plus className="h-4 w-4" />
+              Add Tank
+            </Button>
+          </div>
         </div>
 
         {/* Quick Actions */}
@@ -71,9 +96,17 @@ const Index = () => {
           ))}
         </div>
 
-        {/* Aquarium Grid */}
+        {/* Recent Tanks Overview */}
         <div>
-          <h2 className="text-xl font-semibold mb-4">Your Aquariums</h2>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold">Your Aquariums</h2>
+            {aquariums.length > 0 && (
+              <Button variant="ghost" onClick={() => navigate('/tanks')}>
+                View All ({aquariums.length})
+              </Button>
+            )}
+          </div>
+          
           {isLoading ? (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {[...Array(3)].map((_, i) => (
@@ -104,35 +137,85 @@ const Index = () => {
             </Card>
           ) : (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {aquariums.map((aquarium) => (
-                <Card 
-                  key={aquarium.id} 
-                  className="cursor-pointer hover:shadow-lg transition-shadow"
-                  onClick={() => navigate(`/tank/${aquarium.id}`)}
-                >
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Droplets className="h-5 w-5 text-blue-500" />
-                      {aquarium.name}
-                    </CardTitle>
-                    <CardDescription>
-                      {aquarium.size} • Created: {new Date(aquarium.createdAt).toLocaleDateString()}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <span className="text-muted-foreground">Type:</span>
-                        <p className="font-medium">{aquarium.type}</p>
+              {aquariums.slice(0, 6).map((aquarium) => {
+                const parameterStatus = getParameterStatus(aquarium);
+                
+                return (
+                  <Card 
+                    key={aquarium.id} 
+                    className="cursor-pointer hover:shadow-lg transition-shadow group"
+                    onClick={() => navigate(`/tank/${aquarium.id}`)}
+                  >
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Droplets className="h-5 w-5 text-blue-500" />
+                          <div>
+                            <CardTitle className="text-base">{aquarium.name}</CardTitle>
+                            <CardDescription>{aquarium.size}</CardDescription>
+                          </div>
+                        </div>
+                        <Badge variant="secondary" className="text-xs">
+                          {aquarium.type}
+                        </Badge>
                       </div>
-                      <div>
-                        <span className="text-muted-foreground">Equipment:</span>
-                        <p className="font-medium">{aquarium.equipment.length} items</p>
+                    </CardHeader>
+                    
+                    <CardContent className="space-y-3">
+                      {/* Quick Stats */}
+                      <div className="grid grid-cols-3 gap-2 text-center">
+                        <div>
+                          <p className="text-sm font-medium text-blue-600">
+                            {aquarium.livestock?.length || 0}
+                          </p>
+                          <p className="text-xs text-muted-foreground">Fish</p>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-purple-600">
+                            {aquarium.equipment?.length || 0}
+                          </p>
+                          <p className="text-xs text-muted-foreground">Equipment</p>
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-green-600">
+                            {aquarium.parameters?.length || 0}
+                          </p>
+                          <p className="text-xs text-muted-foreground">Tests</p>
+                        </div>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                      
+                      {/* Test Status */}
+                      <div className="flex items-center justify-between p-2 bg-muted rounded">
+                        <div className="flex items-center gap-2">
+                          <TestTube2 className="h-3 w-3" />
+                          <span className="text-sm">Tests</span>
+                        </div>
+                        <Badge 
+                          variant={parameterStatus.status === 'success' ? 'default' : 
+                                 parameterStatus.status === 'warning' ? 'secondary' : 'destructive'}
+                          className="text-xs"
+                        >
+                          {parameterStatus.text}
+                        </Badge>
+                      </div>
+                      
+                      {/* Quick Action */}
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="w-full opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/tank/${aquarium.id}/log-parameters`);
+                        }}
+                      >
+                        <TestTube2 className="h-3 w-3 mr-1" />
+                        Log Water Test
+                      </Button>
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           )}
         </div>

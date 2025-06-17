@@ -24,6 +24,7 @@ import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 import Tanks from "./pages/Tanks";
 import AddTank from "./pages/AddTank";
+import EditTank from "./pages/EditTank";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -65,6 +66,11 @@ const App = () => (
                     <Route path="/tank/:tankId" element={
                       <ProtectedRoute>
                         <TankDetails />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/tank/:tankId/edit" element={
+                      <ProtectedRoute>
+                        <EditTank />
                       </ProtectedRoute>
                     } />
                     <Route path="/tank/:tankId/log-parameters" element={
