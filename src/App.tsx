@@ -17,6 +17,7 @@ import Livestock from "./pages/Livestock";
 import SetupPlanner from "./pages/SetupPlanner";
 import AquaBot from "./pages/AquaBot";
 import Reminders from "./pages/Reminders";
+import Education from "./pages/Education";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -80,6 +81,11 @@ const App = () => (
                     <Route path="/reminders" element={
                       <ProtectedRoute>
                         <Reminders />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/education" element={
+                      <ProtectedRoute>
+                        <Education />
                       </ProtectedRoute>
                     } />
                     <Route path="*" element={<NotFound />} />

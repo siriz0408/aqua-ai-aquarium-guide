@@ -19,7 +19,7 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
       onClick={onClick}
       className={cn(
         "fixed bottom-20 right-4 h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-all duration-200 z-50",
-        "bg-accent hover:bg-accent/90 text-white",
+        "bg-primary hover:bg-primary/90 text-primary-foreground",
         "sm:bottom-6 sm:right-6 sm:h-16 sm:w-16",
         className
       )}
