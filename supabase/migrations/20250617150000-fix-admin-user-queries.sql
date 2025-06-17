@@ -16,20 +16,26 @@ RETURNS TABLE (
   last_active timestamp with time zone,
   admin_permissions jsonb
 )
-LANGUAGE sql
+LANGUAGE plpgsql
 SECURITY DEFINER
 STABLE
 AS $$
+BEGIN
   -- First check if the requesting user is an admin
+  IF NOT EXISTS (
+    SELECT 1 FROM public.profiles 
+    WHERE id = requesting_admin_id AND is_admin = true
+  ) THEN
+    RAISE EXCEPTION 'Access denied: User is not an admin';
+  END IF;
+  
+  -- If admin, return all profiles
+  RETURN QUERY
   SELECT p.id, p.email, p.full_name, p.is_admin, p.admin_role, 
          p.subscription_status, p.subscription_tier, p.free_credits_remaining, 
          p.total_credits_used, p.created_at, p.last_active, p.admin_permissions
-  FROM public.profiles p
-  WHERE EXISTS (
-    SELECT 1 FROM public.profiles admin_profile 
-    WHERE admin_profile.id = requesting_admin_id 
-    AND admin_profile.is_admin = true
-  );
+  FROM public.profiles p;
+END;
 $$;
 
 -- Create a function to safely update user profiles for admins

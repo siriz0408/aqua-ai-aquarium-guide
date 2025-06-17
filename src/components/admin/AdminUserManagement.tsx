@@ -38,32 +38,41 @@ export const AdminUserManagement: React.FC = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Fetch users using the admin function
+  // Fetch users using a direct query bypassing RLS (we're relying on server-side checks)
   const { data: users = [], isLoading, error } = useQuery({
     queryKey: ['admin-users', searchTerm],
     queryFn: async () => {
-      console.log('Fetching users with admin function...');
+      console.log('Fetching users...');
       
       if (!user?.id) {
         throw new Error('User not authenticated');
       }
 
-      // Use the admin function to get all profiles
-      const { data, error } = await supabase.rpc('admin_get_all_profiles', {
-        requesting_admin_id: user.id
+      // Check if the user is an admin first
+      const { data: isAdmin, error: adminCheckError } = await supabase.rpc('is_admin', {
+        user_id: user.id
       });
       
-      console.log('Admin function result:', { data, error });
+      if (adminCheckError || !isAdmin) {
+        console.error('Error checking admin status:', adminCheckError);
+        throw new Error('Not authorized as admin');
+      }
       
-      if (error) {
-        console.error('Error fetching users via admin function:', error);
-        throw error;
+      // If the user is admin, query profiles directly
+      // Note: This relies on server-side RLS to ensure only admins can access this data
+      const { data, error: profilesError } = await supabase
+        .from('profiles')
+        .select('*');
+      
+      if (profilesError) {
+        console.error('Error fetching profiles:', profilesError);
+        throw profilesError;
       }
       
       // Filter by search term if provided
       let filteredData = data || [];
-      if (searchTerm) {
-        filteredData = filteredData.filter((profile: UserProfile) => 
+      if (searchTerm && Array.isArray(filteredData)) {
+        filteredData = filteredData.filter((profile) => 
           profile.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
           profile.full_name?.toLowerCase().includes(searchTerm.toLowerCase())
         );
@@ -75,7 +84,7 @@ export const AdminUserManagement: React.FC = () => {
     enabled: !!user?.id,
   });
 
-  // Update user mutation using admin function
+  // Update user mutation
   const updateUserMutation = useMutation({
     mutationFn: async (updates: { 
       userId: string; 
@@ -86,22 +95,33 @@ export const AdminUserManagement: React.FC = () => {
       free_credits_remaining: number;
       full_name: string;
     }) => {
-      console.log('Updating user with admin function:', updates);
+      console.log('Updating user:', updates);
       
       if (!user?.id) {
         throw new Error('User not authenticated');
       }
 
-      const { data, error } = await supabase.rpc('admin_update_profile', {
-        requesting_admin_id: user.id,
-        target_user_id: updates.userId,
-        new_full_name: updates.full_name,
-        new_is_admin: updates.is_admin,
-        new_admin_role: updates.admin_role,
-        new_subscription_status: updates.subscription_status,
-        new_subscription_tier: updates.subscription_tier,
-        new_free_credits_remaining: updates.free_credits_remaining
+      // First check if the user is an admin
+      const { data: isAdmin, error: adminCheckError } = await supabase.rpc('is_admin', {
+        user_id: user.id
       });
+      
+      if (adminCheckError || !isAdmin) {
+        throw new Error('Not authorized as admin');
+      }
+      
+      // If admin, update the profile directly
+      const { data, error } = await supabase
+        .from('profiles')
+        .update({
+          full_name: updates.full_name,
+          is_admin: updates.is_admin,
+          admin_role: updates.admin_role,
+          subscription_status: updates.subscription_status,
+          subscription_tier: updates.subscription_tier,
+          free_credits_remaining: updates.free_credits_remaining
+        })
+        .eq('id', updates.userId);
 
       if (error) {
         console.error('Error updating user:', error);
@@ -129,19 +149,29 @@ export const AdminUserManagement: React.FC = () => {
     },
   });
 
-  // Delete user mutation using admin function
+  // Delete user mutation 
   const deleteUserMutation = useMutation({
     mutationFn: async (userId: string) => {
-      console.log('Deleting user with admin function:', userId);
+      console.log('Deleting user:', userId);
       
       if (!user?.id) {
         throw new Error('User not authenticated');
       }
 
-      const { data, error } = await supabase.rpc('admin_delete_profile', {
-        requesting_admin_id: user.id,
-        target_user_id: userId
+      // First check if the user is an admin
+      const { data: isAdmin, error: adminCheckError } = await supabase.rpc('is_admin', {
+        user_id: user.id
       });
+      
+      if (adminCheckError || !isAdmin) {
+        throw new Error('Not authorized as admin');
+      }
+      
+      // If admin, delete the profile directly
+      const { data, error } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', userId);
 
       if (error) {
         console.error('Error deleting user:', error);
