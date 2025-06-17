@@ -3,14 +3,16 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Layout } from '@/components/Layout';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
-import { Loader2, MessageSquare, X, Globe, Menu } from 'lucide-react';
+import { Loader2, MessageSquare, X, Globe, Menu, Zap } from 'lucide-react';
 import { useChat } from '@/hooks/useChat';
+import { useCredits } from '@/hooks/useCredits';
 import { useWebSearch } from '@/hooks/useWebSearch';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { ConversationList } from '@/components/chat/ConversationList';
 import { MessageBubble } from '@/components/chat/MessageBubble';
 import { ChatInput } from '@/components/chat/ChatInput';
 import { QuickPrompts } from '@/components/chat/QuickPrompts';
+import PaywallModal from '@/components/Paywall';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -47,7 +49,18 @@ const AquaBot = () => {
     setCurrentConversationId,
     createNewConversation,
     deleteConversation,
+    showPaywall,
+    setShowPaywall,
+    creditsRemaining,
   } = useChat();
+
+  const { 
+    profile, 
+    canUseFeature, 
+    getRemainingCredits, 
+    needsUpgrade,
+    profileLoading 
+  } = useCredits();
 
   const { searchWeb, isSearching } = useWebSearch();
   const [showSidebar, setShowSidebar] = useState(false);
@@ -78,6 +91,12 @@ const AquaBot = () => {
   const handleSendMessage = async (message: string, attachments?: FileAttachment[]) => {
     console.log('Handling send message with attachments:', attachments?.length || 0);
     
+    // Check if user can use the feature
+    if (!canUseFeature()) {
+      setShowPaywall(true);
+      return;
+    }
+    
     let finalMessage = message;
     
     // If web search is enabled, search for relevant information first
@@ -100,6 +119,9 @@ const AquaBot = () => {
   const handleFollowUpClick = async (prompt: string) => {
     await handleSendMessage(prompt);
   };
+
+  const displayCredits = getRemainingCredits();
+  const isPaidUser = profile?.subscription_status === 'active';
 
   return (
     <Layout title="AquaBot" showBackButton>
@@ -184,6 +206,26 @@ const AquaBot = () => {
             </h2>
             
             <div className="flex items-center gap-1 sm:gap-2">
+              {/* Credits display */}
+              {!profileLoading && (
+                <div className="flex items-center gap-2">
+                  {!isPaidUser && (
+                    <Badge variant="outline" className="flex items-center gap-1">
+                      <Zap className="h-3 w-3" />
+                      <span className="text-xs">
+                        {displayCredits !== null ? `${displayCredits} credits` : 'Loading...'}
+                      </span>
+                    </Badge>
+                  )}
+                  {isPaidUser && (
+                    <Badge variant="default" className="flex items-center gap-1">
+                      <Zap className="h-3 w-3" />
+                      <span className="text-xs">Pro</span>
+                    </Badge>
+                  )}
+                </div>
+              )}
+              
               <Button
                 variant={webSearchEnabled ? "default" : "outline"}
                 size="sm"
@@ -213,7 +255,7 @@ const AquaBot = () => {
                   <div className="space-y-4">
                     <QuickPrompts 
                       onPromptSelect={handleQuickPrompt}
-                      disabled={isLoading || isSearching}
+                      disabled={isLoading || isSearching || !canUseFeature()}
                     />
                     <div className="flex items-center justify-center h-32 text-muted-foreground">
                       <p className="text-center text-sm px-4">Choose a quick action above or start typing your question!</p>
@@ -257,13 +299,18 @@ const AquaBot = () => {
                         I'm your marine aquarium assistant with access to real-time web data. 
                         Ask me anything about water chemistry, fish care, equipment, or troubleshooting!
                       </p>
+                      {!isPaidUser && displayCredits !== null && (
+                        <p className="text-xs text-muted-foreground mt-2">
+                          You have {displayCredits} free messages remaining
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
                 
                 <QuickPrompts 
                   onPromptSelect={handleQuickPrompt}
-                  disabled={isLoading || isSearching}
+                  disabled={isLoading || isSearching || !canUseFeature()}
                 />
               </div>
             )}
@@ -273,11 +320,19 @@ const AquaBot = () => {
           <div className="border-t border-border bg-background">
             <ChatInput 
               onSendMessage={handleSendMessage} 
-              disabled={isLoading || isSearching} 
+              disabled={isLoading || isSearching || !canUseFeature()} 
             />
           </div>
         </div>
       </div>
+
+      {/* Paywall Modal */}
+      <PaywallModal
+        isOpen={showPaywall}
+        onClose={() => setShowPaywall(false)}
+        currentCredits={5}
+        showUpgradeOnly={needsUpgrade()}
+      />
     </Layout>
   );
 };

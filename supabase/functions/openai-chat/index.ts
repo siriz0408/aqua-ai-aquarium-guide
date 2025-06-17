@@ -43,6 +43,39 @@ serve(async (req) => {
 
     console.log('User authenticated successfully:', user.id)
 
+    // Check user's subscription status and credits
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('subscription_status, subscription_tier, free_credits_remaining, total_credits_used')
+      .eq('id', user.id)
+      .single()
+
+    if (profileError) {
+      console.error('Error fetching user profile:', profileError)
+      return new Response('Error fetching user profile', { status: 500, headers: corsHeaders })
+    }
+
+    console.log('User profile:', profile)
+
+    // Check if user has credits available
+    const isPaidUser = profile.subscription_status === 'active'
+    const hasCredits = profile.free_credits_remaining > 0
+
+    if (!isPaidUser && !hasCredits) {
+      console.log('User has no credits remaining')
+      return new Response(
+        JSON.stringify({
+          error: 'No credits remaining',
+          message: 'You have used all your free credits. Please upgrade to continue using AquaBot.',
+          requiresUpgrade: true
+        }),
+        {
+          status: 402, // Payment Required
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      )
+    }
+
     // Check if OpenAI API key is available
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY')
     if (!openAIApiKey) {
@@ -270,10 +303,47 @@ Remember: NO ### headers, use tables for parameters, checkboxes for tasks! 🌊`
       .update({ last_message_at: new Date().toISOString() })
       .eq('id', currentConversationId)
 
+    // Track credit usage for free users
+    if (!isPaidUser) {
+      const creditsAfter = profile.free_credits_remaining - 1
+      const totalCreditsUsed = profile.total_credits_used + 1
+
+      // Update user's credit count
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({
+          free_credits_remaining: creditsAfter,
+          total_credits_used: totalCreditsUsed
+        })
+        .eq('id', user.id)
+
+      if (updateError) {
+        console.error('Error updating user credits:', updateError)
+      }
+
+      // Log the usage
+      const { error: logError } = await supabase
+        .from('subscription_usage_logs')
+        .insert({
+          user_id: user.id,
+          feature_used: 'chat_message',
+          credits_before: profile.free_credits_remaining,
+          credits_after: creditsAfter,
+          subscription_status: profile.subscription_status
+        })
+
+      if (logError) {
+        console.error('Error logging usage:', logError)
+      }
+
+      console.log(`Credit used. Remaining: ${creditsAfter}`)
+    }
+
     return new Response(
       JSON.stringify({
         message: assistantMessage,
-        conversationId: currentConversationId
+        conversationId: currentConversationId,
+        creditsRemaining: !isPaidUser ? Math.max(0, profile.free_credits_remaining - 1) : null
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

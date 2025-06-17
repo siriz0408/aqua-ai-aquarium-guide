@@ -440,24 +440,57 @@ export type Database = {
           avatar_url: string | null
           created_at: string
           email: string | null
+          free_credits_remaining: number | null
           full_name: string | null
           id: string
+          last_active: string | null
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          subscription_end_date: string | null
+          subscription_start_date: string | null
+          subscription_status: string | null
+          subscription_tier: string | null
+          total_credits_used: number | null
+          trial_end_date: string | null
+          trial_start_date: string | null
           updated_at: string
         }
         Insert: {
           avatar_url?: string | null
           created_at?: string
           email?: string | null
+          free_credits_remaining?: number | null
           full_name?: string | null
           id: string
+          last_active?: string | null
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          subscription_end_date?: string | null
+          subscription_start_date?: string | null
+          subscription_status?: string | null
+          subscription_tier?: string | null
+          total_credits_used?: number | null
+          trial_end_date?: string | null
+          trial_start_date?: string | null
           updated_at?: string
         }
         Update: {
           avatar_url?: string | null
           created_at?: string
           email?: string | null
+          free_credits_remaining?: number | null
           full_name?: string | null
           id?: string
+          last_active?: string | null
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          subscription_end_date?: string | null
+          subscription_start_date?: string | null
+          subscription_status?: string | null
+          subscription_tier?: string | null
+          total_credits_used?: number | null
+          trial_end_date?: string | null
+          trial_start_date?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -550,6 +583,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      subscription_usage_logs: {
+        Row: {
+          created_at: string
+          credits_after: number | null
+          credits_before: number | null
+          feature_used: string
+          id: string
+          subscription_status: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          credits_after?: number | null
+          credits_before?: number | null
+          feature_used: string
+          id?: string
+          subscription_status?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          credits_after?: number | null
+          credits_before?: number | null
+          feature_used?: string
+          id?: string
+          subscription_status?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
       }
       task_lists: {
         Row: {

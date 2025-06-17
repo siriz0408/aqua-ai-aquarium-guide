@@ -35,6 +35,8 @@ export const useChat = () => {
   const queryClient = useQueryClient();
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [showPaywall, setShowPaywall] = useState(false);
+  const [creditsRemaining, setCreditsRemaining] = useState<number | null>(null);
 
   // Fetch conversations
   const { data: conversations = [], isLoading: conversationsLoading } = useQuery({
@@ -126,12 +128,38 @@ export const useChat = () => {
       if (data.conversationId && data.conversationId !== currentConversationId) {
         setCurrentConversationId(data.conversationId);
       }
+      
+      // Update credits remaining if returned
+      if (typeof data.creditsRemaining === 'number') {
+        setCreditsRemaining(data.creditsRemaining);
+      }
+      
       // Invalidate and refetch conversations and messages
       queryClient.invalidateQueries({ queryKey: ['conversations'] });
       queryClient.invalidateQueries({ queryKey: ['messages', data.conversationId] });
+      queryClient.invalidateQueries({ queryKey: ['userProfile'] });
     },
     onError: (error) => {
       console.error('Error sending message:', error);
+      
+      // Handle credit exhaustion specifically
+      if (error instanceof Error) {
+        try {
+          const errorData = JSON.parse(error.message);
+          if (errorData.requiresUpgrade) {
+            setShowPaywall(true);
+            toast({
+              title: "Credits Exhausted",
+              description: errorData.message,
+              variant: "destructive",
+            });
+            return;
+          }
+        } catch {
+          // Not JSON, handle as regular error
+        }
+      }
+      
       const errorMessage = error instanceof Error ? error.message : 'Failed to send message. Please try again.';
       
       toast({
@@ -197,5 +225,8 @@ export const useChat = () => {
     setCurrentConversationId,
     createNewConversation,
     deleteConversation: deleteConversationMutation.mutate,
+    showPaywall,
+    setShowPaywall,
+    creditsRemaining,
   };
 };
