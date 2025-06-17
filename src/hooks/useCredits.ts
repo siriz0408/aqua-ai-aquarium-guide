@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -13,6 +14,7 @@ export interface UserProfile {
   subscription_start_date?: string;
   subscription_end_date?: string;
   is_admin?: boolean;
+  admin_role?: string;
 }
 
 export interface UsageLog {
@@ -45,7 +47,8 @@ export const useCredits = () => {
           total_credits_used,
           subscription_start_date,
           subscription_end_date,
-          is_admin
+          is_admin,
+          admin_role
         `)
         .eq('id', user.id)
         .single();
@@ -83,41 +86,95 @@ export const useCredits = () => {
     enabled: !!user,
   });
 
-  // Check if user can use features
+  // Check if user can use features based on new subscription logic
   const canUseFeature = (feature: string = 'chat') => {
     if (!profile) return false;
     
-    const isPaidUser = profile.subscription_status === 'active';
-    const hasCredits = profile.free_credits_remaining > 0;
+    // Super admins have unlimited access to everything
+    if (profile.is_admin && profile.admin_role === 'super_admin') {
+      return true;
+    }
     
-    return isPaidUser || hasCredits;
+    // Regular admins have unlimited access to chat
+    if (profile.is_admin) {
+      return true;
+    }
+    
+    // Premium users (subscription_status = 'active' and subscription_tier = 'premium') have unlimited access
+    if (profile.subscription_status === 'active' && profile.subscription_tier === 'premium') {
+      return true;
+    }
+    
+    // Basic users (subscription_status = 'active' and subscription_tier = 'basic') have 100 credits per month
+    if (profile.subscription_status === 'active' && profile.subscription_tier === 'basic') {
+      // For now, we'll use free_credits_remaining to track basic user credits
+      // In a full implementation, we'd track monthly usage separately
+      return profile.free_credits_remaining > 0;
+    }
+    
+    // Free users have 5 credits total
+    if (profile.subscription_status === 'free') {
+      if (feature === 'chat') {
+        return profile.free_credits_remaining > 0;
+      }
+      // Free users can access planner and learn without credits
+      if (feature === 'planner' || feature === 'learn') {
+        return true;
+      }
+    }
+    
+    return false;
   };
 
   // Get remaining credits for display
   const getRemainingCredits = () => {
     if (!profile) return 0;
     
-    const isPaidUser = profile.subscription_status === 'active';
-    return isPaidUser ? null : profile.free_credits_remaining; // null means unlimited
+    // Super admins and regular admins have unlimited
+    if (profile.is_admin) {
+      return null; // null means unlimited
+    }
+    
+    // Premium users have unlimited
+    if (profile.subscription_status === 'active' && profile.subscription_tier === 'premium') {
+      return null; // null means unlimited
+    }
+    
+    // Basic and free users show actual credits
+    return profile.free_credits_remaining;
   };
 
   // Check if user needs to upgrade
   const needsUpgrade = () => {
     if (!profile) return false;
     
-    const isPaidUser = profile.subscription_status === 'active';
-    const hasCredits = profile.free_credits_remaining > 0;
+    // Admins never need to upgrade
+    if (profile.is_admin) return false;
     
-    return !isPaidUser && !hasCredits;
+    // Premium users never need to upgrade
+    if (profile.subscription_status === 'active' && profile.subscription_tier === 'premium') {
+      return false;
+    }
+    
+    // Basic users need upgrade if they run out of credits
+    if (profile.subscription_status === 'active' && profile.subscription_tier === 'basic') {
+      return profile.free_credits_remaining <= 0;
+    }
+    
+    // Free users need upgrade if they run out of credits
+    return profile.subscription_status === 'free' && profile.free_credits_remaining <= 0;
   };
 
-  // Update credits after a successful operation (called from frontend)
+  // Update credits after a successful operation
   const updateCreditsAfterUse = useMutation({
     mutationFn: async () => {
       if (!user || !profile) throw new Error('User or profile not available');
       
-      const isPaidUser = profile.subscription_status === 'active';
-      if (isPaidUser) return; // Paid users don't consume credits
+      // Admins and premium users don't consume credits
+      if (profile.is_admin || 
+          (profile.subscription_status === 'active' && profile.subscription_tier === 'premium')) {
+        return { creditsRemaining: null }; // Unlimited
+      }
       
       const newCreditsRemaining = Math.max(0, profile.free_credits_remaining - 1);
       const newTotalUsed = profile.total_credits_used + 1;
@@ -142,7 +199,7 @@ export const useCredits = () => {
       if (data?.creditsRemaining === 0) {
         toast({
           title: "Credits Exhausted",
-          description: "You've used all your free credits. Upgrade to continue using AquaBot!",
+          description: "You've used all your credits. Upgrade to continue using AquaBot!",
           variant: "destructive",
         });
       } else if (data?.creditsRemaining && data.creditsRemaining <= 2) {
@@ -162,6 +219,16 @@ export const useCredits = () => {
     },
   });
 
+  const getUserPlanType = () => {
+    if (!profile) return 'free';
+    
+    if (profile.is_admin && profile.admin_role === 'super_admin') return 'super_admin';
+    if (profile.is_admin) return 'admin';
+    if (profile.subscription_status === 'active' && profile.subscription_tier === 'premium') return 'premium';
+    if (profile.subscription_status === 'active' && profile.subscription_tier === 'basic') return 'basic';
+    return 'free';
+  };
+
   return {
     profile,
     usageLogs,
@@ -172,5 +239,6 @@ export const useCredits = () => {
     needsUpgrade,
     updateCreditsAfterUse: updateCreditsAfterUse.mutate,
     isUpdatingCredits: updateCreditsAfterUse.isPending,
+    getUserPlanType,
   };
 };
