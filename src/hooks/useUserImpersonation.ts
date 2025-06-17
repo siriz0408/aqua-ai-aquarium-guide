@@ -5,14 +5,16 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
+interface UserData {
+  id: string;
+  email: string;
+  full_name: string;
+  is_admin: boolean;
+  admin_role: string | null;
+}
+
 interface ImpersonationResult {
-  user_data: {
-    id: string;
-    email: string;
-    full_name: string;
-    is_admin: boolean;
-    admin_role: string | null;
-  };
+  user_data: UserData;
 }
 
 export const useUserImpersonation = () => {
@@ -40,7 +42,18 @@ export const useUserImpersonation = () => {
       }
 
       console.log('Impersonation data:', data);
-      return data[0] as ImpersonationResult;
+      
+      // Since the function returns an array, get the first element and ensure proper typing
+      if (!data || !Array.isArray(data) || data.length === 0) {
+        throw new Error('No impersonation data returned');
+      }
+
+      const result = data[0];
+      if (!result || typeof result.user_data !== 'object') {
+        throw new Error('Invalid user data format');
+      }
+
+      return result as ImpersonationResult;
     },
     onSuccess: async (data) => {
       console.log('Impersonation successful:', data);

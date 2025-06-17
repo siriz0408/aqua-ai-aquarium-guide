@@ -14,6 +14,7 @@ interface LayoutProps {
   showBackButton?: boolean;
   backButtonText?: string;
   backButtonPath?: string;
+  actions?: React.ReactNode;
 }
 
 export const Layout: React.FC<LayoutProps> = ({
@@ -24,6 +25,7 @@ export const Layout: React.FC<LayoutProps> = ({
   showBackButton = false,
   backButtonText = 'Back',
   backButtonPath = '/',
+  actions,
 }) => {
   const navigate = useNavigate();
 
@@ -52,16 +54,25 @@ export const Layout: React.FC<LayoutProps> = ({
         <ImpersonationBanner />
         
         <div className="mb-8">
-          {showBackButton && (
-            <Button
-              variant="ghost"
-              onClick={handleBackClick}
-              className="mb-4 text-muted-foreground hover:text-foreground"
-            >
-              <ChevronLeft className="h-4 w-4 mr-2" />
-              {backButtonText}
-            </Button>
-          )}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-4">
+              {showBackButton && (
+                <Button
+                  variant="ghost"
+                  onClick={handleBackClick}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  <ChevronLeft className="h-4 w-4 mr-2" />
+                  {backButtonText}
+                </Button>
+              )}
+            </div>
+            {actions && (
+              <div className="flex items-center gap-2">
+                {actions}
+              </div>
+            )}
+          </div>
           <h1 className="text-4xl font-bold text-foreground mb-2">{title}</h1>
           {subtitle && <p className="text-xl text-muted-foreground">{subtitle}</p>}
         </div>
