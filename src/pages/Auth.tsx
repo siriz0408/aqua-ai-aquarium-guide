@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useAuth } from '@/contexts/AuthContext';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Shield } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -17,6 +17,7 @@ const Auth = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
+  const [requestAdminAccess, setRequestAdminAccess] = useState(false);
   const [stayLoggedIn, setStayLoggedIn] = useState(true);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -44,7 +45,16 @@ const Auth = () => {
           });
           return;
         }
-        await signUp(email, password, fullName);
+        
+        const { error } = await signUp(email, password, fullName);
+        
+        if (!error && requestAdminAccess) {
+          toast({
+            title: "Account created successfully!",
+            description: "Your account has been created with admin access. Please check your email for confirmation.",
+            variant: "default",
+          });
+        }
       } else {
         const { error } = await signIn(email, password);
         if (!error) {
@@ -93,6 +103,7 @@ const Auth = () => {
     setEmail('');
     setPassword('');
     setFullName('');
+    setRequestAdminAccess(false);
   };
 
   return (
@@ -211,6 +222,31 @@ const Auth = () => {
                   </p>
                 )}
               </div>
+
+              {/* Admin Access Request - only show for sign up */}
+              {isSignUp && (
+                <div className="space-y-3 p-4 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="requestAdminAccess"
+                      checked={requestAdminAccess}
+                      onCheckedChange={(checked) => setRequestAdminAccess(checked === true)}
+                      disabled={loading || googleLoading}
+                    />
+                    <Label 
+                      htmlFor="requestAdminAccess" 
+                      className="text-sm font-medium cursor-pointer flex items-center gap-2"
+                    >
+                      <Shield className="h-4 w-4 text-blue-600" />
+                      Request Admin Access
+                    </Label>
+                  </div>
+                  <p className="text-xs text-muted-foreground pl-6">
+                    Check this box to request administrator privileges for your account. 
+                    Admin access includes user management, analytics, and system settings.
+                  </p>
+                </div>
+              )}
 
               {/* Stay Logged In Option - only show for sign in */}
               {!isSignUp && (
