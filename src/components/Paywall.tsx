@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,8 +13,9 @@ interface PaywallProps {
   showUpgradeOnly?: boolean;
 }
 
-// You'll need to replace this with your actual Stripe price ID
-const STRIPE_PRICE_ID = "price_1QUIgKJNcmPzuSeKKiKvtLQH"; // Replace with your actual price ID
+// TODO: Replace this with your actual Stripe price ID from your Stripe dashboard
+// You can find price IDs at: https://dashboard.stripe.com/products
+const STRIPE_PRICE_ID = "price_1QUIgKJNcmPzuSeKKiKvtLQH"; // ⚠️ REPLACE WITH YOUR ACTUAL PRICE ID
 
 const PaywallModal: React.FC<PaywallProps> = ({ 
   isOpen, 
@@ -31,13 +31,30 @@ const PaywallModal: React.FC<PaywallProps> = ({
   const handleUpgrade = async (plan: string) => {
     try {
       console.log('Starting upgrade process for plan:', plan);
+      console.log('Using Stripe Price ID:', STRIPE_PRICE_ID);
+      
       const { data, error } = await supabase.functions.invoke('create-checkout', {
         body: { priceId: STRIPE_PRICE_ID }
       });
 
       if (error) {
         console.error('Supabase function error:', error);
-        throw error;
+        
+        // Provide more specific error messages
+        if (error.message?.includes('No such price')) {
+          toast({
+            title: "Configuration Error",
+            description: "The subscription plan is not properly configured. Please contact support.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Error",
+            description: error.message || "Failed to start checkout process. Please try again.",
+            variant: "destructive",
+          });
+        }
+        return;
       }
 
       console.log('Checkout session response:', data);
@@ -59,6 +76,7 @@ const PaywallModal: React.FC<PaywallProps> = ({
     }
   };
 
+  // ... keep existing code (getHeaderMessage function)
   const getHeaderMessage = () => {
     if (subscriptionInfo.isTrial) {
       const hoursRemaining = Math.max(0, subscriptionInfo.trialHoursRemaining);
@@ -108,6 +126,19 @@ const PaywallModal: React.FC<PaywallProps> = ({
               {headerInfo.description}
             </p>
           </div>
+
+          {/* Configuration Warning */}
+          {STRIPE_PRICE_ID === "price_1QUIgKJNcmPzuSeKKiKvtLQH" && (
+            <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <div className="flex items-center gap-2 text-yellow-800">
+                <AlertTriangle className="h-4 w-4" />
+                <span className="text-sm font-medium">Configuration Required</span>
+              </div>
+              <p className="text-sm text-yellow-700 mt-1">
+                Please update the Stripe price ID in the code with your actual price ID from the Stripe dashboard.
+              </p>
+            </div>
+          )}
 
           <div className="grid md:grid-cols-3 gap-6 mb-8">
             {/* Free Plan */}
