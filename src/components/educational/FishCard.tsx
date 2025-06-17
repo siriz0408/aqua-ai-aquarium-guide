@@ -4,19 +4,27 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { EducationalFish, useEducationalFish } from '@/hooks/useEducationalFish';
-import { Heart, Plus, Thermometer, Droplets, Fish, MoreVertical } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
+import { Heart, Plus, Thermometer, Droplets, Fish, MoreVertical, Waves, Leaf } from 'lucide-react';
 
 interface FishCardProps {
-  fish: EducationalFish;
+  fish: {
+    id: string;
+    name: string;
+    scientific_name?: string;
+    category: 'Fish' | 'Coral' | 'Invertebrate' | 'Plant';
+    summary: string;
+    care_level: 'Beginner' | 'Intermediate' | 'Advanced';
+    diet_type?: 'Herbivore' | 'Carnivore' | 'Omnivore';
+    tank_size_minimum?: number;
+    water_type: 'Saltwater' | 'Freshwater';
+    reef_safe?: boolean;
+    ph_range?: string;
+    water_temperature_range?: string;
+  };
   showAddToList?: boolean;
 }
 
 const FishCard: React.FC<FishCardProps> = ({ fish, showAddToList = true }) => {
-  const { user } = useAuth();
-  const { addToList, removeFromList, isInList, isAddingToList, isRemovingFromList } = useEducationalFish();
-
   const getCareColor = (level: string) => {
     switch (level) {
       case 'Beginner':
@@ -43,14 +51,25 @@ const FishCard: React.FC<FishCardProps> = ({ fish, showAddToList = true }) => {
     }
   };
 
-  const handleAddToList = (listType: string) => {
-    if (!user) return;
-    addToList({ fishId: fish.id, listType });
+  const getWaterTypeColor = (waterType: string) => {
+    return waterType === 'Saltwater' 
+      ? 'bg-blue-50 text-blue-700 border-blue-200'
+      : 'bg-cyan-50 text-cyan-700 border-cyan-200';
   };
 
-  const handleRemoveFromList = (listType: string) => {
-    if (!user) return;
-    removeFromList({ fishId: fish.id, listType });
+  const getCategoryIcon = (category: string) => {
+    switch (category) {
+      case 'Fish':
+        return <Fish className="h-4 w-4" />;
+      case 'Coral':
+        return <span className="text-sm">🪸</span>;
+      case 'Invertebrate':
+        return <span className="text-sm">🦐</span>;
+      case 'Plant':
+        return <Leaf className="h-4 w-4" />;
+      default:
+        return <Fish className="h-4 w-4" />;
+    }
   };
 
   return (
@@ -58,12 +77,15 @@ const FishCard: React.FC<FishCardProps> = ({ fish, showAddToList = true }) => {
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="flex-1">
-            <CardTitle className="text-lg mb-1">{fish.name}</CardTitle>
+            <div className="flex items-center gap-2 mb-1">
+              {getCategoryIcon(fish.category)}
+              <CardTitle className="text-lg">{fish.name}</CardTitle>
+            </div>
             {fish.scientific_name && (
               <p className="text-sm text-muted-foreground italic">{fish.scientific_name}</p>
             )}
           </div>
-          {showAddToList && user && (
+          {showAddToList && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
@@ -71,41 +93,18 @@ const FishCard: React.FC<FishCardProps> = ({ fish, showAddToList = true }) => {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                {!isInList(fish.id, 'wishlist') ? (
-                  <DropdownMenuItem onClick={() => handleAddToList('wishlist')}>
-                    <Heart className="mr-2 h-4 w-4" />
-                    Add to Wishlist
-                  </DropdownMenuItem>
-                ) : (
-                  <DropdownMenuItem onClick={() => handleRemoveFromList('wishlist')}>
-                    <Heart className="mr-2 h-4 w-4 fill-current" />
-                    Remove from Wishlist
-                  </DropdownMenuItem>
-                )}
-                
-                {!isInList(fish.id, 'planning') ? (
-                  <DropdownMenuItem onClick={() => handleAddToList('planning')}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add to Planning
-                  </DropdownMenuItem>
-                ) : (
-                  <DropdownMenuItem onClick={() => handleRemoveFromList('planning')}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Remove from Planning
-                  </DropdownMenuItem>
-                )}
-                
-                {!isInList(fish.id, 'owned') ? (
-                  <DropdownMenuItem onClick={() => handleAddToList('owned')}>
-                    <Fish className="mr-2 h-4 w-4" />
-                    Mark as Owned
-                  </DropdownMenuItem>
-                ) : (
-                  <DropdownMenuItem onClick={() => handleRemoveFromList('owned')}>
-                    <Fish className="mr-2 h-4 w-4" />
-                    Remove from Owned
-                  </DropdownMenuItem>
-                )}
+                <DropdownMenuItem>
+                  <Heart className="mr-2 h-4 w-4" />
+                  Add to Wishlist
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add to Planning
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <Fish className="mr-2 h-4 w-4" />
+                  Mark as Owned
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           )}
@@ -114,6 +113,10 @@ const FishCard: React.FC<FishCardProps> = ({ fish, showAddToList = true }) => {
         <div className="flex flex-wrap gap-2 mt-2">
           <Badge className={getCareColor(fish.care_level)}>
             {fish.care_level}
+          </Badge>
+          <Badge variant="outline" className={getWaterTypeColor(fish.water_type)}>
+            {fish.water_type === 'Saltwater' ? <Waves className="mr-1 h-3 w-3" /> : <Droplets className="mr-1 h-3 w-3" />}
+            {fish.water_type}
           </Badge>
           {fish.diet_type && (
             <Badge variant="outline" className={getDietColor(fish.diet_type)}>
@@ -129,21 +132,9 @@ const FishCard: React.FC<FishCardProps> = ({ fish, showAddToList = true }) => {
       </CardHeader>
 
       <CardContent className="space-y-4">
-        {fish.image_url && (
-          <div className="aspect-video rounded-lg overflow-hidden bg-gray-100">
-            <img 
-              src={fish.image_url} 
-              alt={fish.name}
-              className="w-full h-full object-cover"
-            />
-          </div>
-        )}
-
-        {fish.summary && (
-          <p className="text-sm text-muted-foreground line-clamp-3">
-            {fish.summary}
-          </p>
-        )}
+        <p className="text-sm text-muted-foreground line-clamp-3">
+          {fish.summary}
+        </p>
 
         <div className="space-y-2">
           {fish.tank_size_minimum && (
@@ -167,15 +158,6 @@ const FishCard: React.FC<FishCardProps> = ({ fish, showAddToList = true }) => {
             </div>
           )}
         </div>
-
-        {fish.food_details && (
-          <div className="pt-2 border-t">
-            <h4 className="text-xs font-medium text-muted-foreground mb-1">DIET</h4>
-            <p className="text-xs text-muted-foreground line-clamp-2">
-              {fish.food_details}
-            </p>
-          </div>
-        )}
       </CardContent>
     </Card>
   );
