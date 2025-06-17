@@ -4,14 +4,12 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Loader2, MessageSquare, X, Globe, Menu, Zap } from 'lucide-react';
 import { useChat } from '@/hooks/useChat';
-import { useCredits } from '@/hooks/useCredits';
 import { useWebSearch } from '@/hooks/useWebSearch';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { ConversationList } from '@/components/chat/ConversationList';
 import { MessageBubble } from '@/components/chat/MessageBubble';
 import { ChatInput } from '@/components/chat/ChatInput';
 import { QuickPrompts } from '@/components/chat/QuickPrompts';
-import PaywallModal from '@/components/Paywall';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -52,14 +50,6 @@ const AquaBot = () => {
     setShowPaywall,
   } = useChat();
 
-  const { 
-    profile, 
-    canUseFeature, 
-    needsUpgrade,
-    getSubscriptionInfo,
-    profileLoading 
-  } = useCredits();
-
   const { searchWeb, isSearching } = useWebSearch();
   const [showSidebar, setShowSidebar] = useState(false);
   const [webSearchEnabled, setWebSearchEnabled] = useState(false);
@@ -89,12 +79,7 @@ const AquaBot = () => {
   const handleSendMessage = async (message: string, attachments?: FileAttachment[]) => {
     console.log('Handling send message with attachments:', attachments?.length || 0);
     
-    // Check if user can use the feature
-    if (!canUseFeature()) {
-      setShowPaywall(true);
-      return;
-    }
-    
+    // No restrictions - always allow message sending
     let finalMessage = message;
     
     // If web search is enabled, search for relevant information first
@@ -117,9 +102,6 @@ const AquaBot = () => {
   const handleFollowUpClick = async (prompt: string) => {
     await handleSendMessage(prompt);
   };
-
-  // Get subscription info for display
-  const subscriptionInfo = getSubscriptionInfo();
 
   return (
     <Layout title="AquaBot" showBackButton>
@@ -204,17 +186,11 @@ const AquaBot = () => {
             </h2>
             
             <div className="flex items-center gap-1 sm:gap-2">
-              {/* Subscription status display */}
-              {!profileLoading && (
-                <div className="flex items-center gap-2">
-                  <Badge variant={subscriptionInfo.hasAccess ? "default" : "secondary"} className="flex items-center gap-1">
-                    <Zap className="h-3 w-3" />
-                    <span className="text-xs">
-                      {subscriptionInfo.displayTier}
-                    </span>
-                  </Badge>
-                </div>
-              )}
+              {/* Always show Pro status */}
+              <Badge variant="default" className="flex items-center gap-1">
+                <Zap className="h-3 w-3" />
+                <span className="text-xs">Pro</span>
+              </Badge>
               
               <Button
                 variant={webSearchEnabled ? "default" : "outline"}
@@ -245,7 +221,7 @@ const AquaBot = () => {
                   <div className="space-y-4">
                     <QuickPrompts 
                       onPromptSelect={handleQuickPrompt}
-                      disabled={isLoading || isSearching || !canUseFeature()}
+                      disabled={isLoading || isSearching}
                     />
                     <div className="flex items-center justify-center h-32 text-muted-foreground">
                       <p className="text-center text-sm px-4">Choose a quick action above or start typing your question!</p>
@@ -289,23 +265,16 @@ const AquaBot = () => {
                         I'm your marine aquarium assistant with access to real-time web data. 
                         Ask me anything about water chemistry, fish care, equipment, or troubleshooting!
                       </p>
-                      {subscriptionInfo.tier === 'free' && (
-                        <p className="text-xs text-muted-foreground mt-2">
-                          Upgrade to Pro for unlimited AI conversations
-                        </p>
-                      )}
-                      {subscriptionInfo.isAdmin && (
-                        <p className="text-xs text-blue-600 mt-2">
-                          Admin access: Full features available
-                        </p>
-                      )}
+                      <p className="text-xs text-blue-600 mt-2">
+                        Full access available to all users
+                      </p>
                     </div>
                   </div>
                 </div>
                 
                 <QuickPrompts 
                   onPromptSelect={handleQuickPrompt}
-                  disabled={isLoading || isSearching || !canUseFeature()}
+                  disabled={isLoading || isSearching}
                 />
               </div>
             )}
@@ -315,19 +284,11 @@ const AquaBot = () => {
           <div className="border-t border-border bg-background">
             <ChatInput 
               onSendMessage={handleSendMessage} 
-              disabled={isLoading || isSearching || !canUseFeature()} 
+              disabled={isLoading || isSearching} 
             />
           </div>
         </div>
       </div>
-
-      {/* Paywall Modal - Only for non-admin users who need upgrade */}
-      <PaywallModal
-        isOpen={showPaywall}
-        onClose={() => setShowPaywall(false)}
-        currentCredits={0}
-        showUpgradeOnly={needsUpgrade()}
-      />
     </Layout>
   );
 };

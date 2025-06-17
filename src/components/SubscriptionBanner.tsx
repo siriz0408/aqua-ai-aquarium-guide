@@ -60,97 +60,25 @@ export const SubscriptionBanner: React.FC = () => {
     return null;
   }
 
-  const subscriptionInfo = getSubscriptionInfo();
-  const isProUser = subscriptionInfo.tier === 'pro' && subscriptionInfo.status === 'active';
-  const isAdmin = subscriptionInfo.isAdmin;
-
-  // Admin users get a special banner
-  if (isAdmin) {
-    return (
-      <Card className="mb-6 border-purple-200 bg-purple-50">
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Crown className="h-5 w-5 text-purple-600" />
-              <div>
-                <h3 className="font-semibold text-purple-800">
-                  Admin Access
-                </h3>
-                <p className="text-sm text-purple-600">
-                  Full access to all features and admin panel
-                </p>
-              </div>
-            </div>
-            <Badge className="bg-purple-600">
-              Admin
-            </Badge>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  // Pro users get a success banner
-  if (isProUser) {
-    return (
-      <Card className="mb-6 border-green-200 bg-green-50">
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Crown className="h-5 w-5 text-green-600" />
-              <div>
-                <h3 className="font-semibold text-green-800">
-                  Pro Plan Active
-                </h3>
-                <p className="text-sm text-green-600">
-                  Unlimited AI conversations and premium features
-                </p>
-              </div>
-            </div>
-            <Button onClick={handleManageSubscription} variant="outline" size="sm">
-              Manage Subscription
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  // Free users get the upgrade banner
+  // Always show as Pro user with full access
   return (
-    <Card className="mb-6 border-blue-200 bg-blue-50">
-      <CardContent className="p-6">
-        <div className="text-center space-y-4">
-          <h2 className="text-xl font-bold text-blue-900">Upgrade to Pro</h2>
-          <p className="text-blue-700">
-            Get unlimited access to AquaBot's AI-powered aquarium assistance
-          </p>
-          
-          <div className="max-w-md mx-auto">
-            <Card className="border-purple-300 relative">
-              <Badge className="absolute -top-2 left-1/2 transform -translate-x-1/2 bg-purple-600">
-                Best Value
-              </Badge>
-              <CardContent className="p-6 text-center">
-                <Star className="h-8 w-8 text-purple-600 mx-auto mb-3" />
-                <h3 className="font-bold text-lg mb-2">Pro Plan</h3>
-                <div className="text-3xl font-bold text-purple-600 mb-2">$9.99/month</div>
-                <ul className="text-sm text-gray-600 space-y-2 mb-6">
-                  <li>✓ Unlimited AI conversations</li>
-                  <li>✓ Advanced aquarium insights</li>
-                  <li>✓ Real-time web search integration</li>
-                  <li>✓ Priority support</li>
-                  <li>✓ Early access to new features</li>
-                </ul>
-                <Button 
-                  onClick={() => handleUpgrade(PRICE_IDS.pro)}
-                  className="w-full bg-purple-600 hover:bg-purple-700"
-                >
-                  Upgrade to Pro
-                </Button>
-              </CardContent>
-            </Card>
+    <Card className="mb-6 border-green-200 bg-green-50">
+      <CardContent className="p-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Crown className="h-5 w-5 text-green-600" />
+            <div>
+              <h3 className="font-semibold text-green-800">
+                Full Access Enabled
+              </h3>
+              <p className="text-sm text-green-600">
+                All features and premium functionality are available
+              </p>
+            </div>
           </div>
+          <Badge className="bg-green-600">
+            Pro Access
+          </Badge>
         </div>
       </CardContent>
     </Card>

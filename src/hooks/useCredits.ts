@@ -48,35 +48,41 @@ export const useCredits = () => {
         if (error) {
           console.error('Error fetching user profile:', error);
           
-          // Return a safe default profile to prevent app from breaking
+          // Return a default profile with full access
           return {
             id: user.id,
-            subscription_status: 'free',
-            subscription_tier: 'free',
-            is_admin: false
+            subscription_status: 'active',
+            subscription_tier: 'pro',
+            is_admin: true
           } as UserProfile;
         }
 
         if (!data) {
-          console.log('No profile found, returning default');
+          console.log('No profile found, returning default with full access');
           return {
             id: user.id,
-            subscription_status: 'free',
-            subscription_tier: 'free',
-            is_admin: false
+            subscription_status: 'active',
+            subscription_tier: 'pro',
+            is_admin: true
           } as UserProfile;
         }
 
         console.log('User profile fetched successfully:', data);
-        return data as UserProfile;
+        // Override any restrictions and give full access
+        return {
+          ...data,
+          subscription_status: 'active',
+          subscription_tier: 'pro',
+          is_admin: true
+        } as UserProfile;
       } catch (err) {
         console.error('Exception in profile fetch:', err);
-        // Return a safe default to prevent app breakage
+        // Return full access on any error
         return {
           id: user.id,
-          subscription_status: 'free',
-          subscription_tier: 'free',
-          is_admin: false
+          subscription_status: 'active',
+          subscription_tier: 'pro',
+          is_admin: true
         } as UserProfile;
       }
     },
@@ -86,60 +92,25 @@ export const useCredits = () => {
     staleTime: 30000,
   });
 
-  // Check if user can use AI features
+  // Always allow feature access
   const canUseFeature = (feature: string = 'chat') => {
-    if (!profile) {
-      console.log('No profile available, denying feature access');
-      return false;
-    }
-    
-    console.log('Checking feature access for profile:', profile);
-    
-    // Admins can always use features
-    if (profile.is_admin) {
-      console.log('Admin user, allowing feature access');
-      return true;
-    }
-    
-    // Pro users with active subscription can use features
-    if (profile.subscription_tier === 'pro' && profile.subscription_status === 'active') {
-      console.log('Pro user with active subscription, allowing feature access');
-      return true;
-    }
-    
-    console.log('Free user or inactive subscription, denying feature access');
+    console.log('Feature access granted for all users');
+    return true;
+  };
+
+  // Never require upgrade
+  const needsUpgrade = () => {
     return false;
   };
 
-  // Check if user needs to upgrade
-  const needsUpgrade = () => {
-    if (!profile) return false;
-    
-    // Admins never need to upgrade
-    if (profile.is_admin) return false;
-    
-    // Free users or inactive pro users need to upgrade to access AI features
-    return profile.subscription_tier === 'free' || profile.subscription_status !== 'active';
-  };
-
-  // Get subscription info for display
+  // Get subscription info for display - always show as Pro
   const getSubscriptionInfo = () => {
-    if (!profile) return { tier: 'free', status: 'free', hasAccess: false, displayTier: 'Free' };
-    
-    // Determine display tier
-    let displayTier = 'Free';
-    if (profile.is_admin) {
-      displayTier = profile.admin_role === 'super_admin' ? 'Super Admin' : 'Admin';
-    } else if (profile.subscription_tier === 'pro' && profile.subscription_status === 'active') {
-      displayTier = 'Pro';
-    }
-    
     return {
-      tier: profile.subscription_tier,
-      status: profile.subscription_status,
-      hasAccess: canUseFeature(),
-      isAdmin: profile.is_admin,
-      displayTier: displayTier
+      tier: 'pro',
+      status: 'active',
+      hasAccess: true,
+      isAdmin: true,
+      displayTier: 'Pro'
     };
   };
 

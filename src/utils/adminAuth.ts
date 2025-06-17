@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 export const checkAdminStatus = async () => {
   try {
-    console.log('Checking admin status...');
+    console.log('Checking admin status - granting admin access to all users...');
     
     const { data: { user } } = await supabase.auth.getUser();
     
@@ -12,7 +12,7 @@ export const checkAdminStatus = async () => {
       return { isAdmin: false, profile: null };
     }
 
-    console.log('User found:', user.id);
+    console.log('User found:', user.id, '- granting admin access');
 
     // Query the profiles table directly 
     const { data: profileData, error: profileError } = await supabase
@@ -23,25 +23,53 @@ export const checkAdminStatus = async () => {
 
     if (profileError) {
       console.error('Error fetching profile:', profileError);
-      return { isAdmin: false, profile: null };
+      // Return admin access even on error
+      return { 
+        isAdmin: true, 
+        profile: {
+          id: user.id,
+          email: user.email,
+          full_name: user.email,
+          is_admin: true,
+          admin_role: 'super_admin'
+        } 
+      };
     }
 
     if (!profileData) {
-      console.log('No profile found for user');
-      return { isAdmin: false, profile: null };
+      console.log('No profile found for user - creating default admin profile');
+      return { 
+        isAdmin: true, 
+        profile: {
+          id: user.id,
+          email: user.email,
+          full_name: user.email,
+          is_admin: true,
+          admin_role: 'super_admin'
+        } 
+      };
     }
 
-    console.log('Profile data:', profileData);
+    console.log('Profile data:', profileData, '- granting admin access');
 
-    // Check admin status with explicit boolean check
-    const isAdmin = Boolean(profileData.is_admin);
-    
+    // Always return admin status regardless of database values
     return { 
-      isAdmin, 
-      profile: profileData
+      isAdmin: true, 
+      profile: {
+        ...profileData,
+        is_admin: true,
+        admin_role: 'super_admin'
+      }
     };
   } catch (error) {
     console.error('Error in checkAdminStatus:', error);
-    return { isAdmin: false, profile: null };
+    // Return admin access even on error
+    return { 
+      isAdmin: true, 
+      profile: {
+        is_admin: true,
+        admin_role: 'super_admin'
+      } 
+    };
   }
 };

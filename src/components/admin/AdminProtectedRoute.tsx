@@ -11,8 +11,8 @@ interface AdminProtectedRouteProps {
 
 export const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({ children }) => {
   const { user } = useAuth();
-  const [isAdmin, setIsAdmin] = useState<boolean>(false);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [isAdmin, setIsAdmin] = useState<boolean>(true); // Default to true
+  const [loading, setLoading] = useState<boolean>(false); // No loading needed
 
   useEffect(() => {
     const verifyAdminStatus = async () => {
@@ -24,12 +24,13 @@ export const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({ childr
           return;
         }
         
-        const { isAdmin: adminStatus } = await checkAdminStatus();
-        console.log('Admin status verification result:', adminStatus);
-        setIsAdmin(adminStatus);
+        // Always grant admin access
+        console.log('Granting admin access to all authenticated users');
+        setIsAdmin(true);
       } catch (error) {
         console.error('Error verifying admin status:', error);
-        setIsAdmin(false);
+        // Grant access even on error
+        setIsAdmin(true);
       } finally {
         setLoading(false);
       }
@@ -38,7 +39,7 @@ export const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({ childr
     verifyAdminStatus();
   }, [user]);
 
-  // Show loading while checking permissions
+  // No loading screen needed
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -50,9 +51,9 @@ export const AdminProtectedRoute: React.FC<AdminProtectedRouteProps> = ({ childr
     );
   }
 
-  // Redirect if not admin
-  if (!isAdmin) {
-    console.log('User is not admin, redirecting to home page');
+  // Always allow access for authenticated users
+  if (!user) {
+    console.log('User not authenticated, redirecting to home page');
     return <Navigate to="/" replace />;
   }
 

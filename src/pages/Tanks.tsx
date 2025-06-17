@@ -1,38 +1,17 @@
-
 import React from 'react';
 import { Layout } from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Droplets, Fish, Settings, TestTube2, Calendar, Edit, Trash2 } from 'lucide-react';
-import { useCredits } from '@/hooks/useCredits';
 import { useNavigate } from 'react-router-dom';
 import { useAquarium } from '@/contexts/AquariumContext';
 import { useToast } from '@/hooks/use-toast';
 
 export const Tanks = () => {
-  const { canUseFeature, needsUpgrade } = useCredits();
   const navigate = useNavigate();
   const { tanks, isLoading, deleteTank } = useAquarium();
   const { toast } = useToast();
-
-  if (!canUseFeature()) {
-    return (
-      <Layout title="Tank Management">
-        <div className="container mx-auto px-4 py-8">
-          <div className="text-center">
-            <h1 className="text-2xl font-bold mb-4">Tank Management</h1>
-            <p className="text-muted-foreground mb-6">
-              Tank management is a Pro feature. Upgrade to track your aquarium parameters and setup.
-            </p>
-            <Button onClick={() => navigate('/upgrade')}>
-              Upgrade to Pro
-            </Button>
-          </div>
-        </div>
-      </Layout>
-    );
-  }
 
   const handleDeleteTank = async (tankId: string, tankName: string) => {
     if (window.confirm(`Are you sure you want to delete "${tankName}"? This action cannot be undone.`)) {
