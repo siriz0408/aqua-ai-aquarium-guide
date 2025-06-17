@@ -210,7 +210,7 @@ const AquaBot = () => {
                   <Badge variant={subscriptionInfo.hasAccess ? "default" : "secondary"} className="flex items-center gap-1">
                     <Zap className="h-3 w-3" />
                     <span className="text-xs">
-                      {subscriptionInfo.isAdmin ? 'Admin' : subscriptionInfo.tier === 'pro' ? 'Pro' : 'Free'}
+                      {subscriptionInfo.displayTier}
                     </span>
                   </Badge>
                 </div>

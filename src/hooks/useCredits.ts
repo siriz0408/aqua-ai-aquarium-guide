@@ -12,6 +12,7 @@ export interface UserProfile {
   subscription_start_date?: string;
   subscription_end_date?: string;
   is_admin?: boolean;
+  admin_role?: string;
 }
 
 export const useCredits = () => {
@@ -123,13 +124,22 @@ export const useCredits = () => {
 
   // Get subscription info for display
   const getSubscriptionInfo = () => {
-    if (!profile) return { tier: 'free', status: 'free', hasAccess: false };
+    if (!profile) return { tier: 'free', status: 'free', hasAccess: false, displayTier: 'Free' };
+    
+    // Determine display tier
+    let displayTier = 'Free';
+    if (profile.is_admin) {
+      displayTier = profile.admin_role === 'super_admin' ? 'Super Admin' : 'Admin';
+    } else if (profile.subscription_tier === 'pro' && profile.subscription_status === 'active') {
+      displayTier = 'Pro';
+    }
     
     return {
       tier: profile.subscription_tier,
       status: profile.subscription_status,
       hasAccess: canUseFeature(),
-      isAdmin: profile.is_admin
+      isAdmin: profile.is_admin,
+      displayTier: displayTier
     };
   };
 
