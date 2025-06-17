@@ -9,6 +9,7 @@ import { Fish, Droplets, Plus, MessageCircle, BookOpen, Wrench, TestTube2, Calen
 import { SubscriptionBanner } from '@/components/SubscriptionBanner';
 import { Badge } from '@/components/ui/badge';
 import TaskRecommendations from '@/components/TaskRecommendations';
+import PlansSummary from '@/components/PlansSummary';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -100,6 +101,11 @@ const Index = () => {
         {/* Task Reminders Section - Full Width */}
         <div className="w-full">
           <TaskRecommendations />
+        </div>
+
+        {/* Setup Plans Section - Full Width */}
+        <div className="w-full">
+          <PlansSummary />
         </div>
 
         {/* Your Aquariums Section - Full Width */}
