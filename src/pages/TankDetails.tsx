@@ -386,14 +386,14 @@ const TankDetails = () => {
                             {task.description}
                           </p>
                           <div className="flex items-center gap-2 mt-2">
-                            <Badge variant="outline" size="sm">
+                            <Badge variant="outline">
                               {task.priority}
                             </Badge>
-                            <Badge variant="secondary" size="sm">
+                            <Badge variant="secondary">
                               {task.task_type}
                             </Badge>
                             {task.estimated_time && (
-                              <Badge variant="outline" size="sm">
+                              <Badge variant="outline">
                                 {task.estimated_time}
                               </Badge>
                             )}

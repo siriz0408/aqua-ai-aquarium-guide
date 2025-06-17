@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -79,6 +78,10 @@ const TaskRecommendations = () => {
         variant: "destructive",
       });
     }
+  };
+
+  const handleUpdateSteps = (taskId: string, steps: TaskStep[]) => {
+    updateTask({ id: taskId, steps });
   };
 
   const closeModal = () => {
@@ -196,6 +199,7 @@ const TaskRecommendations = () => {
         onClose={closeModal}
         onResolve={handleResolveTask}
         onDelete={handleDeleteTask}
+        onUpdateSteps={handleUpdateSteps}
       />
     </>
   );

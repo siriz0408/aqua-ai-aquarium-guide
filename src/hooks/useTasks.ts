@@ -71,6 +71,33 @@ interface CreateTaskData {
   required_tools?: string[];
 }
 
+// Helper function to convert database row to Task
+const convertToTask = (row: any): Task => {
+  return {
+    id: row.id,
+    user_id: row.user_id,
+    title: row.title,
+    description: row.description,
+    task_type: row.task_type,
+    priority: row.priority,
+    status: row.status,
+    frequency: row.frequency,
+    due_date: row.due_date,
+    list_id: row.list_id,
+    conversation_id: row.conversation_id,
+    detailed_instructions: row.detailed_instructions,
+    steps: Array.isArray(row.steps) ? row.steps as TaskStep[] : [],
+    estimated_time: row.estimated_time,
+    difficulty: row.difficulty,
+    resources: Array.isArray(row.resources) ? row.resources as TaskResource[] : [],
+    tips: Array.isArray(row.tips) ? row.tips : [],
+    warnings: Array.isArray(row.warnings) ? row.warnings : [],
+    required_tools: Array.isArray(row.required_tools) ? row.required_tools : [],
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+  };
+};
+
 export const useTasks = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -92,7 +119,7 @@ export const useTasks = () => {
         return [];
       }
 
-      return data as Task[];
+      return data ? data.map(convertToTask) : [];
     },
     enabled: !!user,
   });
@@ -145,7 +172,7 @@ export const useTasks = () => {
         .single();
 
       if (error) throw error;
-      return data;
+      return convertToTask(data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
@@ -175,7 +202,7 @@ export const useTasks = () => {
         .single();
 
       if (error) throw error;
-      return data;
+      return convertToTask(data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
