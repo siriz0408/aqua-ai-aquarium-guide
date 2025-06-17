@@ -43,7 +43,7 @@ const FishCard: React.FC<FishCardProps> = ({ fish, showAddToList = true }) => {
     }
   };
 
-  const handleAddToList = (listType: string) =>;
+  const handleAddToList = (listType: string) => {
     if (!user) return;
     addToList({ fishId: fish.id, listType });
   };
