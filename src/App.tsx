@@ -24,6 +24,7 @@ import NotFound from "./pages/NotFound";
 import Admin from "./pages/Admin";
 import AdminUsersPage from "./pages/AdminUsers";
 import AdminTicketsPage from "./pages/AdminTickets";
+import AdminSettingsPage from "./pages/AdminSettings";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -57,6 +58,7 @@ const App = () => (
                       <Route index element={<Admin />} />
                       <Route path="users" element={<AdminUsersPage />} />
                       <Route path="tickets" element={<AdminTicketsPage />} />
+                      <Route path="settings" element={<AdminSettingsPage />} />
                     </Route>
                     
                     {/* Regular App Routes */}

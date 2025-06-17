@@ -53,6 +53,47 @@ export type Database = {
           },
         ]
       }
+      admin_invitations: {
+        Row: {
+          accepted: boolean | null
+          admin_role: string
+          created_at: string
+          email: string
+          expires_at: string | null
+          id: string
+          invited_by: string | null
+          permissions: Json | null
+        }
+        Insert: {
+          accepted?: boolean | null
+          admin_role?: string
+          created_at?: string
+          email: string
+          expires_at?: string | null
+          id?: string
+          invited_by?: string | null
+          permissions?: Json | null
+        }
+        Update: {
+          accepted?: boolean | null
+          admin_role?: string
+          created_at?: string
+          email?: string
+          expires_at?: string | null
+          id?: string
+          invited_by?: string | null
+          permissions?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_invitations_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       admin_notes: {
         Row: {
           admin_id: string | null
@@ -1109,7 +1150,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      promote_user_to_admin: {
+        Args: { user_email: string; role?: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
