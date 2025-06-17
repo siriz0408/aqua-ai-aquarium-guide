@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Layout } from '@/components/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -70,12 +69,21 @@ const Index = () => {
     setIsAddingTank(false);
   };
 
-  const handleDeleteTank = (tankId: string, tankName: string) => {
-    deleteTank(tankId);
-    toast({
-      title: "Tank deleted",
-      description: `${tankName} has been removed from your collection.`,
-    });
+  const handleDeleteTank = async (tankId: string, tankName: string) => {
+    try {
+      await deleteTank(tankId);
+      toast({
+        title: "Tank deleted permanently",
+        description: `${tankName} and all its data have been permanently removed.`,
+      });
+    } catch (error) {
+      console.error('Error deleting tank:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete tank. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -228,9 +236,27 @@ const Index = () => {
                           </AlertDialogTrigger>
                           <AlertDialogContent>
                             <AlertDialogHeader>
-                              <AlertDialogTitle>Delete Tank</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Are you sure you want to delete "{tank.name}"? This action cannot be undone and will remove all associated data including equipment, livestock, and water parameters.
+                              <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+                                <Trash2 className="h-5 w-5" />
+                                Permanently Delete Tank
+                              </AlertDialogTitle>
+                              <AlertDialogDescription className="space-y-2">
+                                <p className="font-medium">
+                                  Are you sure you want to permanently delete "{tank.name}"?
+                                </p>
+                                <p className="text-sm">
+                                  <strong>This action cannot be undone.</strong> This will permanently remove:
+                                </p>
+                                <ul className="text-sm list-disc list-inside space-y-1 ml-2">
+                                  <li>The tank and all its settings</li>
+                                  <li>All equipment records ({tank.equipment.length} items)</li>
+                                  <li>All livestock records ({tank.livestock.length} animals)</li>
+                                  <li>All water test logs ({tank.parameters.length} tests)</li>
+                                  <li>Any related maintenance history</li>
+                                </ul>
+                                <p className="text-sm font-medium text-destructive">
+                                  This data will be permanently deleted from your account and cannot be recovered.
+                                </p>
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
@@ -239,7 +265,7 @@ const Index = () => {
                                 onClick={() => handleDeleteTank(tank.id, tank.name)}
                                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                               >
-                                Delete Tank
+                                Yes, Permanently Delete
                               </AlertDialogAction>
                             </AlertDialogFooter>
                           </AlertDialogContent>

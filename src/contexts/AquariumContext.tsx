@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -54,7 +53,7 @@ interface AquariumContextType {
   tanks: Tank[];
   addTank: (tank: Omit<Tank, 'id' | 'createdAt'>) => Promise<void>;
   updateTank: (tankId: string, updates: Partial<Tank>) => Promise<void>;
-  deleteTank: (tankId: string) => void;
+  deleteTank: (tankId: string) => Promise<void>;
   addParameters: (tankId: string, parameters: Omit<WaterParameters, 'id'>) => Promise<void>;
   addEquipment: (tankId: string, equipment: Omit<Equipment, 'id'>) => void;
   addLivestock: (tankId: string, livestock: Omit<Livestock, 'id'>) => void;
@@ -225,9 +224,49 @@ export function AquariumProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const deleteTank = (tankId: string) => {
+  const deleteTank = async (tankId: string) => {
+    if (user) {
+      // Delete from Supabase database
+      try {
+        // First delete related water test logs
+        const { error: waterTestError } = await supabase
+          .from('water_test_logs')
+          .delete()
+          .eq('aquarium_id', tankId);
+
+        if (waterTestError) {
+          console.error('Error deleting water test logs:', waterTestError);
+          // Continue with tank deletion even if water test logs fail
+        }
+
+        // Then delete the tank
+        const { error: tankError } = await supabase
+          .from('aquariums')
+          .delete()
+          .eq('id', tankId);
+
+        if (tankError) throw tankError;
+
+        toast({
+          title: "Tank deleted successfully",
+          description: "The tank and all its data have been permanently removed.",
+        });
+      } catch (error: any) {
+        console.error('Error deleting tank from Supabase:', error);
+        toast({
+          title: "Error deleting tank",
+          description: error.message || "Failed to delete tank from database",
+          variant: "destructive",
+        });
+        return; // Don't update local state if database deletion failed
+      }
+    }
+
+    // Update local state
     setTanks(prev => prev.filter(tank => tank.id !== tankId));
+    
     if (!user) {
+      // Update localStorage for non-authenticated users
       const updatedTanks = tanks.filter(tank => tank.id !== tankId);
       localStorage.setItem('aqua-ai-tanks', JSON.stringify(updatedTanks));
     }
