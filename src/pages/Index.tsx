@@ -9,7 +9,6 @@ import { Fish, Droplets, Plus, MessageCircle, BookOpen, Wrench, TestTube2, Calen
 import { SubscriptionBanner } from '@/components/SubscriptionBanner';
 import { Badge } from '@/components/ui/badge';
 import TaskRecommendations from '@/components/TaskRecommendations';
-import PlansSummary from '@/components/PlansSummary';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -98,88 +97,93 @@ const Index = () => {
           ))}
         </div>
 
-        {/* Task Reminders Section */}
-        <TaskRecommendations />
+        {/* Task Reminders Section - Full Width */}
+        <div className="w-full">
+          <TaskRecommendations />
+        </div>
 
-        {/* Setup Plans Section */}
-        <PlansSummary />
-
-        {/* Your Aquariums Section */}
-        <Card className="w-full">
-          <CardHeader className="pb-3">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-              <div className="flex-1 min-w-0">
-                <CardTitle className="text-lg">Your Aquariums</CardTitle>
-                <CardDescription className="text-sm">Monitor and manage your tanks</CardDescription>
-              </div>
-              {aquariums.length > 0 && (
-                <Button variant="ghost" size="sm" onClick={() => navigate('/tanks')} className="flex-shrink-0 text-xs">
-                  View All ({aquariums.length})
-                </Button>
-              )}
-            </div>
-          </CardHeader>
+        {/* Your Aquariums Section - Full Width */}
+        <div className="w-full">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold">Your Aquariums</h2>
+            {aquariums.length > 0 && (
+              <Button variant="ghost" onClick={() => navigate('/tanks')}>
+                View All ({aquariums.length})
+              </Button>
+            )}
+          </div>
           
-          <CardContent>
-            {isLoading ? (
-              <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {[...Array(2)].map((_, i) => (
-                  <div key={i} className="p-3 border rounded-lg animate-pulse">
-                    <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+          {isLoading ? (
+            <div className="grid gap-4 md:grid-cols-2">
+              {[...Array(2)].map((_, i) => (
+                <Card key={i} className="animate-pulse">
+                  <CardHeader>
+                    <div className="h-4 bg-gray-200 rounded w-3/4"></div>
                     <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-                  </div>
-                ))}
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-20 bg-gray-200 rounded"></div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : aquariums.length === 0 ? (
+            <Card className="text-center p-8">
+              <div className="flex flex-col items-center gap-4">
+                <Fish className="h-12 w-12 text-muted-foreground" />
+                <div>
+                  <h3 className="text-lg font-semibold">No aquariums yet</h3>
+                  <p className="text-muted-foreground mb-4">Get started by adding your first tank</p>
+                  <Button onClick={handleAddTank} className="gap-2">
+                    <Plus className="h-4 w-4" />
+                    Add Your First Tank
+                  </Button>
+                </div>
               </div>
-            ) : aquariums.length === 0 ? (
-              <div className="text-center py-6">
-                <Fish className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                <h3 className="text-sm font-medium mb-1">No aquariums yet</h3>
-                <p className="text-xs text-muted-foreground mb-3">Get started by adding your first tank</p>
-                <Button size="sm" onClick={handleAddTank} className="gap-1">
-                  <Plus className="h-3 w-3" />
-                  Add Your First Tank
-                </Button>
-              </div>
-            ) : (
-              <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {aquariums.slice(0, 8).map((aquarium) => {
-                  const parameterStatus = getParameterStatus(aquarium);
-                  
-                  return (
-                    <div 
-                      key={aquarium.id} 
-                      className="p-3 border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors group"
-                      onClick={() => navigate(`/tank/${aquarium.id}`)}
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2 min-w-0 flex-1">
-                          <Droplets className="h-4 w-4 text-blue-500 flex-shrink-0" />
-                          <div className="min-w-0">
-                            <h4 className="text-sm font-medium truncate">{aquarium.name}</h4>
-                            <p className="text-xs text-muted-foreground truncate">{aquarium.size}</p>
+            </Card>
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2">
+              {aquariums.slice(0, 4).map((aquarium) => {
+                const parameterStatus = getParameterStatus(aquarium);
+                
+                return (
+                  <Card 
+                    key={aquarium.id} 
+                    className="cursor-pointer hover:shadow-lg transition-shadow group"
+                    onClick={() => navigate(`/tank/${aquarium.id}`)}
+                  >
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Droplets className="h-5 w-5 text-blue-500" />
+                          <div>
+                            <CardTitle className="text-base">{aquarium.name}</CardTitle>
+                            <CardDescription>{aquarium.size}</CardDescription>
                           </div>
                         </div>
-                        <Badge variant="secondary" className="text-xs flex-shrink-0">
+                        <Badge variant="secondary" className="text-xs">
                           {aquarium.type}
                         </Badge>
                       </div>
-                      
+                    </CardHeader>
+                    
+                    <CardContent className="space-y-3">
                       {/* Quick Stats */}
-                      <div className="grid grid-cols-3 gap-1 text-center mb-2">
+                      <div className="grid grid-cols-3 gap-2 text-center">
                         <div>
-                          <p className="text-xs font-medium text-blue-600">
+                          <p className="text-sm font-medium text-blue-600">
                             {aquarium.livestock?.length || 0}
                           </p>
                           <p className="text-xs text-muted-foreground">Fish</p>
                         </div>
                         <div>
-                          <p className="text-xs font-medium text-purple-600">
+                          <p className="text-sm font-medium text-purple-600">
                             {aquarium.equipment?.length || 0}
                           </p>
                           <p className="text-xs text-muted-foreground">Equipment</p>
                         </div>
                         <div>
-                          <p className="text-xs font-medium text-green-600">
+                          <p className="text-sm font-medium text-green-600">
                             {aquarium.parameters?.length || 0}
                           </p>
                           <p className="text-xs text-muted-foreground">Tests</p>
@@ -187,10 +191,10 @@ const Index = () => {
                       </div>
                       
                       {/* Test Status */}
-                      <div className="flex items-center justify-between p-2 bg-muted rounded text-xs">
-                        <div className="flex items-center gap-1">
+                      <div className="flex items-center justify-between p-2 bg-muted rounded">
+                        <div className="flex items-center gap-2">
                           <TestTube2 className="h-3 w-3" />
-                          <span>Tests</span>
+                          <span className="text-sm">Tests</span>
                         </div>
                         <Badge 
                           variant={parameterStatus.status === 'success' ? 'default' : 
@@ -205,7 +209,7 @@ const Index = () => {
                       <Button 
                         size="sm" 
                         variant="outline" 
-                        className="w-full mt-2 opacity-0 group-hover:opacity-100 transition-opacity text-xs h-7"
+                        className="w-full opacity-0 group-hover:opacity-100 transition-opacity"
                         onClick={(e) => {
                           e.stopPropagation();
                           navigate(`/tank/${aquarium.id}/log-parameters`);
@@ -214,13 +218,13 @@ const Index = () => {
                         <TestTube2 className="h-3 w-3 mr-1" />
                         Log Water Test
                       </Button>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
     </Layout>
   );
