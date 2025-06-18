@@ -45,6 +45,17 @@ export const useCredits = () => {
         // Continue with non-admin profile instead of throwing
       }
 
+      // Get profile data from profiles table
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (profileError && profileError.code !== 'PGRST116') {
+        console.error('Error fetching profile:', profileError);
+      }
+
       // Get trial status if not admin
       let trialStatus: TrialStatus | null = null;
       if (!isAdmin) {
@@ -56,13 +67,34 @@ export const useCredits = () => {
         }
       }
 
-      // Return a profile based on admin status and trial information
+      // Determine subscription status and tier
+      let subscriptionStatus = 'free';
+      let subscriptionTier = 'free';
+
+      if (isAdmin) {
+        subscriptionStatus = 'active';
+        subscriptionTier = 'pro';
+      } else if (profileData) {
+        // Use profile data from database
+        subscriptionStatus = profileData.subscription_status || 'free';
+        subscriptionTier = profileData.subscription_tier || 'free';
+        
+        // Override with trial status if applicable
+        if (trialStatus && trialStatus.subscription_status === 'trial') {
+          subscriptionStatus = 'trial';
+        }
+      } else if (trialStatus) {
+        subscriptionStatus = trialStatus.subscription_status;
+      }
+
       const profile: UserProfile = {
         id: user.id,
-        subscription_status: isAdmin ? 'active' : (trialStatus?.subscription_status as any || 'free'),
-        subscription_tier: isAdmin ? 'pro' : 'free',
-        trial_start_date: trialStatus && !isAdmin ? undefined : undefined,
-        trial_end_date: trialStatus && !isAdmin ? undefined : undefined,
+        subscription_status: subscriptionStatus as any,
+        subscription_tier: subscriptionTier as any,
+        trial_start_date: profileData?.trial_start_date,
+        trial_end_date: profileData?.trial_end_date,
+        subscription_start_date: profileData?.subscription_start_date,
+        subscription_end_date: profileData?.subscription_end_date,
         is_admin: isAdmin || false,
         admin_role: isAdmin ? 'admin' : undefined,
       };
@@ -97,7 +129,10 @@ export const useCredits = () => {
 
   // Check if user can use features (trial, subscription, or admin)
   const canUseFeature = (feature: string = 'chat') => {
-    if (!profile) return false;
+    if (!profile) {
+      console.log('Feature access denied: No profile found');
+      return false;
+    }
     
     // Admins always have access
     if (profile.is_admin) {
@@ -105,19 +140,24 @@ export const useCredits = () => {
       return true;
     }
     
-    // Users with active subscription have access
+    // Users with active PRO subscription have access
     if (profile.subscription_tier === 'pro' && profile.subscription_status === 'active') {
       console.log('Feature access granted: Active pro subscription');
       return true;
     }
     
-    // Users in trial period have access
-    if (profile.subscription_status === 'trial' && trialStatus && !trialStatus.is_trial_expired) {
+    // Users in active trial period have access
+    if (profile.subscription_status === 'trial' && trialStatus && !trialStatus.is_trial_expired && trialStatus.trial_hours_remaining > 0) {
       console.log('Feature access granted: Active trial');
       return true;
     }
     
-    console.log('Feature access denied: No valid subscription, trial, or admin status');
+    console.log('Feature access denied: No valid subscription, trial, or admin status', {
+      subscriptionStatus: profile.subscription_status,
+      subscriptionTier: profile.subscription_tier,
+      isTrialExpired: trialStatus?.is_trial_expired,
+      trialHoursRemaining: trialStatus?.trial_hours_remaining
+    });
     return false;
   };
 
@@ -134,7 +174,7 @@ export const useCredits = () => {
     }
     
     // Check if user is in active trial
-    if (profile.subscription_status === 'trial' && trialStatus && !trialStatus.is_trial_expired) {
+    if (profile.subscription_status === 'trial' && trialStatus && !trialStatus.is_trial_expired && trialStatus.trial_hours_remaining > 0) {
       return false;
     }
     
@@ -158,7 +198,7 @@ export const useCredits = () => {
     const isTrial = profile.subscription_status === 'trial';
     const hasAccess = profile.is_admin || 
       (profile.subscription_tier === 'pro' && profile.subscription_status === 'active') ||
-      (isTrial && trialStatus && !trialStatus.is_trial_expired);
+      (isTrial && trialStatus && !trialStatus.is_trial_expired && trialStatus.trial_hours_remaining > 0);
 
     return {
       tier: profile.subscription_tier || 'free',

@@ -13,7 +13,7 @@ import { useState } from 'react';
 const Index = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { needsUpgrade } = useCredits();
+  const { canUseFeature, needsUpgrade, getSubscriptionInfo } = useCredits();
   const [showPaywall, setShowPaywall] = useState(false);
 
   const handleFeatureClick = (path: string) => {
@@ -22,17 +22,23 @@ const Index = () => {
       return;
     }
     
-    if (needsUpgrade()) {
+    // Check if user can access the feature
+    if (!canUseFeature()) {
+      console.log('User cannot access feature, showing paywall');
       setShowPaywall(true);
       return;
     }
     
+    console.log('User can access feature, navigating to:', path);
     navigate(path);
   };
 
   const handleUpgrade = () => {
     setShowPaywall(true);
   };
+
+  const subscriptionInfo = getSubscriptionInfo();
+  console.log('Current subscription info:', subscriptionInfo);
 
   return (
     <Layout title="AquaAI - Intelligent Aquarium Management">
