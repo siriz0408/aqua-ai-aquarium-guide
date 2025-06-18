@@ -127,59 +127,16 @@ export const useCredits = () => {
     refetchInterval: 60000, // Refetch every minute to update trial countdown
   });
 
-  // Check if user can use features - Pro users ALWAYS have access
+  // PAYWALL REMOVED: Always allow access to features
   const canUseFeature = (feature: string = 'chat') => {
-    if (!profile) {
-      console.log('Feature access denied: No profile found');
-      return false;
-    }
-    
-    // Admins always have access
-    if (profile.is_admin) {
-      console.log('Feature access granted: User is admin');
-      return true;
-    }
-    
-    // Pro users ALWAYS have access regardless of subscription status
-    if (profile.subscription_tier === 'pro') {
-      console.log('Feature access granted: Pro tier user (regardless of status)');
-      return true;
-    }
-    
-    // Users in active trial period have access
-    if (profile.subscription_status === 'trial' && trialStatus && !trialStatus.is_trial_expired && trialStatus.trial_hours_remaining > 0) {
-      console.log('Feature access granted: Active trial');
-      return true;
-    }
-    
-    console.log('Feature access denied: No valid subscription, trial, or admin status', {
-      subscriptionStatus: profile.subscription_status,
-      subscriptionTier: profile.subscription_tier,
-      isTrialExpired: trialStatus?.is_trial_expired,
-      trialHoursRemaining: trialStatus?.trial_hours_remaining
-    });
-    return false;
+    console.log('Feature access granted: Paywall disabled for all users');
+    return true;
   };
 
-  // Check if user needs upgrade - Pro users NEVER need upgrade
+  // PAYWALL REMOVED: No users need upgrade
   const needsUpgrade = () => {
-    if (!profile) return true;
-    
-    // Admins never need upgrade
-    if (profile.is_admin) return false;
-    
-    // Pro users NEVER need upgrade regardless of status
-    if (profile.subscription_tier === 'pro') {
-      console.log('No upgrade needed: Pro tier user');
-      return false;
-    }
-    
-    // Check if user is in active trial
-    if (profile.subscription_status === 'trial' && trialStatus && !trialStatus.is_trial_expired && trialStatus.trial_hours_remaining > 0) {
-      return false;
-    }
-    
-    return true;
+    console.log('No upgrade needed: Paywall disabled for all users');
+    return false;
   };
 
   // Get subscription info for display
@@ -188,7 +145,7 @@ export const useCredits = () => {
       return {
         tier: 'free',
         status: 'free',
-        hasAccess: false,
+        hasAccess: true, // Always true now
         isAdmin: false,
         isTrial: false,
         trialHoursRemaining: 0,
@@ -197,9 +154,7 @@ export const useCredits = () => {
     }
 
     const isTrial = profile.subscription_status === 'trial';
-    const hasAccess = profile.is_admin || 
-      profile.subscription_tier === 'pro' || // Pro users always have access
-      (isTrial && trialStatus && !trialStatus.is_trial_expired && trialStatus.trial_hours_remaining > 0);
+    const hasAccess = true; // Always true now
 
     return {
       tier: profile.subscription_tier || 'free',

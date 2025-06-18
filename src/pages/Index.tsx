@@ -6,15 +6,13 @@ import { DropletIcon, FishIcon, Thermometer, Zap, MessageSquare, Calculator } fr
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { TrialBanner } from '@/components/TrialBanner';
-import PaywallModal from '@/components/Paywall';
 import { useCredits } from '@/hooks/useCredits';
 import { useState } from 'react';
 
 const Index = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { canUseFeature, needsUpgrade, getSubscriptionInfo } = useCredits();
-  const [showPaywall, setShowPaywall] = useState(false);
+  const { getSubscriptionInfo } = useCredits();
 
   const handleFeatureClick = (path: string) => {
     if (!user) {
@@ -22,27 +20,14 @@ const Index = () => {
       return;
     }
     
-    // Check if user can access the feature - Pro users always can
-    if (!canUseFeature()) {
-      console.log('User cannot access feature, showing paywall');
-      setShowPaywall(true);
-      return;
-    }
-    
-    console.log('User can access feature, navigating to:', path);
+    // PAYWALL REMOVED: Always navigate to features
+    console.log('Navigating to feature (paywall disabled):', path);
     navigate(path);
   };
 
   const handleUpgrade = () => {
-    const subscriptionInfo = getSubscriptionInfo();
-    
-    // Pro users should never see the paywall
-    if (subscriptionInfo.tier === 'pro') {
-      console.log('Pro user tried to upgrade - this should not happen');
-      return;
-    }
-    
-    setShowPaywall(true);
+    // PAYWALL REMOVED: No upgrade needed
+    console.log('Upgrade clicked but paywall is disabled');
   };
 
   const subscriptionInfo = getSubscriptionInfo();
@@ -52,10 +37,7 @@ const Index = () => {
     <Layout title="AquaAI - Intelligent Aquarium Management">
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-gray-900 dark:to-blue-900">
         <div className="container mx-auto px-4 py-8">
-          {/* Only show trial banner for trial users, not pro users */}
-          {user && subscriptionInfo.isTrial && subscriptionInfo.tier !== 'pro' && (
-            <TrialBanner onUpgrade={handleUpgrade} />
-          )}
+          {/* PAYWALL REMOVED: Hide trial banner completely */}
           
           <div className="text-center mb-12">
             <div className="flex items-center justify-center mb-6">
@@ -195,11 +177,7 @@ const Index = () => {
         </div>
       </div>
 
-      <PaywallModal 
-        isOpen={showPaywall} 
-        onClose={() => setShowPaywall(false)} 
-        showUpgradeOnly={needsUpgrade()}
-      />
+      {/* PAYWALL REMOVED: No paywall modal */}
     </Layout>
   );
 };
