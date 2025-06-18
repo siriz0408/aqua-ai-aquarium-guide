@@ -60,6 +60,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             description: "You've successfully signed in to AquaAI.",
           });
         }
+
+        // Handle successful sign out
+        if (event === 'SIGNED_OUT') {
+          console.log('User signed out successfully');
+        }
       }
     );
 
@@ -167,28 +172,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signOut = async () => {
     try {
-      setLoading(true);
+      console.log('Starting sign out process...');
       const { error } = await supabase.auth.signOut();
+      
       if (error) {
+        console.error('Sign out error:', error);
         toast({
           title: "Sign out failed",
           description: error.message,
           variant: "destructive",
         });
       } else {
+        console.log('Sign out successful');
+        // Clear local state immediately
+        setSession(null);
+        setUser(null);
         toast({
           title: "Signed out",
           description: "You've been successfully signed out.",
         });
       }
     } catch (error: any) {
+      console.error('Sign out exception:', error);
       toast({
         title: "Sign out failed",
         description: error.message || "An unexpected error occurred",
         variant: "destructive",
       });
-    } finally {
-      setLoading(false);
     }
   };
 
