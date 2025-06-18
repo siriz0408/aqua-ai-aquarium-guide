@@ -10,7 +10,7 @@ const corsHeaders = {
 
 const logStep = (step: string, details?: any) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
-  console.log(`[STRIPE-WEBHOOK] ${step}${detailsStr}`);
+  console.log(`[STRIPE-WEBHOOK-ENHANCED] ${step}${detailsStr}`);
 };
 
 serve(async (req) => {
@@ -19,7 +19,7 @@ serve(async (req) => {
   }
 
   try {
-    logStep("Webhook received");
+    logStep("Enhanced webhook received");
 
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeKey) throw new Error("STRIPE_SECRET_KEY is not set");
@@ -45,196 +45,91 @@ serve(async (req) => {
     }
 
     const event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
-    logStep("Event verified", { type: event.type, id: event.id });
+    logStep("Event verified and enhanced processing started", { type: event.type, id: event.id });
 
-    switch (event.type) {
-      case 'checkout.session.completed': {
-        const session = event.data.object as Stripe.Checkout.Session;
-        logStep("Checkout session completed", { sessionId: session.id, customerId: session.customer });
-        
-        if (session.customer && session.mode === 'subscription') {
-          const customerId = session.customer as string;
-          
-          // Get customer details
-          const customer = await stripe.customers.retrieve(customerId) as Stripe.Customer;
-          if (!customer.email) break;
-          
-          // Find user by email
-          const { data: profiles } = await supabaseClient
-            .from('profiles')
-            .select('id')
-            .eq('email', customer.email)
-            .limit(1);
-            
-          if (!profiles || profiles.length === 0) {
-            logStep("No user found for email", { email: customer.email });
-            break;
-          }
-          
-          const userId = profiles[0].id;
-          
-          // Get subscription details
-          const subscriptions = await stripe.subscriptions.list({
-            customer: customerId,
-            status: 'active',
-            limit: 1
-          });
-          
-          if (subscriptions.data.length > 0) {
-            const subscription = subscriptions.data[0];
-            
-            // Update user profile to active pro subscription
-            const { error: updateError } = await supabaseClient
-              .from('profiles')
-              .update({
-                subscription_status: 'active',
-                subscription_tier: 'pro',
-                subscription_type: 'paid',
-                stripe_customer_id: customerId,
-                stripe_subscription_id: subscription.id,
-                subscription_start_date: new Date().toISOString(),
-                subscription_end_date: new Date(subscription.current_period_end * 1000).toISOString(),
-                updated_at: new Date().toISOString()
-              })
-              .eq('id', userId);
-              
-            if (updateError) {
-              logStep("Error updating user profile", { error: updateError });
-            } else {
-              logStep("User profile updated successfully", { userId, subscriptionId: subscription.id });
-            }
-          }
-        }
-        break;
-      }
-      
-      case 'customer.subscription.updated':
-      case 'customer.subscription.deleted': {
-        const subscription = event.data.object as Stripe.Subscription;
-        const customerId = subscription.customer as string;
-        
-        // Get customer details
-        const customer = await stripe.customers.retrieve(customerId) as Stripe.Customer;
-        if (!customer.email) break;
-        
-        // Find user by email
-        const { data: profiles } = await supabaseClient
-          .from('profiles')
-          .select('id')
-          .eq('email', customer.email)
-          .limit(1);
-          
-        if (!profiles || profiles.length === 0) break;
-        
-        const userId = profiles[0].id;
-        
-        if (event.type === 'customer.subscription.deleted' || subscription.status !== 'active') {
-          // Subscription cancelled or inactive
-          await supabaseClient
-            .from('profiles')
-            .update({
-              subscription_status: 'expired',
-              subscription_tier: 'free',
-              subscription_type: 'expired',
-              subscription_end_date: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', userId);
-            
-          logStep("Subscription cancelled", { userId, subscriptionId: subscription.id });
-        } else {
-          // Subscription updated
-          await supabaseClient
-            .from('profiles')
-            .update({
-              subscription_status: 'active',
-              subscription_tier: 'pro',
-              subscription_type: 'paid',
-              subscription_end_date: new Date(subscription.current_period_end * 1000).toISOString(),
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', userId);
-            
-          logStep("Subscription updated", { userId, subscriptionId: subscription.id });
-        }
-        break;
-      }
+    // Use the new enhanced webhook processing function
+    const { data: processResult, error: processError } = await supabaseClient.rpc('process_webhook_event', {
+      event_id: event.id,
+      event_type: event.type,
+      event_data: event as any
+    });
 
-      case 'invoice.payment_succeeded': {
-        const invoice = event.data.object as Stripe.Invoice;
-        const customerId = invoice.customer as string;
-        
-        // Get customer details
-        const customer = await stripe.customers.retrieve(customerId) as Stripe.Customer;
-        if (!customer.email) break;
-        
-        // Find user by email
-        const { data: profiles } = await supabaseClient
-          .from('profiles')
-          .select('id')
-          .eq('email', customer.email)
-          .limit(1);
-          
-        if (!profiles || profiles.length === 0) break;
-        
-        const userId = profiles[0].id;
-        
-        // If this is a subscription invoice, ensure user has active status
-        if (invoice.subscription) {
-          const subscription = await stripe.subscriptions.retrieve(invoice.subscription as string);
-          
-          await supabaseClient
-            .from('profiles')
-            .update({
-              subscription_status: 'active',
-              subscription_tier: 'pro',
-              subscription_type: 'paid',
-              subscription_end_date: new Date(subscription.current_period_end * 1000).toISOString(),
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', userId);
-            
-          logStep("Payment succeeded, subscription renewed", { userId, subscriptionId: subscription.id });
-        }
-        break;
-      }
-
-      case 'invoice.payment_failed': {
-        const invoice = event.data.object as Stripe.Invoice;
-        const customerId = invoice.customer as string;
-        
-        // Get customer details
-        const customer = await stripe.customers.retrieve(customerId) as Stripe.Customer;
-        if (!customer.email) break;
-        
-        // Find user by email
-        const { data: profiles } = await supabaseClient
-          .from('profiles')
-          .select('id')
-          .eq('email', customer.email)
-          .limit(1);
-          
-        if (!profiles || profiles.length === 0) break;
-        
-        const userId = profiles[0].id;
-        
-        logStep("Payment failed for user", { userId, customerId });
-        // Note: We don't immediately cancel on payment failure as Stripe has retry logic
-        break;
-      }
+    if (processError) {
+      logStep("Error in enhanced webhook processing", { error: processError });
+      throw processError;
     }
 
-    return new Response(JSON.stringify({ received: true }), {
+    logStep("Enhanced webhook processing completed", { result: processResult });
+
+    // For subscription events, also sync directly with Stripe API to ensure accuracy
+    if (['customer.subscription.created', 'customer.subscription.updated', 'customer.subscription.deleted'].includes(event.type)) {
+      await handleSubscriptionEventWithStripeSync(event, stripe, supabaseClient);
+    }
+
+    return new Response(JSON.stringify({ 
+      received: true, 
+      processed: true,
+      result: processResult 
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    logStep("ERROR in stripe-webhook", { message: errorMessage });
+    logStep("ERROR in enhanced stripe-webhook", { message: errorMessage });
     
-    return new Response(JSON.stringify({ error: errorMessage }), {
+    return new Response(JSON.stringify({ 
+      error: errorMessage,
+      received: true,
+      processed: false 
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 400,
     });
   }
 });
+
+async function handleSubscriptionEventWithStripeSync(
+  event: Stripe.Event, 
+  stripe: Stripe, 
+  supabaseClient: any
+) {
+  try {
+    const subscription = event.data.object as Stripe.Subscription;
+    const customerId = subscription.customer as string;
+    
+    // Get fresh customer data from Stripe
+    const customer = await stripe.customers.retrieve(customerId) as Stripe.Customer;
+    if (!customer.email) {
+      logStep("No email found for customer", { customerId });
+      return;
+    }
+    
+    // Get fresh subscription data from Stripe
+    const freshSubscription = await stripe.subscriptions.retrieve(subscription.id);
+    
+    logStep("Syncing with fresh Stripe data", { 
+      email: customer.email, 
+      subscriptionStatus: freshSubscription.status,
+      subscriptionId: freshSubscription.id 
+    });
+    
+    // Use the enhanced sync function
+    const { data: syncResult, error: syncError } = await supabaseClient.rpc('sync_user_subscription_from_stripe', {
+      user_email: customer.email,
+      stripe_customer_id: customerId,
+      stripe_subscription_id: freshSubscription.id,
+      subscription_status: freshSubscription.status,
+      subscription_tier: 'pro',
+      current_period_end: new Date(freshSubscription.current_period_end * 1000).toISOString()
+    });
+    
+    if (syncError) {
+      logStep("Error in Stripe sync", { error: syncError });
+    } else {
+      logStep("Stripe sync completed successfully", { result: syncResult });
+    }
+  } catch (error) {
+    logStep("Error in handleSubscriptionEventWithStripeSync", { error: error.message });
+  }
+}

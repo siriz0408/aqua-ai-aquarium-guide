@@ -621,6 +621,56 @@ export type Database = {
           },
         ]
       }
+      manual_sync_operations: {
+        Row: {
+          admin_user_id: string | null
+          after_state: Json | null
+          before_state: Json | null
+          created_at: string | null
+          error_message: string | null
+          id: string
+          operation_type: string
+          stripe_customer_id: string | null
+          success: boolean | null
+          target_email: string | null
+          target_user_id: string | null
+        }
+        Insert: {
+          admin_user_id?: string | null
+          after_state?: Json | null
+          before_state?: Json | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          operation_type: string
+          stripe_customer_id?: string | null
+          success?: boolean | null
+          target_email?: string | null
+          target_user_id?: string | null
+        }
+        Update: {
+          admin_user_id?: string | null
+          after_state?: Json | null
+          before_state?: Json | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          operation_type?: string
+          stripe_customer_id?: string | null
+          success?: boolean | null
+          target_email?: string | null
+          target_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "manual_sync_operations_admin_user_id_fkey"
+            columns: ["admin_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
           content: string
@@ -1266,6 +1316,51 @@ export type Database = {
           },
         ]
       }
+      webhook_events: {
+        Row: {
+          created_at: string | null
+          customer_id: string | null
+          error_message: string | null
+          event_type: string
+          id: string
+          processed_at: string | null
+          processing_status: string | null
+          raw_data: Json | null
+          stripe_event_id: string
+          subscription_id: string | null
+          user_email: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          customer_id?: string | null
+          error_message?: string | null
+          event_type: string
+          id?: string
+          processed_at?: string | null
+          processing_status?: string | null
+          raw_data?: Json | null
+          stripe_event_id: string
+          subscription_id?: string | null
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          customer_id?: string | null
+          error_message?: string | null
+          event_type?: string
+          id?: string
+          processed_at?: string | null
+          processing_status?: string | null
+          raw_data?: Json | null
+          stripe_event_id?: string
+          subscription_id?: string | null
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       webhook_logs: {
         Row: {
           created_at: string
@@ -1332,6 +1427,16 @@ export type Database = {
           refresh_token: string
           user_data: Json
         }[]
+      }
+      admin_manual_sync_user: {
+        Args: {
+          requesting_admin_id: string
+          target_email: string
+          stripe_customer_id: string
+          stripe_subscription_id: string
+          subscription_status?: string
+        }
+        Returns: Json
       }
       admin_update_profile: {
         Args: {
@@ -1418,6 +1523,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      process_webhook_event: {
+        Args: { event_id: string; event_type: string; event_data: Json }
+        Returns: Json
+      }
       promote_user_to_admin: {
         Args: { user_email: string; role?: string }
         Returns: boolean
@@ -1425,6 +1534,17 @@ export type Database = {
       refresh_subscription_status: {
         Args: { user_id: string }
         Returns: undefined
+      }
+      sync_user_subscription_from_stripe: {
+        Args: {
+          user_email: string
+          stripe_customer_id: string
+          stripe_subscription_id: string
+          subscription_status: string
+          subscription_tier?: string
+          current_period_end?: string
+        }
+        Returns: Json
       }
       update_expired_trials: {
         Args: Record<PropertyKey, never>

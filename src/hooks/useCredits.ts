@@ -20,9 +20,22 @@ export const useCredits = () => {
       return false;
     }
     
-    console.log('Checking feature access using improved database function...');
+    console.log('Checking feature access using enhanced database function...');
     
-    // Use the new database function for reliable access checking
+    // First ensure the user profile exists
+    try {
+      const { error: ensureError } = await supabase.rpc('ensure_user_profile', {
+        user_id: user.id
+      });
+      
+      if (ensureError) {
+        console.error('Error ensuring profile exists:', ensureError);
+      }
+    } catch (error) {
+      console.error('Exception ensuring profile:', error);
+    }
+    
+    // Use the enhanced database function for reliable access checking
     const { data, error } = await supabase.rpc('check_user_access', {
       user_id: user.id
     });
@@ -34,11 +47,20 @@ export const useCredits = () => {
     
     if (data && data.length > 0) {
       const accessResult = data[0];
-      console.log('Database access check result:', accessResult);
+      console.log('Enhanced database access check result:', accessResult);
+      
+      // Log detailed access decision for debugging
+      console.log('Access decision details:', {
+        has_access: accessResult.has_access,
+        access_reason: accessResult.access_reason,
+        trial_hours_remaining: accessResult.trial_hours_remaining,
+        feature_requested: feature
+      });
+      
       return accessResult.has_access;
     }
     
-    console.log('No access data returned, denying access');
+    console.log('No access data returned from enhanced check, denying access');
     return false;
   };
 
@@ -64,6 +86,31 @@ export const useCredits = () => {
     return true;
   };
 
+  const forceRefreshAccess = async () => {
+    if (!user?.id) return false;
+    
+    console.log('Force refreshing user access...');
+    
+    try {
+      // Ensure profile exists first
+      await supabase.rpc('ensure_user_profile', { user_id: user.id });
+      
+      // Check access again
+      const { data, error } = await supabase.rpc('check_user_access', { user_id: user.id });
+      
+      if (error) {
+        console.error('Error in force refresh:', error);
+        return false;
+      }
+      
+      console.log('Force refresh result:', data);
+      return data?.[0]?.has_access || false;
+    } catch (error) {
+      console.error('Exception in force refresh:', error);
+      return false;
+    }
+  };
+
   return {
     profile,
     profileLoading: profileLoading || trialLoading,
@@ -72,5 +119,6 @@ export const useCredits = () => {
     needsUpgrade,
     getSubscriptionInfo,
     profileError,
+    forceRefreshAccess,
   };
 };
