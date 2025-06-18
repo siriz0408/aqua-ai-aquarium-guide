@@ -1,26 +1,100 @@
-import React, { useEffect, useState } from 'react';
+
+import React from 'react';
 import { Layout } from '@/components/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { DropletIcon, FishIcon, Thermometer, Zap, MessageSquare, Calculator } from 'lucide-react';
+import { DropletIcon, FishIcon, Thermometer, Zap, MessageSquare, Calculator, Lock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { SubscriptionBanner } from '@/components/subscription/SubscriptionBanner';
-import { useCredits } from '@/hooks/useCredits';
+import { useSubscriptionAccess } from '@/hooks/useSubscriptionAccess';
+import { useToast } from '@/hooks/use-toast';
 
 const Index = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { profile, trialStatus } = useCredits();
+  const { toast } = useToast();
+  const {
+    profile,
+    subscriptionInfo,
+    trialStatus,
+    canAccessFeature,
+    requiresUpgrade,
+    isLoading
+  } = useSubscriptionAccess();
 
-  const handleFeatureClick = async (path: string) => {
+  const handleFeatureClick = async (path: string, featureType: 'basic' | 'premium' = 'basic') => {
     if (!user) {
       navigate('/auth');
       return;
     }
+
+    if (isLoading) {
+      toast({
+        title: "Loading...",
+        description: "Please wait while we check your subscription status.",
+      });
+      return;
+    }
+
+    // Check if user can access this feature
+    if (!canAccessFeature(featureType)) {
+      toast({
+        title: "Premium Feature",
+        description: "This feature requires a Pro subscription or active trial. Please upgrade to continue.",
+        variant: "destructive",
+      });
+      // Navigate to pricing instead
+      navigate('/#pricing');
+      return;
+    }
     
-    // All features are now available to all users
     navigate(path);
+  };
+
+  const FeatureCard = ({ 
+    title, 
+    description, 
+    icon: Icon, 
+    path, 
+    featureType = 'basic',
+    iconColor = 'text-blue-500'
+  }: {
+    title: string;
+    description: string;
+    icon: any;
+    path: string;
+    featureType?: 'basic' | 'premium';
+    iconColor?: string;
+  }) => {
+    const needsUpgrade = requiresUpgrade(featureType);
+    
+    return (
+      <Card 
+        className={`hover:shadow-lg transition-shadow cursor-pointer relative ${needsUpgrade ? 'opacity-75' : ''}`}
+        onClick={() => handleFeatureClick(path, featureType)}
+      >
+        <CardHeader>
+          <div className="flex items-start justify-between">
+            <Icon className={`h-8 w-8 ${iconColor} mb-2`} />
+            {needsUpgrade && (
+              <Lock className="h-5 w-5 text-orange-500" />
+            )}
+          </div>
+          <CardTitle className="flex items-center gap-2">
+            {title}
+            {featureType === 'premium' && needsUpgrade && (
+              <span className="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded-full">
+                Pro
+              </span>
+            )}
+          </CardTitle>
+          <CardDescription>
+            {description}
+          </CardDescription>
+        </CardHeader>
+      </Card>
+    );
   };
 
   return (
@@ -71,65 +145,167 @@ const Index = () => {
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => handleFeatureClick('/tanks')}>
-              <CardHeader>
-                <DropletIcon className="h-8 w-8 text-blue-500 mb-2" />
-                <CardTitle>Tank Management</CardTitle>
-                <CardDescription>
-                  Track multiple aquariums, monitor water parameters, and maintain detailed logs.
-                </CardDescription>
-              </CardHeader>
-            </Card>
+            <FeatureCard
+              title="Tank Management"
+              description="Track multiple aquariums, monitor water parameters, and maintain detailed logs."
+              icon={DropletIcon}
+              path="/tanks"
+              featureType="basic"
+              iconColor="text-blue-500"
+            />
 
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => handleFeatureClick('/aquabot')}>
-              <CardHeader>
-                <MessageSquare className="h-8 w-8 text-green-500 mb-2" />
-                <CardTitle>AquaBot AI Assistant</CardTitle>
-                <CardDescription>
-                  Get expert advice on fish care, troubleshooting, and aquarium maintenance.
-                </CardDescription>
-              </CardHeader>
-            </Card>
+            <FeatureCard
+              title="AquaBot AI Assistant"
+              description="Get expert advice on fish care, troubleshooting, and aquarium maintenance."
+              icon={MessageSquare}
+              path="/aquabot"
+              featureType="premium"
+              iconColor="text-green-500"
+            />
 
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => handleFeatureClick('/education')}>
-              <CardHeader>
-                <FishIcon className="h-8 w-8 text-orange-500 mb-2" />
-                <CardTitle>Fish & Equipment Guide</CardTitle>
-                <CardDescription>
-                  Explore comprehensive databases of fish species and aquarium equipment.
-                </CardDescription>
-              </CardHeader>
-            </Card>
+            <FeatureCard
+              title="Fish & Equipment Guide"
+              description="Explore comprehensive databases of fish species and aquarium equipment."
+              icon={FishIcon}
+              path="/education"
+              featureType="basic"
+              iconColor="text-orange-500"
+            />
 
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => handleFeatureClick('/setup-planner')}>
-              <CardHeader>
-                <Calculator className="h-8 w-8 text-purple-500 mb-2" />
-                <CardTitle>Setup Planner</CardTitle>
-                <CardDescription>
-                  Plan your dream aquarium with AI-generated equipment and livestock recommendations.
-                </CardDescription>
-              </CardHeader>
-            </Card>
+            <FeatureCard
+              title="Setup Planner"
+              description="Plan your dream aquarium with AI-generated equipment and livestock recommendations."
+              icon={Calculator}
+              path="/setup-planner"
+              featureType="premium"
+              iconColor="text-purple-500"
+            />
 
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => handleFeatureClick('/reminders')}>
-              <CardHeader>
-                <Thermometer className="h-8 w-8 text-red-500 mb-2" />
-                <CardTitle>Smart Reminders</CardTitle>
-                <CardDescription>
-                  Never miss water changes, feedings, or equipment maintenance with intelligent alerts.
-                </CardDescription>
-              </CardHeader>
-            </Card>
+            <FeatureCard
+              title="Smart Reminders"
+              description="Never miss water changes, feedings, or equipment maintenance with intelligent alerts."
+              icon={Thermometer}
+              path="/reminders"
+              featureType="basic"
+              iconColor="text-red-500"
+            />
 
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => handleFeatureClick('/log-parameters')}>
-              <CardHeader>
-                <Zap className="h-8 w-8 text-yellow-500 mb-2" />
-                <CardTitle>Water Testing</CardTitle>
-                <CardDescription>
-                  Log water test results and get automated analysis and recommendations.
-                </CardDescription>
-              </CardHeader>
-            </Card>
+            <FeatureCard
+              title="Water Testing"
+              description="Log water test results and get automated analysis and recommendations."
+              icon={Zap}
+              path="/log-parameters"
+              featureType="basic"
+              iconColor="text-yellow-500"
+            />
+          </div>
+
+          {/* Pricing Section */}
+          <div id="pricing" className="bg-white dark:bg-gray-800 rounded-lg p-8 shadow-lg mb-12">
+            <div className="text-center mb-8">
+              <h2 className="text-3xl font-bold mb-4">Choose Your Plan</h2>
+              <p className="text-muted-foreground">
+                Start with our free plan or upgrade to Pro for unlimited access to AI features
+              </p>
+            </div>
+            
+            <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+              {/* Free Plan */}
+              <Card className="relative">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <DropletIcon className="h-5 w-5 text-blue-600" />
+                    Free Plan
+                  </CardTitle>
+                  <CardDescription>
+                    Perfect for getting started with basic aquarium management
+                  </CardDescription>
+                  <div className="text-3xl font-bold">$0</div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Zap className="h-4 w-4 text-green-600" />
+                      <span className="text-sm">Basic tank tracking</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Zap className="h-4 w-4 text-green-600" />
+                      <span className="text-sm">Water parameter logging</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Zap className="h-4 w-4 text-green-600" />
+                      <span className="text-sm">Equipment management</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Zap className="h-4 w-4 text-green-600" />
+                      <span className="text-sm">Educational resources</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Pro Plan */}
+              <Card className="relative border-blue-200 shadow-lg">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <MessageSquare className="h-5 w-5 text-blue-600" />
+                    Pro Plan
+                  </CardTitle>
+                  <CardDescription>
+                    Unlock AI-powered insights and advanced planning tools
+                  </CardDescription>
+                  <div className="text-3xl font-bold">
+                    $4.99<span className="text-base font-normal text-gray-600">/month</span>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Zap className="h-4 w-4 text-green-600" />
+                      <span className="text-sm">Everything in Free</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Zap className="h-4 w-4 text-green-600" />
+                      <span className="text-sm font-medium">AI-Powered AquaBot Chat</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Zap className="h-4 w-4 text-green-600" />
+                      <span className="text-sm">Advanced Setup Planner</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Zap className="h-4 w-4 text-green-600" />
+                      <span className="text-sm">Priority support</span>
+                    </div>
+                  </div>
+                  {user && !isLoading && (
+                    <Button 
+                      onClick={() => {
+                        if (subscriptionInfo.hasAccess) {
+                          toast({
+                            title: "Already subscribed",
+                            description: "You already have access to Pro features!",
+                          });
+                        } else {
+                          navigate('/pricing');
+                        }
+                      }}
+                      className="w-full bg-blue-600 hover:bg-blue-700"
+                      disabled={subscriptionInfo.hasAccess}
+                    >
+                      {subscriptionInfo.hasAccess ? "Current Plan" : "Upgrade to Pro"}
+                    </Button>
+                  )}
+                  {!user && (
+                    <Button 
+                      onClick={() => navigate('/auth')}
+                      className="w-full bg-blue-600 hover:bg-blue-700"
+                    >
+                      Sign Up for Pro
+                    </Button>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
           </div>
 
           <div className="bg-white dark:bg-gray-800 rounded-lg p-8 shadow-lg">

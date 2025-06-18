@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -26,6 +27,8 @@ import AddTank from "./pages/AddTank";
 import EditTank from "./pages/EditTank";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import PaymentCancelled from "./pages/PaymentCancelled";
+import Pricing from "./pages/Pricing";
+import Account from "./pages/Account";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -51,6 +54,16 @@ const App = () => (
                     <Route path="/auth" element={<Auth />} />
                     <Route path="/payment-success" element={<PaymentSuccess />} />
                     <Route path="/payment-cancelled" element={<PaymentCancelled />} />
+                    <Route path="/pricing" element={
+                      <ProtectedRoute>
+                        <Pricing />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/account" element={
+                      <ProtectedRoute>
+                        <Account />
+                      </ProtectedRoute>
+                    } />
                     <Route path="/" element={
                       <ProtectedRoute>
                         <Index />
