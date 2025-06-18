@@ -67,7 +67,7 @@ export const useCredits = () => {
         }
       }
 
-      // Determine subscription status and tier
+      // FIXED: Determine subscription status and tier with better logic
       let subscriptionStatus = 'free';
       let subscriptionTier = 'free';
 
@@ -79,8 +79,14 @@ export const useCredits = () => {
         subscriptionStatus = profileData.subscription_status || 'free';
         subscriptionTier = profileData.subscription_tier || 'free';
         
-        // Override with trial status if applicable
-        if (trialStatus && trialStatus.subscription_status === 'trial') {
+        // IMPORTANT FIX: If user has stripe_customer_id and active subscription, they should be Pro
+        if (profileData.stripe_customer_id && subscriptionStatus === 'active') {
+          subscriptionTier = 'pro';
+          console.log('User has Stripe customer ID and active status - upgrading to Pro tier');
+        }
+        
+        // Override with trial status if applicable (but don't downgrade Pro users)
+        if (trialStatus && trialStatus.subscription_status === 'trial' && subscriptionTier !== 'pro') {
           subscriptionStatus = 'trial';
         }
       } else if (trialStatus) {
@@ -100,6 +106,7 @@ export const useCredits = () => {
       };
 
       console.log('User profile constructed:', profile);
+      console.log('Raw profile data:', profileData);
       return profile;
     },
     enabled: !!user?.id,
@@ -127,7 +134,7 @@ export const useCredits = () => {
     refetchInterval: 60000, // Refetch every minute to update trial countdown
   });
 
-  // Check if user can use features (trial, subscription, or admin)
+  // FIXED: Improved access control logic
   const canUseFeature = (feature: string = 'chat') => {
     if (!profile) {
       console.log('Feature access denied: No profile found');
@@ -140,13 +147,16 @@ export const useCredits = () => {
       return true;
     }
     
-    // Users with active PRO subscription have access (don't check trial status for pro users)
+    // CRITICAL FIX: Pro users with active subscription always have access
     if (profile.subscription_tier === 'pro' && profile.subscription_status === 'active') {
-      console.log('Feature access granted: Active pro subscription');
+      console.log('Feature access granted: Active Pro subscription', {
+        tier: profile.subscription_tier,
+        status: profile.subscription_status
+      });
       return true;
     }
     
-    // Users in active trial period have access (only check trial if not pro)
+    // Users in active trial period have access (only if not already Pro)
     if (profile.subscription_status === 'trial' && trialStatus && !trialStatus.is_trial_expired && trialStatus.trial_hours_remaining > 0) {
       console.log('Feature access granted: Active trial');
       return true;
@@ -156,24 +166,25 @@ export const useCredits = () => {
       subscriptionStatus: profile.subscription_status,
       subscriptionTier: profile.subscription_tier,
       isTrialExpired: trialStatus?.is_trial_expired,
-      trialHoursRemaining: trialStatus?.trial_hours_remaining
+      trialHoursRemaining: trialStatus?.trial_hours_remaining,
+      hasStripeCustomer: profile.subscription_status === 'active'
     });
     return false;
   };
 
-  // Check if user needs upgrade (trial expired or no access)
+  // FIXED: Updated upgrade logic
   const needsUpgrade = () => {
     if (!profile) return true;
     
     // Admins never need upgrade
     if (profile.is_admin) return false;
     
-    // Check if user has active pro subscription
+    // Pro users with active subscription don't need upgrade
     if (profile.subscription_tier === 'pro' && profile.subscription_status === 'active') {
       return false;
     }
     
-    // Check if user is in active trial
+    // Users in active trial don't need upgrade
     if (profile.subscription_status === 'trial' && trialStatus && !trialStatus.is_trial_expired && trialStatus.trial_hours_remaining > 0) {
       return false;
     }
@@ -181,7 +192,7 @@ export const useCredits = () => {
     return true;
   };
 
-  // Get subscription info for display
+  // FIXED: Updated subscription info display
   const getSubscriptionInfo = () => {
     if (!profile) {
       return {
@@ -196,8 +207,8 @@ export const useCredits = () => {
     }
 
     const isTrial = profile.subscription_status === 'trial';
-    const hasAccess = profile.is_admin || 
-      (profile.subscription_tier === 'pro' && profile.subscription_status === 'active') ||
+    const isPro = profile.subscription_tier === 'pro' && profile.subscription_status === 'active';
+    const hasAccess = profile.is_admin || isPro ||
       (isTrial && trialStatus && !trialStatus.is_trial_expired && trialStatus.trial_hours_remaining > 0);
 
     return {
@@ -208,7 +219,7 @@ export const useCredits = () => {
       isTrial,
       trialHoursRemaining: trialStatus?.trial_hours_remaining || 0,
       displayTier: profile.is_admin ? 'Admin' : 
-        (profile.subscription_tier === 'pro' ? 'Pro' : 
+        (isPro ? 'Pro' : 
         (isTrial ? 'Trial' : 'Free'))
     };
   };
