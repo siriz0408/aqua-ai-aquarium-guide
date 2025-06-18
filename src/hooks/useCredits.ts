@@ -62,7 +62,7 @@ export const useCredits = () => {
       const profile: UserProfile = {
         id: user.id,
         email: user.email,
-        full_name: user.full_name,
+        full_name: user.user_metadata?.full_name || null,
         subscription_status: isAdmin ? 'active' : (trialStatus?.subscription_status as any || 'free'),
         subscription_tier: isAdmin ? 'pro' : 'free',
         trial_start_date: trialStatus && !isAdmin ? undefined : undefined,
