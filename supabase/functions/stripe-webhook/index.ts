@@ -59,7 +59,8 @@ serve(async (req) => {
     }
 
     logStep("Verifying webhook signature");
-    const event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
+    // Use constructEventAsync to avoid SubtleCrypto sync issue
+    const event = await stripe.webhooks.constructEventAsync(body, signature, webhookSecret);
     
     eventId = event.id;
     eventType = event.type;
@@ -92,6 +93,10 @@ serve(async (req) => {
         
       case 'invoice.payment_failed':
         processResult = await handlePaymentFailed(event, stripe, supabaseClient);
+        break;
+
+      case 'checkout.session.completed':
+        processResult = await handleCheckoutCompleted(event, stripe, supabaseClient);
         break;
       
       default:
@@ -168,6 +173,119 @@ serve(async (req) => {
   }
 });
 
+async function handleCheckoutCompleted(
+  event: Stripe.Event, 
+  stripe: Stripe, 
+  supabaseClient: any
+) {
+  try {
+    logStep("Processing checkout completed event");
+    
+    const session = event.data.object as Stripe.Checkout.Session;
+    const customerId = session.customer as string;
+    
+    // Get customer data from Stripe
+    const customer = await stripe.customers.retrieve(customerId) as Stripe.Customer;
+    if (!customer.email) {
+      logStep("No email found for customer", { customerId });
+      return {
+        success: false,
+        error: `No email found for customer ${customerId}`,
+        customerId
+      };
+    }
+    
+    logStep("Processing checkout session", { 
+      sessionId: session.id,
+      email: customer.email,
+      mode: session.mode 
+    });
+
+    // Handle both subscription and one-time payments
+    if (session.mode === 'subscription' && session.subscription) {
+      // Get subscription details
+      const subscription = await stripe.subscriptions.retrieve(session.subscription as string);
+      
+      // Update user profile for subscription
+      const { error: updateError } = await supabaseClient
+        .from('profiles')
+        .update({
+          subscription_status: 'active',
+          subscription_tier: 'pro',
+          stripe_customer_id: customerId,
+          stripe_subscription_id: subscription.id,
+          subscription_start_date: new Date(subscription.created * 1000).toISOString(),
+          subscription_end_date: new Date(subscription.current_period_end * 1000).toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('email', customer.email);
+
+      if (updateError) {
+        logStep("Error updating subscription profile", { error: updateError });
+        return {
+          success: false,
+          error: `Failed to update subscription profile: ${updateError.message}`,
+          userEmail: customer.email,
+          customerId
+        };
+      }
+    } else if (session.mode === 'payment') {
+      // Handle one-time payment
+      const { error: updateError } = await supabaseClient
+        .from('profiles')
+        .update({
+          subscription_status: 'active',
+          subscription_tier: 'pro',
+          stripe_customer_id: customerId,
+          updated_at: new Date().toISOString()
+        })
+        .eq('email', customer.email);
+
+      if (updateError) {
+        logStep("Error updating one-time payment profile", { error: updateError });
+        return {
+          success: false,
+          error: `Failed to update one-time payment profile: ${updateError.message}`,
+          userEmail: customer.email,
+          customerId
+        };
+      }
+
+      // Update order status if exists
+      if (session.id) {
+        await supabaseClient
+          .from('orders')
+          .update({
+            status: 'paid',
+            updated_at: new Date().toISOString()
+          })
+          .eq('stripe_session_id', session.id);
+      }
+    }
+    
+    logStep("Checkout completed successfully", { 
+      email: customer.email,
+      mode: session.mode
+    });
+    
+    return {
+      success: true,
+      message: 'Checkout completed successfully',
+      userEmail: customer.email,
+      customerId
+    };
+  } catch (error) {
+    logStep("Error in handleCheckoutCompleted", { 
+      error: error instanceof Error ? error.message : String(error)
+    });
+    
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error)
+    };
+  }
+}
+
 async function handleSubscriptionEvent(
   event: Stripe.Event, 
   stripe: Stripe, 
@@ -219,7 +337,6 @@ async function handleSubscriptionEvent(
         subscription_tier: subscriptionTier,
         stripe_customer_id: customerId,
         stripe_subscription_id: subscription.id,
-        stripe_price_id: subscription.items.data[0]?.price?.id || null,
         subscription_start_date: subscription.status === 'active' ? new Date(subscription.created * 1000).toISOString() : null,
         subscription_end_date: subscriptionEndDate,
         updated_at: new Date().toISOString()
@@ -236,19 +353,6 @@ async function handleSubscriptionEvent(
         subscriptionId: subscription.id
       };
     }
-    
-    // Also update subscriptions table
-    await supabaseClient
-      .from('subscriptions')
-      .upsert({
-        stripe_customer_id: customerId,
-        stripe_subscription_id: subscription.id,
-        stripe_price_id: subscription.items.data[0]?.price?.id || null,
-        status: subscription.status,
-        current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-        current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
-        updated_at: new Date().toISOString()
-      }, { onConflict: 'stripe_subscription_id' });
     
     logStep("Subscription sync completed successfully", { 
       email: customer.email,
