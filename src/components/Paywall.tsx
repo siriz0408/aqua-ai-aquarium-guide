@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,7 +14,6 @@ interface PaywallProps {
   showUpgradeOnly?: boolean;
 }
 
-// Updated with your actual Stripe price ID
 const STRIPE_PRICE_ID = "price_1Rb8vR1d1AvgoBGoNIjxLKRR";
 
 const PaywallModal: React.FC<PaywallProps> = ({ 
@@ -33,7 +33,6 @@ const PaywallModal: React.FC<PaywallProps> = ({
       console.log('Starting upgrade process for plan:', plan);
       console.log('Using Stripe Price ID:', STRIPE_PRICE_ID);
       
-      // Add user authentication check
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         toast({
@@ -52,7 +51,6 @@ const PaywallModal: React.FC<PaywallProps> = ({
       if (error) {
         console.error('Supabase function error:', error);
         
-        // Provide more specific error messages based on the error content
         let errorMessage = "Failed to start checkout process. Please try again.";
         
         if (error.message?.includes('STRIPE_SECRET_KEY')) {
@@ -76,7 +74,6 @@ const PaywallModal: React.FC<PaywallProps> = ({
       console.log('Checkout session response:', data);
 
       if (data?.url) {
-        // Open Stripe checkout in a new tab
         window.open(data.url, '_blank');
         onClose();
       } else {
@@ -143,7 +140,7 @@ const PaywallModal: React.FC<PaywallProps> = ({
           </div>
 
           <div className="grid md:grid-cols-3 gap-6 mb-8">
-            {/* Free Plan */}
+            {/* Free Trial Plan */}
             <Card className={`relative ${!showUpgradeOnly ? 'border-muted' : 'opacity-50'}`}>
               <CardHeader className="text-center">
                 <CardTitle className="flex items-center justify-center gap-2">
@@ -236,7 +233,7 @@ const PaywallModal: React.FC<PaywallProps> = ({
               </CardContent>
             </Card>
 
-            {/* Premium Plan - Hidden for now, keeping original structure */}
+            {/* Premium Plan - Coming Soon */}
             <Card className="relative border-yellow-500 opacity-50">
               <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
                 <Badge variant="secondary" className="bg-yellow-500 text-yellow-50">

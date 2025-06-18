@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { Layout } from '@/components/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { TrialBanner } from '@/components/TrialBanner';
 import { useCredits } from '@/hooks/useCredits';
 import { useState } from 'react';
+import PaywallModal from '@/components/Paywall';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -22,36 +22,47 @@ const Index = () => {
       return;
     }
     
+    // Check if user has access to the feature
     if (!canUseFeature()) {
+      console.log('User does not have access, showing paywall');
       setShowPaywall(true);
       return;
     }
     
-    console.log('Navigating to feature:', path);
+    console.log('User has access, navigating to feature:', path);
     navigate(path);
-  };
-
-  const handleUpgrade = () => {
-    setShowPaywall(true);
   };
 
   const subscriptionInfo = getSubscriptionInfo();
   console.log('Current subscription info:', subscriptionInfo);
 
-  // Show trial banner for trial users
-  const showTrialBanner = user && subscriptionInfo.isTrial;
+  // Show trial banner for trial users only (not for paid users)
+  const showTrialBanner = user && subscriptionInfo.isTrial && !subscriptionInfo.isAdmin;
   const isTrialExpired = subscriptionInfo.isTrial && subscriptionInfo.trialHoursRemaining <= 0;
 
   return (
     <Layout title="AquaAI - Intelligent Aquarium Management">
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-gray-900 dark:to-blue-900">
         <div className="container mx-auto px-4 py-8">
-          {/* Trial Banner for authenticated users */}
+          {/* Trial Banner for trial users only */}
           {showTrialBanner && (
             <TrialBanner 
               hoursRemaining={subscriptionInfo.trialHoursRemaining}
               isExpired={isTrialExpired}
             />
+          )}
+          
+          {/* Debug info - remove in production */}
+          {user && (
+            <div className="mb-4 p-4 bg-gray-100 rounded text-xs">
+              <strong>Debug Info:</strong><br/>
+              Has Access: {subscriptionInfo.hasAccess ? 'Yes' : 'No'}<br/>
+              Status: {subscriptionInfo.status}<br/>
+              Tier: {subscriptionInfo.tier}<br/>
+              Is Admin: {subscriptionInfo.isAdmin ? 'Yes' : 'No'}<br/>
+              Is Trial: {subscriptionInfo.isTrial ? 'Yes' : 'No'}<br/>
+              Trial Hours: {subscriptionInfo.trialHoursRemaining}
+            </div>
           )}
           
           <div className="text-center mb-12">
@@ -193,41 +204,11 @@ const Index = () => {
       </div>
 
       {/* Paywall Modal */}
-      {showPaywall && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-background rounded-lg border border-border max-w-md w-full p-6">
-            <div className="text-center">
-              <div className="h-16 w-16 rounded-full bg-gradient-to-r from-blue-600 to-cyan-600 flex items-center justify-center mx-auto mb-4">
-                <Zap className="h-8 w-8 text-white" />
-              </div>
-              <h2 className="text-2xl font-bold mb-2">
-                {isTrialExpired ? 'Trial Expired' : 'Upgrade Required'}
-              </h2>
-              <p className="text-muted-foreground mb-6">
-                {isTrialExpired 
-                  ? 'Your 24-hour trial has ended. Upgrade to Pro to continue using premium features.'
-                  : 'This feature requires a Pro subscription. Start your 24-hour free trial today!'
-                }
-              </p>
-              <div className="space-y-3">
-                <Button 
-                  className="w-full" 
-                  onClick={handleUpgrade}
-                >
-                  Upgrade to Pro - $4.99/month
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  className="w-full"
-                  onClick={() => setShowPaywall(false)}
-                >
-                  Maybe Later
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <PaywallModal 
+        isOpen={showPaywall} 
+        onClose={() => setShowPaywall(false)}
+        showUpgradeOnly={isTrialExpired}
+      />
     </Layout>
   );
 };

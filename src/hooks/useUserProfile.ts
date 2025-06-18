@@ -44,7 +44,7 @@ export const useUserProfile = () => {
         }
       }
 
-      // Determine subscription status based on new subscription_type field
+      // Determine subscription status based on database fields
       let subscriptionStatus = 'free';
       let subscriptionTier = 'free';
 
@@ -52,16 +52,25 @@ export const useUserProfile = () => {
         subscriptionStatus = 'active';
         subscriptionTier = 'pro';
       } else if (profileData) {
-        // Use the new subscription_type field
-        const subType = profileData.subscription_type || 'expired';
-        
-        if (subType === 'trial') {
-          subscriptionStatus = 'trial';
-          subscriptionTier = 'free';
-        } else if (subType === 'paid') {
+        // Check if user has active paid subscription via Stripe
+        if (profileData.stripe_subscription_id && 
+            profileData.subscription_status === 'active' && 
+            profileData.subscription_tier === 'pro') {
           subscriptionStatus = 'active';
           subscriptionTier = 'pro';
-        } else {
+        }
+        // Check for trial based on subscription_type
+        else if (profileData.subscription_type === 'trial') {
+          subscriptionStatus = 'trial';
+          subscriptionTier = 'free';
+        }
+        // Check for paid subscription based on subscription_type
+        else if (profileData.subscription_type === 'paid') {
+          subscriptionStatus = 'active';
+          subscriptionTier = 'pro';
+        }
+        // Default to expired/free
+        else {
           subscriptionStatus = 'expired';
           subscriptionTier = 'free';
         }
@@ -80,6 +89,7 @@ export const useUserProfile = () => {
       };
 
       console.log('User profile constructed:', profile);
+      console.log('Raw profile data:', profileData);
       return profile;
     },
     enabled: !!user?.id,

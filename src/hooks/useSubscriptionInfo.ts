@@ -22,7 +22,10 @@ export const useSubscriptionInfo = (
     const isActive = profile.subscription_status === 'active';
     const trialHoursRemaining = trialStatus?.trial_hours_remaining || 0;
     
-    // Access logic: Admin always has access, paid users have access, trial users have access if time remaining
+    // Access logic: 
+    // 1. Admin always has access
+    // 2. Active pro subscription has access (this covers paid Stripe users)
+    // 3. Trial users have access if time remaining
     const hasAccess = profile.is_admin || 
                      (isActive && profile.subscription_tier === 'pro') || 
                      (isTrial && trialHoursRemaining > 0);
@@ -35,7 +38,7 @@ export const useSubscriptionInfo = (
       isTrial,
       trialHoursRemaining,
       displayTier: profile.is_admin ? 'Admin' : 
-        (profile.subscription_tier === 'pro' && isActive ? 'Pro' : 
+        (isActive && profile.subscription_tier === 'pro' ? 'Pro' : 
         (isTrial ? 'Trial' : 'Free'))
     };
   };
