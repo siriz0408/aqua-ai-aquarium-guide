@@ -12,9 +12,9 @@ export const useUserProfile = () => {
     queryFn: async (): Promise<UserProfile | null> => {
       if (!user?.id) return null;
       
-      console.log('Fetching user profile with improved function...');
+      console.log('Fetching user profile for:', user.id);
       
-      // First ensure the profile exists using the new function
+      // First ensure the profile exists using the improved function
       const { error: ensureError } = await supabase.rpc('ensure_user_profile', {
         user_id: user.id
       });
@@ -44,6 +44,7 @@ export const useUserProfile = () => {
 
       const profile: UserProfile = {
         id: user.id,
+        full_name: profileData.full_name,
         subscription_status: (profileData.subscription_status || 'free') as 'free' | 'trial' | 'active' | 'expired',
         subscription_tier: (profileData.subscription_tier || 'free') as 'free' | 'pro',
         trial_start_date: profileData.trial_start_date,

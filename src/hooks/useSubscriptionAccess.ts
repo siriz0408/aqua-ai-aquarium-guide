@@ -4,12 +4,18 @@ import { useTrialStatus } from './useTrialStatus';
 import { useSubscriptionInfo } from './useSubscriptionInfo';
 
 export const useSubscriptionAccess = () => {
-  const { data: profile, isLoading: profileLoading } = useUserProfile();
-  const { data: trialStatus, isLoading: trialLoading } = useTrialStatus(profile);
+  const { data: profile, isLoading: profileLoading, error: profileError } = useUserProfile();
+  const { data: trialStatus, isLoading: trialLoading, error: trialError } = useTrialStatus(profile);
   const { getSubscriptionInfo } = useSubscriptionInfo(profile, trialStatus);
   
+  console.log('useSubscriptionAccess - Profile:', profile);
+  console.log('useSubscriptionAccess - Trial Status:', trialStatus);
+  
   const subscriptionInfo = getSubscriptionInfo();
+  console.log('useSubscriptionAccess - Subscription Info:', subscriptionInfo);
+  
   const isLoading = profileLoading || trialLoading;
+  const hasError = profileError || trialError;
 
   const canAccessFeature = (featureType: 'basic' | 'premium' = 'basic') => {
     if (isLoading) return false;
@@ -34,6 +40,7 @@ export const useSubscriptionAccess = () => {
     subscriptionInfo,
     trialStatus,
     isLoading,
+    hasError,
     canAccessFeature,
     requiresUpgrade,
     hasActiveSubscription: subscriptionInfo.status === 'active',

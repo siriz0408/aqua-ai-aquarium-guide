@@ -26,7 +26,7 @@ export const SubscriptionBanner: React.FC<SubscriptionBannerProps> = ({
 
   const handleUpgrade = async () => {
     try {
-      console.log('Starting upgrade process');
+      console.log('Starting upgrade process with price ID:', STRIPE_PRICE_ID);
       
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
@@ -37,6 +37,8 @@ export const SubscriptionBanner: React.FC<SubscriptionBannerProps> = ({
         });
         return;
       }
+      
+      console.log('User authenticated, creating checkout session...');
       
       const { data, error } = await supabase.functions.invoke('create-checkout', {
         body: { priceId: STRIPE_PRICE_ID }
@@ -51,6 +53,8 @@ export const SubscriptionBanner: React.FC<SubscriptionBannerProps> = ({
         });
         return;
       }
+
+      console.log('Checkout session created:', data);
 
       if (data?.url) {
         window.open(data.url, '_blank');
@@ -74,6 +78,8 @@ export const SubscriptionBanner: React.FC<SubscriptionBannerProps> = ({
 
   // Show trial banner
   if (subscriptionStatus === 'trial' || (subscriptionStatus === 'free' && trialHoursRemaining > 0)) {
+    const hoursLeft = Math.max(0, Math.floor(trialHoursRemaining));
+    
     return (
       <Card className={`mb-6 ${isTrialExpired ? 'border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20' : 'border-orange-200 bg-orange-50 dark:border-orange-800 dark:bg-orange-900/20'}`}>
         <CardContent className="p-4">
@@ -91,7 +97,7 @@ export const SubscriptionBanner: React.FC<SubscriptionBannerProps> = ({
                 <p className={`text-sm ${isTrialExpired ? 'text-red-600 dark:text-red-300' : 'text-orange-600 dark:text-orange-300'}`}>
                   {isTrialExpired 
                     ? 'Your trial has ended. Upgrade to continue using premium features.'
-                    : `${Math.floor(trialHoursRemaining)} hours remaining in your trial`
+                    : `${hoursLeft} hours remaining in your trial`
                   }
                 </p>
               </div>
