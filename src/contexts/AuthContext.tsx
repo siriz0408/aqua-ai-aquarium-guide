@@ -53,6 +53,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             description: "You've successfully signed in to AquaAI.",
           });
         }
+        
+        // Handle sign out
+        if (event === 'SIGNED_OUT') {
+          console.log('User signed out successfully');
+          toast({
+            title: "Signed out",
+            description: "You've been successfully signed out.",
+          });
+        }
       }
     );
 
@@ -161,13 +170,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signOut = async () => {
     try {
       console.log('Starting sign out process...');
-      setLoading(true);
       
-      // Get current session before signing out
-      const { data: { session: currentSession } } = await supabase.auth.getSession();
-      
-      if (!currentSession) {
-        console.log('No active session found');
+      // Check if user is already signed out
+      if (!session && !user) {
+        console.log('User is already signed out');
         toast({
           title: "Already signed out",
           description: "You are already signed out.",
@@ -175,29 +181,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
 
+      setLoading(true);
+      
+      // Clear local state immediately to prevent race conditions
+      setSession(null);
+      setUser(null);
+      
+      // Attempt to sign out from Supabase
       const { error } = await supabase.auth.signOut();
       
       if (error) {
         console.error('Sign out error:', error);
-        toast({
-          title: "Sign out failed",
-          description: error.message,
-          variant: "destructive",
-        });
+        // Only show error toast if it's not a session missing error
+        if (!error.message.includes('Auth session missing')) {
+          toast({
+            title: "Sign out failed",
+            description: error.message,
+            variant: "destructive",
+          });
+        } else {
+          // For session missing errors, just log and treat as successful
+          console.log('Session was already missing, treating as successful signout');
+        }
       } else {
         console.log('Sign out successful');
-        toast({
-          title: "Signed out",
-          description: "You've been successfully signed out.",
-        });
       }
     } catch (error: any) {
       console.error('Unexpected sign out error:', error);
-      toast({
-        title: "Sign out failed",
-        description: error.message || "An unexpected error occurred",
-        variant: "destructive",
-      });
+      // For session missing errors, don't show error toast
+      if (!error.message?.includes('Auth session missing')) {
+        toast({
+          title: "Sign out failed",
+          description: error.message || "An unexpected error occurred",
+          variant: "destructive",
+        });
+      }
     } finally {
       setLoading(false);
     }
