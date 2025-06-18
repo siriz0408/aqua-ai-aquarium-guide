@@ -1319,11 +1319,11 @@ export type Database = {
           target_user_id: string
           new_subscription_status: string
           new_subscription_tier: string
-          new_stripe_customer_id: string
-          new_stripe_subscription_id: string
-          new_stripe_price_id: string
-          new_subscription_start_date: string
-          new_subscription_end_date: string
+          new_stripe_customer_id?: string
+          new_stripe_subscription_id?: string
+          new_stripe_price_id?: string
+          new_subscription_start_date?: string
+          new_subscription_end_date?: string
         }
         Returns: boolean
       }
