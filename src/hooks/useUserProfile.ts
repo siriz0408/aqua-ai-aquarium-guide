@@ -33,17 +33,6 @@ export const useUserProfile = () => {
         console.error('Error fetching profile:', profileError);
       }
 
-      // Get trial status using new function
-      let trialStatus = null;
-      if (!isAdmin) {
-        const { data: trialData, error: trialError } = await supabase
-          .rpc('check_trial_status', { user_id: user.id });
-        
-        if (!trialError && trialData && trialData.length > 0) {
-          trialStatus = trialData[0];
-        }
-      }
-
       // Determine subscription status based on database fields
       let subscriptionStatus = 'free';
       let subscriptionTier = 'free';

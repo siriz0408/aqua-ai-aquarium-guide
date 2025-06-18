@@ -159,6 +159,69 @@ serve(async (req) => {
         }
         break;
       }
+
+      case 'invoice.payment_succeeded': {
+        const invoice = event.data.object as Stripe.Invoice;
+        const customerId = invoice.customer as string;
+        
+        // Get customer details
+        const customer = await stripe.customers.retrieve(customerId) as Stripe.Customer;
+        if (!customer.email) break;
+        
+        // Find user by email
+        const { data: profiles } = await supabaseClient
+          .from('profiles')
+          .select('id')
+          .eq('email', customer.email)
+          .limit(1);
+          
+        if (!profiles || profiles.length === 0) break;
+        
+        const userId = profiles[0].id;
+        
+        // If this is a subscription invoice, ensure user has active status
+        if (invoice.subscription) {
+          const subscription = await stripe.subscriptions.retrieve(invoice.subscription as string);
+          
+          await supabaseClient
+            .from('profiles')
+            .update({
+              subscription_status: 'active',
+              subscription_tier: 'pro',
+              subscription_type: 'paid',
+              subscription_end_date: new Date(subscription.current_period_end * 1000).toISOString(),
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', userId);
+            
+          logStep("Payment succeeded, subscription renewed", { userId, subscriptionId: subscription.id });
+        }
+        break;
+      }
+
+      case 'invoice.payment_failed': {
+        const invoice = event.data.object as Stripe.Invoice;
+        const customerId = invoice.customer as string;
+        
+        // Get customer details
+        const customer = await stripe.customers.retrieve(customerId) as Stripe.Customer;
+        if (!customer.email) break;
+        
+        // Find user by email
+        const { data: profiles } = await supabaseClient
+          .from('profiles')
+          .select('id')
+          .eq('email', customer.email)
+          .limit(1);
+          
+        if (!profiles || profiles.length === 0) break;
+        
+        const userId = profiles[0].id;
+        
+        logStep("Payment failed for user", { userId, customerId });
+        // Note: We don't immediately cancel on payment failure as Stripe has retry logic
+        break;
+      }
     }
 
     return new Response(JSON.stringify({ received: true }), {
