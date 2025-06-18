@@ -209,7 +209,7 @@ export const SubscriptionBanner: React.FC = () => {
             </Button>
           </div>
         </div>
-      </div>
+      </CardContent>
     </Card>
   );
 };
