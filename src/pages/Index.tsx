@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { DropletIcon, FishIcon, Thermometer, Zap, MessageSquare, Calculator } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { TrialBanner } from '@/components/TrialBanner';
 import { useCredits } from '@/hooks/useCredits';
 import { useState } from 'react';
 
