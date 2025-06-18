@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { Layout } from '@/components/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,17 +14,33 @@ import { useState } from 'react';
 const Index = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { canUseFeature, needsUpgrade, getSubscriptionInfo } = useCredits();
+  const { canUseFeature, needsUpgrade, getSubscriptionInfo, profile } = useCredits();
   const [showPaywall, setShowPaywall] = useState(false);
+
+  // Debug logging
+  useEffect(() => {
+    if (user && profile) {
+      console.log('=== INDEX PAGE DEBUG INFO ===');
+      console.log('Current user:', user);
+      console.log('Current profile:', profile);
+      console.log('Can use feature:', canUseFeature());
+      console.log('Needs upgrade:', needsUpgrade());
+      console.log('Subscription info:', getSubscriptionInfo());
+    }
+  }, [user, profile, canUseFeature, needsUpgrade, getSubscriptionInfo]);
 
   const handleFeatureClick = (path: string) => {
     if (!user) {
+      console.log('No user, redirecting to auth');
       navigate('/auth');
       return;
     }
     
     // Check if user can access the feature
-    if (!canUseFeature()) {
+    const canAccess = canUseFeature();
+    console.log('Feature click check - can access:', canAccess);
+    
+    if (!canAccess) {
       console.log('User cannot access feature, showing paywall');
       setShowPaywall(true);
       return;
@@ -38,13 +55,30 @@ const Index = () => {
   };
 
   const subscriptionInfo = getSubscriptionInfo();
-  console.log('Current subscription info:', subscriptionInfo);
 
   return (
     <Layout title="AquaAI - Intelligent Aquarium Management">
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-gray-900 dark:to-blue-900">
         <div className="container mx-auto px-4 py-8">
           {user && <TrialBanner onUpgrade={handleUpgrade} />}
+          
+          {/* Debug panel for troubleshooting */}
+          {user && profile && (
+            <Card className="mb-6 bg-yellow-50 border-yellow-200">
+              <CardHeader>
+                <CardTitle className="text-sm text-yellow-800">Debug Info (Remove in Production)</CardTitle>
+              </CardHeader>
+              <CardContent className="text-xs text-yellow-700">
+                <div>User ID: {user.id}</div>
+                <div>Email: {user.email}</div>
+                <div>Subscription Tier: {profile.subscription_tier}</div>
+                <div>Subscription Status: {profile.subscription_status}</div>
+                <div>Is Admin: {profile.is_admin ? 'Yes' : 'No'}</div>
+                <div>Can Use Feature: {canUseFeature() ? 'Yes' : 'No'}</div>
+                <div>Needs Upgrade: {needsUpgrade() ? 'Yes' : 'No'}</div>
+              </CardContent>
+            </Card>
+          )}
           
           <div className="text-center mb-12">
             <div className="flex items-center justify-center mb-6">
