@@ -12,9 +12,9 @@ export interface UserProfile {
 }
 
 export interface TrialStatus {
-  subscription_status: string;
-  trial_hours_remaining: number;
-  is_trial_expired: boolean;
+  isTrialActive: boolean;
+  hoursRemaining: number;
+  isTrialExpired: boolean;
 }
 
 export interface SubscriptionInfo {
