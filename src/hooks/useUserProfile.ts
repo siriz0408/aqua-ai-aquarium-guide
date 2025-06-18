@@ -44,8 +44,8 @@ export const useUserProfile = () => {
 
       const profile: UserProfile = {
         id: user.id,
-        subscription_status: profileData.subscription_status || 'free',
-        subscription_tier: profileData.subscription_tier || 'free',
+        subscription_status: (profileData.subscription_status || 'free') as 'free' | 'trial' | 'active' | 'expired',
+        subscription_tier: (profileData.subscription_tier || 'free') as 'free' | 'pro',
         trial_start_date: profileData.trial_start_date,
         trial_end_date: profileData.trial_end_date,
         subscription_start_date: profileData.subscription_start_date,
