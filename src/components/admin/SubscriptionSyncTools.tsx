@@ -10,6 +10,15 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { RefreshCw, UserPlus, AlertCircle } from 'lucide-react';
 
+// Define the expected response type from the sync function
+interface SyncResponse {
+  success: boolean;
+  error?: string;
+  user_id?: string;
+  email?: string;
+  status_updated?: string;
+}
+
 export const SubscriptionSyncTools: React.FC = () => {
   const [email, setEmail] = useState('');
   const [stripeCustomerId, setStripeCustomerId] = useState('');
@@ -53,7 +62,10 @@ export const SubscriptionSyncTools: React.FC = () => {
 
       console.log('Sync result:', data);
 
-      if (data?.success) {
+      // Safely cast the response to our expected type
+      const syncResult = data as SyncResponse;
+
+      if (syncResult && typeof syncResult === 'object' && syncResult.success) {
         toast({
           title: "Sync Successful",
           description: `User ${email} has been synced successfully`,
@@ -65,7 +77,8 @@ export const SubscriptionSyncTools: React.FC = () => {
         setStripeSubscriptionId('');
         setSubscriptionStatus('active');
       } else {
-        throw new Error(data?.error || 'Sync failed');
+        const errorMessage = syncResult?.error || 'Sync failed - unknown error';
+        throw new Error(errorMessage);
       }
     } catch (error) {
       console.error('Manual sync error:', error);
