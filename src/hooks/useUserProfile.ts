@@ -2,7 +2,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import type { UserProfile, TrialStatus } from '@/types/subscription';
+import type { UserProfile } from '@/types/subscription';
 
 export const useUserProfile = () => {
   const { user } = useAuth();
@@ -12,7 +12,7 @@ export const useUserProfile = () => {
     queryFn: async (): Promise<UserProfile | null> => {
       if (!user?.id) return null;
       
-      console.log('Fetching user profile for credits hook...');
+      console.log('Fetching user profile...');
       
       // Check if user is admin using the safe function
       const { data: isAdmin, error: adminError } = await supabase
@@ -20,7 +20,6 @@ export const useUserProfile = () => {
 
       if (adminError) {
         console.error('Error checking admin status:', adminError);
-        // Continue with non-admin profile instead of throwing
       }
 
       // Get profile data from profiles table
@@ -34,18 +33,18 @@ export const useUserProfile = () => {
         console.error('Error fetching profile:', profileError);
       }
 
-      // Get trial status if not admin
-      let trialStatus: TrialStatus | null = null;
+      // Get trial status using new function
+      let trialStatus = null;
       if (!isAdmin) {
         const { data: trialData, error: trialError } = await supabase
-          .rpc('check_user_trial_status', { user_id: user.id });
+          .rpc('check_trial_status', { user_id: user.id });
         
         if (!trialError && trialData && trialData.length > 0) {
           trialStatus = trialData[0];
         }
       }
 
-      // Determine subscription status and tier
+      // Determine subscription status based on new subscription_type field
       let subscriptionStatus = 'free';
       let subscriptionTier = 'free';
 
@@ -53,16 +52,19 @@ export const useUserProfile = () => {
         subscriptionStatus = 'active';
         subscriptionTier = 'pro';
       } else if (profileData) {
-        // Use profile data from database
-        subscriptionStatus = profileData.subscription_status || 'free';
-        subscriptionTier = profileData.subscription_tier || 'free';
+        // Use the new subscription_type field
+        const subType = profileData.subscription_type || 'expired';
         
-        // Override with trial status if applicable
-        if (trialStatus && trialStatus.subscription_status === 'trial') {
+        if (subType === 'trial') {
           subscriptionStatus = 'trial';
+          subscriptionTier = 'free';
+        } else if (subType === 'paid') {
+          subscriptionStatus = 'active';
+          subscriptionTier = 'pro';
+        } else {
+          subscriptionStatus = 'expired';
+          subscriptionTier = 'free';
         }
-      } else if (trialStatus) {
-        subscriptionStatus = trialStatus.subscription_status;
       }
 
       const profile: UserProfile = {

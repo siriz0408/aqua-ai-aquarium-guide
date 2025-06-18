@@ -13,14 +13,23 @@ export const useTrialStatus = (profile: UserProfile | undefined | null) => {
       if (!user?.id || profile?.is_admin) return null;
       
       const { data, error } = await supabase
-        .rpc('check_user_trial_status', { user_id: user.id });
+        .rpc('check_trial_status', { user_id: user.id });
       
       if (error) {
         console.error('Error fetching trial status:', error);
         return null;
       }
       
-      return data && data.length > 0 ? data[0] : null;
+      if (data && data.length > 0) {
+        const trialData = data[0];
+        return {
+          subscription_status: trialData.is_trial_active ? 'trial' : 'expired',
+          trial_hours_remaining: trialData.hours_remaining || 0,
+          is_trial_expired: !trialData.is_trial_active
+        };
+      }
+      
+      return null;
     },
     enabled: !!user?.id && !!profile && !profile.is_admin,
     refetchInterval: 60000, // Refetch every minute to update trial countdown

@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { Layout } from '@/components/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -5,13 +6,15 @@ import { Button } from '@/components/ui/button';
 import { DropletIcon, FishIcon, Thermometer, Zap, MessageSquare, Calculator } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { TrialBanner } from '@/components/TrialBanner';
 import { useCredits } from '@/hooks/useCredits';
 import { useState } from 'react';
 
 const Index = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { getSubscriptionInfo } = useCredits();
+  const { canUseFeature, needsUpgrade, getSubscriptionInfo } = useCredits();
+  const [showPaywall, setShowPaywall] = useState(false);
 
   const handleFeatureClick = (path: string) => {
     if (!user) {
@@ -19,24 +22,37 @@ const Index = () => {
       return;
     }
     
-    // PAYWALL REMOVED: Always navigate to features
-    console.log('Navigating to feature (paywall disabled):', path);
+    if (!canUseFeature()) {
+      setShowPaywall(true);
+      return;
+    }
+    
+    console.log('Navigating to feature:', path);
     navigate(path);
   };
 
   const handleUpgrade = () => {
-    // PAYWALL REMOVED: No upgrade needed
-    console.log('Upgrade clicked but paywall is disabled');
+    setShowPaywall(true);
   };
 
   const subscriptionInfo = getSubscriptionInfo();
   console.log('Current subscription info:', subscriptionInfo);
 
+  // Show trial banner for trial users
+  const showTrialBanner = user && subscriptionInfo.isTrial;
+  const isTrialExpired = subscriptionInfo.isTrial && subscriptionInfo.trialHoursRemaining <= 0;
+
   return (
     <Layout title="AquaAI - Intelligent Aquarium Management">
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-gray-900 dark:to-blue-900">
         <div className="container mx-auto px-4 py-8">
-          {/* PAYWALL REMOVED: Hide trial banner completely */}
+          {/* Trial Banner for authenticated users */}
+          {showTrialBanner && (
+            <TrialBanner 
+              hoursRemaining={subscriptionInfo.trialHoursRemaining}
+              isExpired={isTrialExpired}
+            />
+          )}
           
           <div className="text-center mb-12">
             <div className="flex items-center justify-center mb-6">
@@ -176,7 +192,42 @@ const Index = () => {
         </div>
       </div>
 
-      {/* PAYWALL REMOVED: No paywall modal */}
+      {/* Paywall Modal */}
+      {showPaywall && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-background rounded-lg border border-border max-w-md w-full p-6">
+            <div className="text-center">
+              <div className="h-16 w-16 rounded-full bg-gradient-to-r from-blue-600 to-cyan-600 flex items-center justify-center mx-auto mb-4">
+                <Zap className="h-8 w-8 text-white" />
+              </div>
+              <h2 className="text-2xl font-bold mb-2">
+                {isTrialExpired ? 'Trial Expired' : 'Upgrade Required'}
+              </h2>
+              <p className="text-muted-foreground mb-6">
+                {isTrialExpired 
+                  ? 'Your 24-hour trial has ended. Upgrade to Pro to continue using premium features.'
+                  : 'This feature requires a Pro subscription. Start your 24-hour free trial today!'
+                }
+              </p>
+              <div className="space-y-3">
+                <Button 
+                  className="w-full" 
+                  onClick={handleUpgrade}
+                >
+                  Upgrade to Pro - $4.99/month
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  className="w-full"
+                  onClick={() => setShowPaywall(false)}
+                >
+                  Maybe Later
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </Layout>
   );
 };

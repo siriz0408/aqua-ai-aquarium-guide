@@ -13,16 +13,49 @@ export const useCredits = () => {
   const { data: trialStatus, isLoading: trialLoading } = useTrialStatus(profile);
   const { getSubscriptionInfo } = useSubscriptionInfo(profile, trialStatus);
 
-  // PAYWALL REMOVED: Always allow access to features
   const canUseFeature = (feature: string = 'chat') => {
-    console.log('Feature access granted: Paywall disabled for all users');
-    return true;
+    if (!profile) return false;
+    
+    // Admins always have access
+    if (profile.is_admin) return true;
+    
+    // Check subscription type
+    const subscriptionInfo = getSubscriptionInfo();
+    
+    // Paid users have access
+    if (subscriptionInfo.tier === 'pro' && subscriptionInfo.status === 'active') {
+      return true;
+    }
+    
+    // Trial users have access if trial is still active
+    if (subscriptionInfo.isTrial && subscriptionInfo.trialHoursRemaining > 0) {
+      return true;
+    }
+    
+    // Expired users don't have access
+    return false;
   };
 
-  // PAYWALL REMOVED: No users need upgrade
   const needsUpgrade = () => {
-    console.log('No upgrade needed: Paywall disabled for all users');
-    return false;
+    if (!profile) return true;
+    
+    // Admins never need upgrade
+    if (profile.is_admin) return false;
+    
+    const subscriptionInfo = getSubscriptionInfo();
+    
+    // Paid users don't need upgrade
+    if (subscriptionInfo.tier === 'pro' && subscriptionInfo.status === 'active') {
+      return false;
+    }
+    
+    // Trial users with time remaining don't need upgrade yet
+    if (subscriptionInfo.isTrial && subscriptionInfo.trialHoursRemaining > 0) {
+      return false;
+    }
+    
+    // Everyone else needs upgrade
+    return true;
   };
 
   return {

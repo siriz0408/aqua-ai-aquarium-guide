@@ -676,8 +676,10 @@ export type Database = {
           subscription_start_date: string | null
           subscription_status: string | null
           subscription_tier: string | null
+          subscription_type: string | null
           trial_end_date: string | null
           trial_start_date: string | null
+          trial_started_at: string | null
           updated_at: string
         }
         Insert: {
@@ -699,8 +701,10 @@ export type Database = {
           subscription_start_date?: string | null
           subscription_status?: string | null
           subscription_tier?: string | null
+          subscription_type?: string | null
           trial_end_date?: string | null
           trial_start_date?: string | null
+          trial_started_at?: string | null
           updated_at?: string
         }
         Update: {
@@ -722,8 +726,10 @@ export type Database = {
           subscription_start_date?: string | null
           subscription_status?: string | null
           subscription_tier?: string | null
+          subscription_type?: string | null
           trial_end_date?: string | null
           trial_start_date?: string | null
+          trial_started_at?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -1348,6 +1354,13 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
+      check_trial_status: {
+        Args: { user_id: string }
+        Returns: {
+          is_trial_active: boolean
+          hours_remaining: number
+        }[]
+      }
       check_user_admin_status: {
         Args: { user_id: string }
         Returns: boolean
@@ -1359,6 +1372,10 @@ export type Database = {
           trial_hours_remaining: number
           is_trial_expired: boolean
         }[]
+      }
+      expire_trials: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
       get_user_admin_status: {
         Args: { user_id: string }
@@ -1402,16 +1419,25 @@ export type Database = {
         Returns: number
       }
       update_subscription_status: {
-        Args: {
-          target_user_id: string
-          new_subscription_status: string
-          new_subscription_tier: string
-          new_stripe_customer_id?: string
-          new_stripe_subscription_id?: string
-          new_stripe_price_id?: string
-          new_subscription_start_date?: string
-          new_subscription_end_date?: string
-        }
+        Args:
+          | {
+              target_user_id: string
+              new_subscription_status: string
+              new_subscription_tier: string
+              new_stripe_customer_id?: string
+              new_stripe_subscription_id?: string
+              new_stripe_price_id?: string
+              new_subscription_start_date?: string
+              new_subscription_end_date?: string
+            }
+          | {
+              target_user_id: string
+              new_subscription_status: string
+              new_subscription_tier: string
+              new_subscription_type?: string
+              new_stripe_customer_id?: string
+              new_stripe_subscription_id?: string
+            }
         Returns: boolean
       }
     }
