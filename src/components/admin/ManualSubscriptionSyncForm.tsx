@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RefreshCw, Zap } from 'lucide-react';
-import { useManualSync } from '@/hooks/useManualSync';
+import { useSubscriptionSync } from '@/hooks/useSubscriptionSync';
 
 interface SyncFormData {
   email: string;
@@ -19,7 +19,7 @@ interface ManualSubscriptionSyncFormProps {
 }
 
 export const ManualSubscriptionSyncForm: React.FC<ManualSubscriptionSyncFormProps> = ({ onResult }) => {
-  const { syncUserSubscription, isLoading } = useManualSync();
+  const { syncUserSubscription, isLoading } = useSubscriptionSync();
   const [syncForm, setSyncForm] = useState<SyncFormData>({
     email: '',
     stripeCustomerId: '',

@@ -5,14 +5,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RefreshCw, CheckCircle, Users } from 'lucide-react';
-import { useManualSync } from '@/hooks/useManualSync';
+import { useUserAccessRefresh } from '@/hooks/useUserAccessRefresh';
 
 interface UserAccessRefreshFormProps {
   onResult: (result: any) => void;
 }
 
 export const UserAccessRefreshForm: React.FC<UserAccessRefreshFormProps> = ({ onResult }) => {
-  const { refreshUserAccess, isLoading } = useManualSync();
+  const { refreshUserAccess, isLoading } = useUserAccessRefresh();
   const [refreshUserId, setRefreshUserId] = useState('');
 
   const handleRefreshAccess = async (e: React.FormEvent) => {
