@@ -3,10 +3,11 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Check, Star, Zap, ShoppingCart } from 'lucide-react';
+import { Check, Star, Zap, ShoppingCart, RefreshCw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSubscriptionStatus } from '@/hooks/useSubscriptionStatus';
 import { OneTimePaymentButton } from './OneTimePaymentButton';
 
 const SUBSCRIPTION_PRICE_ID = "price_1Rb8vR1d1AvgoBGoNIjxLKRR"; // Monthly subscription
@@ -16,6 +17,7 @@ export const PricingSection: React.FC = () => {
   const { toast } = useToast();
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const { checkSubscriptionStatus, isLoading: isCheckingStatus } = useSubscriptionStatus();
 
   const handleSubscriptionUpgrade = async () => {
     if (!user) {
@@ -58,6 +60,21 @@ export const PricingSection: React.FC = () => {
           <p className="text-gray-600 max-w-2xl mx-auto">
             Start with our free plan, get a monthly subscription, or make a one-time purchase
           </p>
+          
+          {user && (
+            <div className="mt-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={checkSubscriptionStatus}
+                disabled={isCheckingStatus}
+                className="gap-2"
+              >
+                <RefreshCw className={`h-4 w-4 ${isCheckingStatus ? 'animate-spin' : ''}`} />
+                {isCheckingStatus ? 'Checking...' : 'Refresh Subscription Status'}
+              </Button>
+            </div>
+          )}
         </div>
 
         <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">

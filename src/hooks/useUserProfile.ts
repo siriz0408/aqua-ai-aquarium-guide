@@ -14,14 +14,14 @@ export const useUserProfile = () => {
       
       console.log('Fetching user profile for:', user.id);
       
-      // First ensure the profile exists using the fixed function
+      // First ensure the profile exists
       const { error: ensureError } = await supabase.rpc('ensure_user_profile', {
         user_id: user.id
       });
       
       if (ensureError) {
         console.error('Error ensuring profile exists:', ensureError);
-        // Don't fail here, continue trying to get the profile
+        // Continue anyway - the profile might already exist
       }
 
       // Get profile data from profiles table
@@ -33,41 +33,6 @@ export const useUserProfile = () => {
 
       if (profileError) {
         console.error('Error fetching profile:', profileError);
-        // If profile doesn't exist, create a minimal one
-        if (profileError.code === 'PGRST116') {
-          // Try to create profile manually
-          const { data: newProfile, error: createError } = await supabase
-            .from('profiles')
-            .insert({
-              id: user.id,
-              email: user.email,
-              subscription_status: 'free',
-              subscription_tier: 'free',
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            })
-            .select()
-            .single();
-          
-          if (createError) {
-            console.error('Error creating profile:', createError);
-            return null;
-          }
-          
-          console.log('Created new profile:', newProfile);
-          return {
-            id: user.id,
-            full_name: newProfile.full_name,
-            subscription_status: 'free',
-            subscription_tier: 'free',
-            trial_start_date: null,
-            trial_end_date: null,
-            subscription_start_date: null,
-            subscription_end_date: null,
-            is_admin: false,
-            admin_role: null,
-          };
-        }
         return null;
       }
 
