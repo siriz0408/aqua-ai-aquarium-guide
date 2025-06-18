@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -7,6 +6,8 @@ import { useToast } from '@/hooks/use-toast';
 
 export interface UserProfile {
   id: string;
+  email?: string;
+  full_name?: string;
   subscription_status: 'trial' | 'active' | 'expired' | 'free';
   subscription_tier: 'free' | 'pro';
   subscription_start_date?: string;
@@ -15,6 +16,7 @@ export interface UserProfile {
   trial_end_date?: string;
   is_admin?: boolean;
   admin_role?: string;
+  created_at?: string;
 }
 
 export interface TrialStatus {
@@ -59,12 +61,15 @@ export const useCredits = () => {
       // Return a profile based on admin status and trial information
       const profile: UserProfile = {
         id: user.id,
+        email: user.email,
+        full_name: user.full_name,
         subscription_status: isAdmin ? 'active' : (trialStatus?.subscription_status as any || 'free'),
         subscription_tier: isAdmin ? 'pro' : 'free',
         trial_start_date: trialStatus && !isAdmin ? undefined : undefined,
         trial_end_date: trialStatus && !isAdmin ? undefined : undefined,
         is_admin: isAdmin || false,
         admin_role: isAdmin ? 'admin' : undefined,
+        created_at: user.created_at,
       };
 
       console.log('User profile constructed:', profile);
