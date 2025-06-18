@@ -14,8 +14,8 @@ export const TrialBanner: React.FC<TrialBannerProps> = ({ onUpgrade }) => {
   const { getSubscriptionInfo } = useCredits();
   const subscriptionInfo = getSubscriptionInfo();
 
-  // Only show for trial users
-  if (!subscriptionInfo.isTrial) {
+  // Only show for trial users who are NOT pro users
+  if (!subscriptionInfo.isTrial || subscriptionInfo.tier === 'pro') {
     return null;
   }
 

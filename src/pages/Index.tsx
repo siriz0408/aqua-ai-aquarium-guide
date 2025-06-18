@@ -22,7 +22,7 @@ const Index = () => {
       return;
     }
     
-    // Check if user can access the feature
+    // Check if user can access the feature - Pro users always can
     if (!canUseFeature()) {
       console.log('User cannot access feature, showing paywall');
       setShowPaywall(true);
@@ -34,6 +34,14 @@ const Index = () => {
   };
 
   const handleUpgrade = () => {
+    const subscriptionInfo = getSubscriptionInfo();
+    
+    // Pro users should never see the paywall
+    if (subscriptionInfo.tier === 'pro') {
+      console.log('Pro user tried to upgrade - this should not happen');
+      return;
+    }
+    
     setShowPaywall(true);
   };
 
@@ -44,7 +52,10 @@ const Index = () => {
     <Layout title="AquaAI - Intelligent Aquarium Management">
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-gray-900 dark:to-blue-900">
         <div className="container mx-auto px-4 py-8">
-          {user && <TrialBanner onUpgrade={handleUpgrade} />}
+          {/* Only show trial banner for trial users, not pro users */}
+          {user && subscriptionInfo.isTrial && subscriptionInfo.tier !== 'pro' && (
+            <TrialBanner onUpgrade={handleUpgrade} />
+          )}
           
           <div className="text-center mb-12">
             <div className="flex items-center justify-center mb-6">

@@ -127,7 +127,7 @@ export const useCredits = () => {
     refetchInterval: 60000, // Refetch every minute to update trial countdown
   });
 
-  // Check if user can use features (trial, subscription, or admin)
+  // Check if user can use features - Pro users ALWAYS have access
   const canUseFeature = (feature: string = 'chat') => {
     if (!profile) {
       console.log('Feature access denied: No profile found');
@@ -140,13 +140,13 @@ export const useCredits = () => {
       return true;
     }
     
-    // Users with active PRO subscription have access (don't check trial status for pro users)
-    if (profile.subscription_tier === 'pro' && profile.subscription_status === 'active') {
-      console.log('Feature access granted: Active pro subscription');
+    // Pro users ALWAYS have access regardless of subscription status
+    if (profile.subscription_tier === 'pro') {
+      console.log('Feature access granted: Pro tier user (regardless of status)');
       return true;
     }
     
-    // Users in active trial period have access (only check trial if not pro)
+    // Users in active trial period have access
     if (profile.subscription_status === 'trial' && trialStatus && !trialStatus.is_trial_expired && trialStatus.trial_hours_remaining > 0) {
       console.log('Feature access granted: Active trial');
       return true;
@@ -161,15 +161,16 @@ export const useCredits = () => {
     return false;
   };
 
-  // Check if user needs upgrade (trial expired or no access)
+  // Check if user needs upgrade - Pro users NEVER need upgrade
   const needsUpgrade = () => {
     if (!profile) return true;
     
     // Admins never need upgrade
     if (profile.is_admin) return false;
     
-    // Check if user has active pro subscription
-    if (profile.subscription_tier === 'pro' && profile.subscription_status === 'active') {
+    // Pro users NEVER need upgrade regardless of status
+    if (profile.subscription_tier === 'pro') {
+      console.log('No upgrade needed: Pro tier user');
       return false;
     }
     
@@ -197,7 +198,7 @@ export const useCredits = () => {
 
     const isTrial = profile.subscription_status === 'trial';
     const hasAccess = profile.is_admin || 
-      (profile.subscription_tier === 'pro' && profile.subscription_status === 'active') ||
+      profile.subscription_tier === 'pro' || // Pro users always have access
       (isTrial && trialStatus && !trialStatus.is_trial_expired && trialStatus.trial_hours_remaining > 0);
 
     return {
