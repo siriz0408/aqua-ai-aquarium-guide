@@ -46,15 +46,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           });
         }
         
-        // Handle successful sign in - check for subscription updates
+        // Handle successful sign in
         if (event === 'SIGNED_IN' && session?.user) {
-          try {
-            // Check subscription status after sign in
-            await supabase.functions.invoke('check-subscription');
-          } catch (error) {
-            console.error('Error checking subscription:', error);
-          }
-          
           toast({
             title: "Welcome back!",
             description: "You've successfully signed in to AquaAI.",

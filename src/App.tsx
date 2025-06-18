@@ -21,7 +21,6 @@ import Reminders from "./pages/Reminders";
 import Education from "./pages/Education";
 import Auth from "./pages/Auth";
 import Admin from "./pages/Admin";
-import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import Tanks from "./pages/Tanks";
 import AddTank from "./pages/AddTank";
@@ -107,11 +106,6 @@ const App = () => (
                     <Route path="/education" element={
                       <ProtectedRoute>
                         <Education />
-                      </ProtectedRoute>
-                    } />
-                    <Route path="/settings" element={
-                      <ProtectedRoute>
-                        <Settings />
                       </ProtectedRoute>
                     } />
                     <Route path="/admin" element={
