@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Layout } from '@/components/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,10 +5,13 @@ import { Button } from '@/components/ui/button';
 import { DropletIcon, FishIcon, Thermometer, Zap, MessageSquare, Calculator } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { SubscriptionBanner } from '@/components/subscription/SubscriptionBanner';
+import { useCredits } from '@/hooks/useCredits';
 
 const Index = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { profile, trialStatus } = useCredits();
 
   const handleFeatureClick = async (path: string) => {
     if (!user) {
@@ -25,6 +27,16 @@ const Index = () => {
     <Layout title="AquaAI - Intelligent Aquarium Management">
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-gray-900 dark:to-blue-900">
         <div className="container mx-auto px-4 py-8">
+          {/* Show subscription banner for authenticated users */}
+          {user && profile && (
+            <SubscriptionBanner
+              subscriptionStatus={profile.subscription_status}
+              subscriptionTier={profile.subscription_tier}
+              trialHoursRemaining={trialStatus?.hoursRemaining || 0}
+              isTrialExpired={trialStatus?.isTrialExpired || false}
+            />
+          )}
+
           <div className="text-center mb-12">
             <div className="flex items-center justify-center mb-6">
               <div className="h-16 w-16 rounded-full ocean-gradient flex items-center justify-center mr-4">

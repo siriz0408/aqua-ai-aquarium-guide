@@ -87,8 +87,11 @@ serve(async (req) => {
         break;
       
       case 'invoice.payment_succeeded':
+        processResult = await handlePaymentSucceeded(event, stripe, supabaseClient);
+        break;
+        
       case 'invoice.payment_failed':
-        processResult = await handleInvoiceEvent(event, stripe, supabaseClient);
+        processResult = await handlePaymentFailed(event, stripe, supabaseClient);
         break;
       
       default:
@@ -189,34 +192,77 @@ async function handleSubscriptionEvent(
     
     logStep("Customer retrieved", { email: customer.email, customerId });
     
-    // Use the simplified sync function
-    const { data: syncResult, error: syncError } = await supabaseClient.rpc('sync_stripe_subscription', {
-      customer_email: customer.email,
-      stripe_customer_id: customerId,
-      stripe_subscription_id: subscription.id,
-      subscription_status: subscription.status,
-      price_id: subscription.items.data[0]?.price?.id || null
-    });
+    // Update subscription status based on event type and subscription status
+    let subscriptionStatus = 'free';
+    let subscriptionTier = 'free';
+    let subscriptionEndDate = null;
     
-    if (syncError) {
-      logStep("Error in subscription sync", { error: syncError });
+    if (event.type === 'customer.subscription.deleted' || subscription.status === 'canceled') {
+      subscriptionStatus = 'expired';
+      subscriptionTier = 'free';
+      subscriptionEndDate = new Date().toISOString();
+    } else if (subscription.status === 'active' || subscription.status === 'trialing') {
+      subscriptionStatus = 'active';
+      subscriptionTier = 'pro';
+      subscriptionEndDate = new Date(subscription.current_period_end * 1000).toISOString();
+    } else if (subscription.status === 'past_due' || subscription.status === 'unpaid') {
+      subscriptionStatus = 'expired';
+      subscriptionTier = 'free';
+      subscriptionEndDate = new Date().toISOString();
+    }
+    
+    // Update user profile in Supabase
+    const { error: updateError } = await supabaseClient
+      .from('profiles')
+      .update({
+        subscription_status: subscriptionStatus,
+        subscription_tier: subscriptionTier,
+        stripe_customer_id: customerId,
+        stripe_subscription_id: subscription.id,
+        stripe_price_id: subscription.items.data[0]?.price?.id || null,
+        subscription_start_date: subscription.status === 'active' ? new Date(subscription.created * 1000).toISOString() : null,
+        subscription_end_date: subscriptionEndDate,
+        updated_at: new Date().toISOString()
+      })
+      .eq('email', customer.email);
+    
+    if (updateError) {
+      logStep("Error updating user profile", { error: updateError });
       return {
         success: false,
-        error: `Sync failed: ${syncError.message}`,
-        userEmail: customer.email,
-        customerId,
-        subscriptionId: subscription.id
-      };
-    } else {
-      logStep("Subscription sync completed successfully", { result: syncResult });
-      return {
-        success: true,
-        message: 'Subscription processed successfully',
+        error: `Failed to update user profile: ${updateError.message}`,
         userEmail: customer.email,
         customerId,
         subscriptionId: subscription.id
       };
     }
+    
+    // Also update subscriptions table
+    await supabaseClient
+      .from('subscriptions')
+      .upsert({
+        stripe_customer_id: customerId,
+        stripe_subscription_id: subscription.id,
+        stripe_price_id: subscription.items.data[0]?.price?.id || null,
+        status: subscription.status,
+        current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
+        current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'stripe_subscription_id' });
+    
+    logStep("Subscription sync completed successfully", { 
+      email: customer.email,
+      status: subscriptionStatus,
+      tier: subscriptionTier
+    });
+    
+    return {
+      success: true,
+      message: 'Subscription processed successfully',
+      userEmail: customer.email,
+      customerId,
+      subscriptionId: subscription.id
+    };
   } catch (error) {
     logStep("Error in handleSubscriptionEvent", { 
       error: error instanceof Error ? error.message : String(error),
@@ -230,13 +276,13 @@ async function handleSubscriptionEvent(
   }
 }
 
-async function handleInvoiceEvent(
+async function handlePaymentSucceeded(
   event: Stripe.Event, 
   stripe: Stripe, 
   supabaseClient: any
 ) {
   try {
-    logStep("Processing invoice event", { eventType: event.type });
+    logStep("Processing payment succeeded event");
     
     const invoice = event.data.object as Stripe.Invoice;
     const customerId = invoice.customer as string;
@@ -247,22 +293,78 @@ async function handleInvoiceEvent(
       throw new Error(`No email found for customer ${customerId}`);
     }
     
-    logStep("Invoice event processed", { 
+    // If this is a subscription invoice, get the subscription
+    if (invoice.subscription) {
+      const subscription = await stripe.subscriptions.retrieve(invoice.subscription as string);
+      
+      // Update user profile to active status
+      await supabaseClient
+        .from('profiles')
+        .update({
+          subscription_status: 'active',
+          subscription_tier: 'pro',
+          stripe_customer_id: customerId,
+          stripe_subscription_id: subscription.id,
+          subscription_start_date: new Date(subscription.created * 1000).toISOString(),
+          subscription_end_date: new Date(subscription.current_period_end * 1000).toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('email', customer.email);
+    }
+    
+    logStep("Payment succeeded event processed", { 
       invoiceId: invoice.id,
-      status: invoice.status,
       userEmail: customer.email 
     });
     
     return { 
       success: true, 
-      message: 'Invoice processed successfully',
+      message: 'Payment succeeded processed',
       userEmail: customer.email,
       customerId
     };
   } catch (error) {
-    logStep("Error in handleInvoiceEvent", { 
-      error: error instanceof Error ? error.message : String(error),
-      eventType: event.type
+    logStep("Error in handlePaymentSucceeded", { 
+      error: error instanceof Error ? error.message : String(error)
+    });
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : String(error)
+    };
+  }
+}
+
+async function handlePaymentFailed(
+  event: Stripe.Event, 
+  stripe: Stripe, 
+  supabaseClient: any
+) {
+  try {
+    logStep("Processing payment failed event");
+    
+    const invoice = event.data.object as Stripe.Invoice;
+    const customerId = invoice.customer as string;
+    
+    // Get customer data from Stripe
+    const customer = await stripe.customers.retrieve(customerId) as Stripe.Customer;
+    if (!customer.email) {
+      throw new Error(`No email found for customer ${customerId}`);
+    }
+    
+    logStep("Payment failed event processed", { 
+      invoiceId: invoice.id,
+      userEmail: customer.email 
+    });
+    
+    return { 
+      success: true, 
+      message: 'Payment failed processed',
+      userEmail: customer.email,
+      customerId
+    };
+  } catch (error) {
+    logStep("Error in handlePaymentFailed", { 
+      error: error instanceof Error ? error.message : String(error)
     });
     return { 
       success: false, 
