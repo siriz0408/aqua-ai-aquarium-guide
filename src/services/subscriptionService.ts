@@ -7,6 +7,14 @@ export const canUserAccessFeature = (profile: UserProfile | null, trialStatus: T
     return false;
   }
   
+  console.log('Checking feature access for user:', {
+    userId: profile.id,
+    subscriptionTier: profile.subscription_tier,
+    subscriptionStatus: profile.subscription_status,
+    isAdmin: profile.is_admin,
+    feature
+  });
+  
   // Admins always have access
   if (profile.is_admin) {
     console.log('Feature access granted: User is admin');
@@ -37,19 +45,32 @@ export const canUserAccessFeature = (profile: UserProfile | null, trialStatus: T
 export const doesUserNeedUpgrade = (profile: UserProfile | null, trialStatus: TrialStatus | null): boolean => {
   if (!profile) return true;
   
+  console.log('Checking if user needs upgrade:', {
+    userId: profile.id,
+    subscriptionTier: profile.subscription_tier,
+    subscriptionStatus: profile.subscription_status,
+    isAdmin: profile.is_admin
+  });
+  
   // Admins never need upgrade
-  if (profile.is_admin) return false;
+  if (profile.is_admin) {
+    console.log('No upgrade needed: User is admin');
+    return false;
+  }
   
   // Check if user has active pro subscription
   if (profile.subscription_tier === 'pro' && profile.subscription_status === 'active') {
+    console.log('No upgrade needed: Active pro subscription');
     return false;
   }
   
   // Check if user is in active trial
   if (profile.subscription_status === 'trial' && trialStatus && !trialStatus.is_trial_expired && trialStatus.trial_hours_remaining > 0) {
+    console.log('No upgrade needed: Active trial');
     return false;
   }
   
+  console.log('Upgrade needed');
   return true;
 };
 
@@ -71,7 +92,7 @@ export const buildSubscriptionInfo = (profile: UserProfile | null, trialStatus: 
     (profile.subscription_tier === 'pro' && profile.subscription_status === 'active') ||
     (isTrial && trialStatus && !trialStatus.is_trial_expired && trialStatus.trial_hours_remaining > 0);
 
-  return {
+  const subscriptionInfo = {
     tier: profile.subscription_tier || 'free',
     status: profile.subscription_status || 'free',
     hasAccess,
@@ -82,4 +103,7 @@ export const buildSubscriptionInfo = (profile: UserProfile | null, trialStatus: 
       (profile.subscription_tier === 'pro' ? 'Pro' : 
       (isTrial ? 'Trial' : 'Free'))
   };
+
+  console.log('Built subscription info:', subscriptionInfo);
+  return subscriptionInfo;
 };

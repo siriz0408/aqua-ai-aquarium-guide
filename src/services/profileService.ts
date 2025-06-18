@@ -27,9 +27,11 @@ export const fetchUserProfile = async (userId: string): Promise<UserProfile | nu
     console.error('Error fetching profile:', profileError);
   }
 
-  // Get trial status if not admin
+  // Get trial status if not admin and not already a pro user with active subscription
   let trialStatus: TrialStatus | null = null;
-  if (!isAdmin) {
+  const hasActiveProSubscription = profileData?.subscription_tier === 'pro' && profileData?.subscription_status === 'active';
+  
+  if (!isAdmin && !hasActiveProSubscription) {
     const { data: trialData, error: trialError } = await supabase
       .rpc('check_user_trial_status', { user_id: userId });
     
@@ -46,12 +48,12 @@ export const fetchUserProfile = async (userId: string): Promise<UserProfile | nu
     subscriptionStatus = 'active';
     subscriptionTier = 'pro';
   } else if (profileData) {
-    // Use profile data from database
+    // Use profile data from database - don't override for pro users
     subscriptionStatus = profileData.subscription_status || 'free';
     subscriptionTier = profileData.subscription_tier || 'free';
     
-    // Override with trial status if applicable
-    if (trialStatus && trialStatus.subscription_status === 'trial') {
+    // Only override with trial status if user is NOT a pro user with active subscription
+    if (!hasActiveProSubscription && trialStatus && trialStatus.subscription_status === 'trial') {
       subscriptionStatus = 'trial';
     }
   } else if (trialStatus) {
@@ -71,5 +73,6 @@ export const fetchUserProfile = async (userId: string): Promise<UserProfile | nu
   };
 
   console.log('User profile constructed:', profile);
+  console.log('Has active pro subscription:', hasActiveProSubscription);
   return profile;
 };
