@@ -19,6 +19,9 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  let eventId = 'unknown';
+  let eventType = 'unknown';
+
   try {
     logStep("Webhook received", { 
       method: req.method, 
@@ -56,32 +59,62 @@ serve(async (req) => {
 
     logStep("Verifying webhook signature");
     const event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
+    
+    eventId = event.id;
+    eventType = event.type;
+    
     logStep("Webhook verified successfully", { type: event.type, id: event.id });
 
-    // Process the event using the enhanced database function
-    const { data: processResult, error: processError } = await supabaseClient.rpc('process_webhook_event', {
-      event_id: event.id,
-      event_type: event.type,
-      event_data: event as any
-    });
+    // Store webhook event in enhanced tracking table
+    await supabaseClient
+      .from('webhook_events')
+      .upsert({
+        stripe_event_id: eventId,
+        event_type: eventType,
+        processing_status: 'processing',
+        raw_data: event,
+        created_at: new Date().toISOString()
+      }, { onConflict: 'stripe_event_id' });
 
-    if (processError) {
-      logStep("Error in webhook processing", { error: processError });
-      throw processError;
+    // Process different event types
+    let processResult;
+    switch (event.type) {
+      case 'customer.subscription.created':
+      case 'customer.subscription.updated':
+      case 'customer.subscription.deleted':
+        processResult = await handleSubscriptionEvent(event, stripe, supabaseClient);
+        break;
+      
+      case 'invoice.payment_succeeded':
+      case 'invoice.payment_failed':
+        processResult = await handleInvoiceEvent(event, stripe, supabaseClient);
+        break;
+      
+      default:
+        logStep("Unsupported event type", { type: event.type });
+        processResult = { success: true, message: 'Event type not processed' };
     }
+
+    // Update webhook event status
+    await supabaseClient
+      .from('webhook_events')
+      .update({
+        processing_status: processResult.success ? 'completed' : 'failed',
+        error_message: processResult.success ? null : processResult.error,
+        processed_at: new Date().toISOString(),
+        user_email: processResult.userEmail,
+        customer_id: processResult.customerId,
+        subscription_id: processResult.subscriptionId
+      })
+      .eq('stripe_event_id', eventId);
 
     logStep("Webhook processing completed", { result: processResult });
-
-    // For subscription events, also perform additional sync with fresh Stripe data
-    if (['customer.subscription.created', 'customer.subscription.updated', 'customer.subscription.deleted'].includes(event.type)) {
-      await handleSubscriptionEventWithFreshData(event, stripe, supabaseClient);
-    }
 
     return new Response(JSON.stringify({ 
       received: true, 
       processed: true,
-      event_id: event.id,
-      event_type: event.type,
+      event_id: eventId,
+      event_type: eventType,
       result: processResult 
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -94,10 +127,35 @@ serve(async (req) => {
       stack: error instanceof Error ? error.stack : undefined
     });
     
+    // Update webhook event with error if we have an eventId
+    if (eventId !== 'unknown') {
+      try {
+        const supabaseClient = createClient(
+          Deno.env.get("SUPABASE_URL") ?? "",
+          Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+          { auth: { persistSession: false } }
+        );
+        
+        await supabaseClient
+          .from('webhook_events')
+          .upsert({
+            stripe_event_id: eventId,
+            event_type: eventType,
+            processing_status: 'failed',
+            error_message: errorMessage,
+            processed_at: new Date().toISOString()
+          }, { onConflict: 'stripe_event_id' });
+      } catch (dbError) {
+        logStep("Failed to update webhook event with error", { dbError });
+      }
+    }
+    
     return new Response(JSON.stringify({ 
       error: errorMessage,
       received: true,
       processed: false,
+      event_id: eventId,
+      event_type: eventType,
       timestamp: new Date().toISOString()
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -106,54 +164,145 @@ serve(async (req) => {
   }
 });
 
-async function handleSubscriptionEventWithFreshData(
+async function handleSubscriptionEvent(
   event: Stripe.Event, 
   stripe: Stripe, 
   supabaseClient: any
 ) {
   try {
-    logStep("Processing subscription event with fresh Stripe data", { eventType: event.type });
+    logStep("Processing subscription event", { eventType: event.type });
     
     const subscription = event.data.object as Stripe.Subscription;
     const customerId = subscription.customer as string;
     
-    // Get fresh customer data from Stripe API
+    // Get customer data from Stripe
     const customer = await stripe.customers.retrieve(customerId) as Stripe.Customer;
     if (!customer.email) {
-      logStep("No email found for customer", { customerId });
-      return;
+      throw new Error(`No email found for customer ${customerId}`);
     }
     
     logStep("Customer retrieved", { email: customer.email, customerId });
     
-    // Get fresh subscription data from Stripe API
-    const freshSubscription = await stripe.subscriptions.retrieve(subscription.id);
+    // Find user in our database
+    const { data: profiles, error: profileError } = await supabaseClient
+      .from('profiles')
+      .select('id, email')
+      .eq('email', customer.email)
+      .limit(1);
     
-    logStep("Fresh subscription data retrieved", { 
-      subscriptionId: freshSubscription.id,
-      status: freshSubscription.status,
-      currentPeriodEnd: freshSubscription.current_period_end
-    });
-    
-    // Use the enhanced sync function with fresh data
-    const { data: syncResult, error: syncError } = await supabaseClient.rpc('sync_user_subscription_from_stripe', {
-      user_email: customer.email,
-      stripe_customer_id: customerId,
-      stripe_subscription_id: freshSubscription.id,
-      subscription_status: freshSubscription.status,
-      subscription_tier: 'pro',
-      current_period_end: new Date(freshSubscription.current_period_end * 1000).toISOString()
-    });
-    
-    if (syncError) {
-      logStep("Error in subscription sync", { error: syncError });
-    } else {
-      logStep("Subscription sync completed successfully", { result: syncResult });
+    if (profileError) {
+      throw new Error(`Error finding user profile: ${profileError.message}`);
     }
+    
+    if (!profiles || profiles.length === 0) {
+      throw new Error(`No user found with email ${customer.email}`);
+    }
+    
+    const userProfile = profiles[0];
+    logStep("User profile found", { userId: userProfile.id, email: userProfile.email });
+    
+    // Update or insert customer record
+    await supabaseClient
+      .from('customers')
+      .upsert({
+        stripe_customer_id: customerId,
+        email: customer.email,
+        user_id: userProfile.id,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'stripe_customer_id' });
+    
+    // Update or insert subscription record
+    await supabaseClient
+      .from('subscriptions')
+      .upsert({
+        stripe_subscription_id: subscription.id,
+        stripe_customer_id: customerId,
+        user_id: userProfile.id,
+        status: subscription.status,
+        current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
+        current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+        price_id: subscription.items.data[0]?.price?.id,
+        quantity: subscription.quantity || 1,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'stripe_subscription_id' });
+    
+    // Update user profile subscription status
+    const subscriptionStatus = subscription.status === 'active' ? 'active' : 'expired';
+    await supabaseClient
+      .from('profiles')
+      .update({
+        subscription_status: subscriptionStatus,
+        subscription_tier: 'pro',
+        stripe_customer_id: customerId,
+        stripe_subscription_id: subscription.id,
+        subscription_start_date: new Date(subscription.current_period_start * 1000).toISOString(),
+        subscription_end_date: new Date(subscription.current_period_end * 1000).toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', userProfile.id);
+    
+    logStep("Subscription event processed successfully", { 
+      subscriptionId: subscription.id,
+      status: subscription.status,
+      userEmail: customer.email 
+    });
+    
+    return { 
+      success: true, 
+      message: 'Subscription processed successfully',
+      userEmail: customer.email,
+      customerId,
+      subscriptionId: subscription.id
+    };
   } catch (error) {
-    logStep("Error in handleSubscriptionEventWithFreshData", { 
+    logStep("Error in handleSubscriptionEvent", { 
       error: error instanceof Error ? error.message : String(error),
       eventType: event.type
     });
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : String(error)
+    };
+  }
+}
+
+async function handleInvoiceEvent(
+  event: Stripe.Event, 
+  stripe: Stripe, 
+  supabaseClient: any
+) {
+  try {
+    logStep("Processing invoice event", { eventType: event.type });
+    
+    const invoice = event.data.object as Stripe.Invoice;
+    const customerId = invoice.customer as string;
+    
+    // Get customer data from Stripe
+    const customer = await stripe.customers.retrieve(customerId) as Stripe.Customer;
+    if (!customer.email) {
+      throw new Error(`No email found for customer ${customerId}`);
+    }
+    
+    logStep("Invoice event processed", { 
+      invoiceId: invoice.id,
+      status: invoice.status,
+      userEmail: customer.email 
+    });
+    
+    return { 
+      success: true, 
+      message: 'Invoice processed successfully',
+      userEmail: customer.email,
+      customerId
+    };
+  } catch (error) {
+    logStep("Error in handleInvoiceEvent", { 
+      error: error instanceof Error ? error.message : String(error),
+      eventType: event.type
+    });
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : String(error)
+    };
   }
 }
