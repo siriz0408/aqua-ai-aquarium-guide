@@ -28,6 +28,54 @@ export const useCredits = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Set up real-time subscription to profile changes
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const channel = supabase
+      .channel('profile-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'profiles',
+          filter: `id=eq.${user.id}`,
+        },
+        (payload) => {
+          console.log('Profile updated via webhook:', payload);
+          // Invalidate and refetch profile data when it changes
+          queryClient.invalidateQueries({ queryKey: ['user-profile', user.id] });
+          
+          // Show toast notification for subscription changes
+          if (payload.eventType === 'UPDATE') {
+            const oldRecord = payload.old;
+            const newRecord = payload.new;
+            
+            if (oldRecord?.subscription_status !== newRecord?.subscription_status) {
+              if (newRecord?.subscription_status === 'active') {
+                toast({
+                  title: "Subscription Activated!",
+                  description: "Your Pro subscription is now active. Enjoy all features!",
+                });
+              } else if (newRecord?.subscription_status === 'expired') {
+                toast({
+                  title: "Subscription Status Changed",
+                  description: "Your subscription status has been updated.",
+                  variant: "destructive",
+                });
+              }
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id, queryClient, toast]);
+
   // Fetch user profile using the safe admin check function
   const { data: profile, isLoading: profileLoading, error: profileError } = useQuery({
     queryKey: ['user-profile', user?.id],

@@ -856,6 +856,42 @@ export type Database = {
         }
         Relationships: []
       }
+      subscription_events: {
+        Row: {
+          created_at: string
+          event_data: Json
+          event_type: string
+          id: string
+          processed: boolean | null
+          stripe_customer_id: string | null
+          stripe_event_id: string
+          stripe_subscription_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_data: Json
+          event_type: string
+          id?: string
+          processed?: boolean | null
+          stripe_customer_id?: string | null
+          stripe_event_id: string
+          stripe_subscription_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_data?: Json
+          event_type?: string
+          id?: string
+          processed?: boolean | null
+          stripe_customer_id?: string | null
+          stripe_event_id?: string
+          stripe_subscription_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       support_ticket_responses: {
         Row: {
           created_at: string
@@ -1224,6 +1260,39 @@ export type Database = {
           },
         ]
       }
+      webhook_logs: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          event_type: string
+          id: string
+          processed_at: string | null
+          processing_status: string
+          raw_payload: Json | null
+          stripe_event_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          event_type: string
+          id?: string
+          processed_at?: string | null
+          processing_status?: string
+          raw_payload?: Json | null
+          stripe_event_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          event_type?: string
+          id?: string
+          processed_at?: string | null
+          processing_status?: string
+          raw_payload?: Json | null
+          stripe_event_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -1308,6 +1377,16 @@ export type Database = {
       }
       is_admin: {
         Args: { user_id: string }
+        Returns: boolean
+      }
+      process_stripe_webhook: {
+        Args: {
+          event_id: string
+          event_type: string
+          customer_id?: string
+          subscription_id?: string
+          event_data?: Json
+        }
         Returns: boolean
       }
       promote_user_to_admin: {
