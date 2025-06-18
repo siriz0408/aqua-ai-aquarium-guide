@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -45,13 +46,12 @@ export const SubscriptionSyncTools: React.FC = () => {
         subscriptionStatus
       });
 
-      // Use the simplified sync function
+      // Use the updated sync function (removed price_id parameter)
       const { data, error } = await supabase.rpc('sync_stripe_subscription', {
         customer_email: email,
         stripe_customer_id: stripeCustomerId,
         stripe_subscription_id: stripeSubscriptionId || null,
-        subscription_status: subscriptionStatus,
-        price_id: null
+        subscription_status: subscriptionStatus
       });
 
       if (error) {

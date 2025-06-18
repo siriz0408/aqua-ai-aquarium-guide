@@ -529,51 +529,6 @@ export type Database = {
           },
         ]
       }
-      gbif_import_jobs: {
-        Row: {
-          completed_at: string | null
-          created_at: string
-          error_details: Json | null
-          failed_species: number | null
-          id: string
-          imported_species: number | null
-          job_type: string
-          search_query: string | null
-          status: string
-          total_species: number | null
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          completed_at?: string | null
-          created_at?: string
-          error_details?: Json | null
-          failed_species?: number | null
-          id?: string
-          imported_species?: number | null
-          job_type: string
-          search_query?: string | null
-          status?: string
-          total_species?: number | null
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          completed_at?: string | null
-          created_at?: string
-          error_details?: Json | null
-          failed_species?: number | null
-          id?: string
-          imported_species?: number | null
-          job_type?: string
-          search_query?: string | null
-          status?: string
-          total_species?: number | null
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       livestock: {
         Row: {
           aquarium_id: string
@@ -822,47 +777,6 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
-      }
-      species_images: {
-        Row: {
-          attribution: string | null
-          created_at: string
-          id: string
-          image_source: string
-          image_url: string
-          is_primary: boolean | null
-          license: string | null
-          species_id: string | null
-        }
-        Insert: {
-          attribution?: string | null
-          created_at?: string
-          id?: string
-          image_source: string
-          image_url: string
-          is_primary?: boolean | null
-          license?: string | null
-          species_id?: string | null
-        }
-        Update: {
-          attribution?: string | null
-          created_at?: string
-          id?: string
-          image_source?: string
-          image_url?: string
-          is_primary?: boolean | null
-          license?: string | null
-          species_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "species_images_species_id_fkey"
-            columns: ["species_id"]
-            isOneToOne: false
-            referencedRelation: "educational_fish"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       support_ticket_responses: {
         Row: {
@@ -1277,39 +1191,6 @@ export type Database = {
         }
         Relationships: []
       }
-      webhook_logs: {
-        Row: {
-          created_at: string
-          error_message: string | null
-          event_type: string
-          id: string
-          processed_at: string | null
-          processing_status: string
-          raw_payload: Json | null
-          stripe_event_id: string | null
-        }
-        Insert: {
-          created_at?: string
-          error_message?: string | null
-          event_type: string
-          id?: string
-          processed_at?: string | null
-          processing_status?: string
-          raw_payload?: Json | null
-          stripe_event_id?: string | null
-        }
-        Update: {
-          created_at?: string
-          error_message?: string | null
-          event_type?: string
-          id?: string
-          processed_at?: string | null
-          processing_status?: string
-          raw_payload?: Json | null
-          stripe_event_id?: string | null
-        }
-        Relationships: []
-      }
     }
     Views: {
       [_ in never]: never
@@ -1375,13 +1256,6 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
-      check_trial_status: {
-        Args: { user_id: string }
-        Returns: {
-          is_trial_active: boolean
-          hours_remaining: number
-        }[]
-      }
       check_user_access: {
         Args: { user_id: string }
         Returns: {
@@ -1406,10 +1280,6 @@ export type Database = {
         Args: { user_id: string }
         Returns: undefined
       }
-      expire_trials: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
       get_user_admin_status: {
         Args: { user_id: string }
         Returns: boolean
@@ -1429,16 +1299,6 @@ export type Database = {
         Args: { user_id: string }
         Returns: boolean
       }
-      process_stripe_webhook: {
-        Args: {
-          event_id: string
-          event_type: string
-          customer_id?: string
-          subscription_id?: string
-          event_data?: Json
-        }
-        Returns: boolean
-      }
       process_webhook_event: {
         Args: { event_id: string; event_type: string; event_data: Json }
         Returns: Json
@@ -1446,10 +1306,6 @@ export type Database = {
       promote_user_to_admin: {
         Args: { user_email: string; role?: string }
         Returns: boolean
-      }
-      refresh_subscription_status: {
-        Args: { user_id: string }
-        Returns: undefined
       }
       sync_stripe_subscription: {
         Args: {
@@ -1471,10 +1327,6 @@ export type Database = {
           current_period_end?: string
         }
         Returns: Json
-      }
-      update_expired_trials: {
-        Args: Record<PropertyKey, never>
-        Returns: number
       }
       update_subscription_status: {
         Args:

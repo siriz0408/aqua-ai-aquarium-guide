@@ -29,9 +29,9 @@ export const useManualSync = () => {
     try {
       console.log('Starting manual sync for user:', targetEmail);
       
-      const { data, error } = await supabase.rpc('admin_manual_sync_user', {
-        requesting_admin_id: user.id,
-        target_email: targetEmail,
+      // Use simplified sync function call
+      const { data, error } = await supabase.rpc('sync_stripe_subscription', {
+        customer_email: targetEmail,
         stripe_customer_id: stripeCustomerId,
         stripe_subscription_id: stripeSubscriptionId,
         subscription_status: subscriptionStatus
@@ -50,7 +50,6 @@ export const useManualSync = () => {
 
       console.log('Manual sync result:', data);
       
-      // Fix TypeScript errors by properly typing the response
       const syncData = data as any;
       
       if (syncData?.success) {
@@ -64,7 +63,7 @@ export const useManualSync = () => {
           details: syncData 
         };
       } else {
-        const errorMessage = syncData?.sync_result?.error || syncData?.error || 'Unknown sync error';
+        const errorMessage = syncData?.error || 'Unknown sync error';
         toast({
           title: "Sync Failed",
           description: errorMessage,
@@ -91,7 +90,7 @@ export const useManualSync = () => {
     try {
       console.log('Refreshing user access:', userId);
       
-      // First ensure the user profile exists
+      // Ensure the user profile exists
       const { error: ensureError } = await supabase.rpc('ensure_user_profile', {
         user_id: userId
       });
@@ -100,7 +99,7 @@ export const useManualSync = () => {
         console.error('Error ensuring profile:', ensureError);
       }
 
-      // Then check their access status
+      // Check their access status using the updated function
       const { data: accessData, error: accessError } = await supabase.rpc('check_user_access', {
         user_id: userId
       });
