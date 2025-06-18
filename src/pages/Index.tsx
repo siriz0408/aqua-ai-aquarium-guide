@@ -1,5 +1,4 @@
-
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Layout } from '@/components/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,7 +7,6 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { TrialBanner } from '@/components/TrialBanner';
 import { useCredits } from '@/hooks/useCredits';
-import { useState } from 'react';
 import PaywallModal from '@/components/Paywall';
 
 const Index = () => {
@@ -17,14 +15,17 @@ const Index = () => {
   const { canUseFeature, needsUpgrade, getSubscriptionInfo } = useCredits();
   const [showPaywall, setShowPaywall] = useState(false);
 
-  const handleFeatureClick = (path: string) => {
+  const handleFeatureClick = async (path: string) => {
     if (!user) {
       navigate('/auth');
       return;
     }
     
-    // Check if user has access to the feature
-    if (!canUseFeature()) {
+    // Check if user has access to the feature using the improved function
+    console.log('Checking access for feature:', path);
+    const hasAccess = await canUseFeature();
+    
+    if (!hasAccess) {
       console.log('User does not have access, showing paywall');
       setShowPaywall(true);
       return;

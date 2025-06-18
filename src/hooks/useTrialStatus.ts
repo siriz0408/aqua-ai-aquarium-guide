@@ -12,20 +12,26 @@ export const useTrialStatus = (profile: UserProfile | undefined | null) => {
     queryFn: async (): Promise<TrialStatus | null> => {
       if (!user?.id || profile?.is_admin) return null;
       
-      const { data, error } = await supabase
-        .rpc('check_trial_status', { user_id: user.id });
+      console.log('Checking trial status with improved function...');
+      
+      // Use the new access check function
+      const { data, error } = await supabase.rpc('check_user_access', { 
+        user_id: user.id 
+      });
       
       if (error) {
-        console.error('Error fetching trial status:', error);
+        console.error('Error checking user access:', error);
         return null;
       }
       
+      console.log('User access check result:', data);
+      
       if (data && data.length > 0) {
-        const trialData = data[0];
+        const accessData = data[0];
         return {
-          subscription_status: trialData.is_trial_active ? 'trial' : 'expired',
-          trial_hours_remaining: trialData.hours_remaining || 0,
-          is_trial_expired: !trialData.is_trial_active
+          subscription_status: accessData.access_reason === 'trial' ? 'trial' : 'expired',
+          trial_hours_remaining: accessData.trial_hours_remaining || 0,
+          is_trial_expired: accessData.access_reason === 'trial_expired'
         };
       }
       

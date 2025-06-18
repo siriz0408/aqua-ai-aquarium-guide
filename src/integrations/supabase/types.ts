@@ -1361,6 +1361,14 @@ export type Database = {
           hours_remaining: number
         }[]
       }
+      check_user_access: {
+        Args: { user_id: string }
+        Returns: {
+          has_access: boolean
+          access_reason: string
+          trial_hours_remaining: number
+        }[]
+      }
       check_user_admin_status: {
         Args: { user_id: string }
         Returns: boolean
@@ -1372,6 +1380,10 @@ export type Database = {
           trial_hours_remaining: number
           is_trial_expired: boolean
         }[]
+      }
+      ensure_user_profile: {
+        Args: { user_id: string }
+        Returns: undefined
       }
       expire_trials: {
         Args: Record<PropertyKey, never>

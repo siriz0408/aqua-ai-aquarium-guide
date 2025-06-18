@@ -3,6 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useUserProfile } from './useUserProfile';
 import { useTrialStatus } from './useTrialStatus';
 import { useSubscriptionInfo } from './useSubscriptionInfo';
+import { supabase } from '@/integrations/supabase/client';
 
 // Re-export types for backward compatibility
 export type { UserProfile, TrialStatus } from '@/types/subscription';
@@ -13,37 +14,31 @@ export const useCredits = () => {
   const { data: trialStatus, isLoading: trialLoading } = useTrialStatus(profile);
   const { getSubscriptionInfo } = useSubscriptionInfo(profile, trialStatus);
 
-  const canUseFeature = (feature: string = 'chat') => {
-    if (!profile) {
-      console.log('No profile found, denying access');
+  const canUseFeature = async (feature: string = 'chat') => {
+    if (!user?.id) {
+      console.log('No user ID found, denying access');
       return false;
     }
     
-    console.log('Checking feature access for profile:', profile);
+    console.log('Checking feature access using improved database function...');
     
-    // Admins always have access
-    if (profile.is_admin) {
-      console.log('User is admin, granting access');
-      return true;
+    // Use the new database function for reliable access checking
+    const { data, error } = await supabase.rpc('check_user_access', {
+      user_id: user.id
+    });
+    
+    if (error) {
+      console.error('Error checking user access:', error);
+      return false;
     }
     
-    // Check subscription type and status
-    const subscriptionInfo = getSubscriptionInfo();
-    console.log('Subscription info:', subscriptionInfo);
-    
-    // Users with active pro subscription have access
-    if (subscriptionInfo.tier === 'pro' && subscriptionInfo.status === 'active') {
-      console.log('User has active pro subscription, granting access');
-      return true;
+    if (data && data.length > 0) {
+      const accessResult = data[0];
+      console.log('Database access check result:', accessResult);
+      return accessResult.has_access;
     }
     
-    // Trial users have access if trial is still active
-    if (subscriptionInfo.isTrial && subscriptionInfo.trialHoursRemaining > 0) {
-      console.log('User has active trial, granting access');
-      return true;
-    }
-    
-    console.log('User does not have access - Status:', subscriptionInfo.status, 'Tier:', subscriptionInfo.tier, 'Trial Hours:', subscriptionInfo.trialHoursRemaining);
+    console.log('No access data returned, denying access');
     return false;
   };
 
