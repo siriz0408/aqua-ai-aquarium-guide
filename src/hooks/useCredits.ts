@@ -140,13 +140,13 @@ export const useCredits = () => {
       return true;
     }
     
-    // Users with active PRO subscription have access
+    // Users with active PRO subscription have access (don't check trial status for pro users)
     if (profile.subscription_tier === 'pro' && profile.subscription_status === 'active') {
       console.log('Feature access granted: Active pro subscription');
       return true;
     }
     
-    // Users in active trial period have access
+    // Users in active trial period have access (only check trial if not pro)
     if (profile.subscription_status === 'trial' && trialStatus && !trialStatus.is_trial_expired && trialStatus.trial_hours_remaining > 0) {
       console.log('Feature access granted: Active trial');
       return true;
