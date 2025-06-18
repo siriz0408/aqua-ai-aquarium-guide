@@ -261,33 +261,6 @@ export type Database = {
         }
         Relationships: []
       }
-      customers: {
-        Row: {
-          created_at: string | null
-          email: string | null
-          id: string
-          stripe_customer_id: string
-          updated_at: string | null
-          user_id: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          email?: string | null
-          id?: string
-          stripe_customer_id: string
-          updated_at?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          email?: string | null
-          id?: string
-          stripe_customer_id?: string
-          updated_at?: string | null
-          user_id?: string | null
-        }
-        Relationships: []
-      }
       educational_equipment: {
         Row: {
           category: string
@@ -747,16 +720,13 @@ export type Database = {
           last_active: string | null
           last_admin_login: string | null
           stripe_customer_id: string | null
-          stripe_price_id: string | null
           stripe_subscription_id: string | null
           subscription_end_date: string | null
           subscription_start_date: string | null
           subscription_status: string | null
           subscription_tier: string | null
-          subscription_type: string | null
           trial_end_date: string | null
           trial_start_date: string | null
-          trial_started_at: string | null
           updated_at: string
         }
         Insert: {
@@ -772,16 +742,13 @@ export type Database = {
           last_active?: string | null
           last_admin_login?: string | null
           stripe_customer_id?: string | null
-          stripe_price_id?: string | null
           stripe_subscription_id?: string | null
           subscription_end_date?: string | null
           subscription_start_date?: string | null
           subscription_status?: string | null
           subscription_tier?: string | null
-          subscription_type?: string | null
           trial_end_date?: string | null
           trial_start_date?: string | null
-          trial_started_at?: string | null
           updated_at?: string
         }
         Update: {
@@ -797,16 +764,13 @@ export type Database = {
           last_active?: string | null
           last_admin_login?: string | null
           stripe_customer_id?: string | null
-          stripe_price_id?: string | null
           stripe_subscription_id?: string | null
           subscription_end_date?: string | null
           subscription_start_date?: string | null
           subscription_status?: string | null
           subscription_tier?: string | null
-          subscription_type?: string | null
           trial_end_date?: string | null
           trial_start_date?: string | null
-          trial_started_at?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -897,137 +861,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "educational_fish"
             referencedColumns: ["id"]
-          },
-        ]
-      }
-      subscribers: {
-        Row: {
-          created_at: string
-          email: string
-          id: string
-          stripe_customer_id: string | null
-          stripe_subscription_id: string | null
-          subscribed: boolean
-          subscription_end: string | null
-          subscription_tier: string | null
-          updated_at: string
-          user_id: string | null
-        }
-        Insert: {
-          created_at?: string
-          email: string
-          id?: string
-          stripe_customer_id?: string | null
-          stripe_subscription_id?: string | null
-          subscribed?: boolean
-          subscription_end?: string | null
-          subscription_tier?: string | null
-          updated_at?: string
-          user_id?: string | null
-        }
-        Update: {
-          created_at?: string
-          email?: string
-          id?: string
-          stripe_customer_id?: string | null
-          stripe_subscription_id?: string | null
-          subscribed?: boolean
-          subscription_end?: string | null
-          subscription_tier?: string | null
-          updated_at?: string
-          user_id?: string | null
-        }
-        Relationships: []
-      }
-      subscription_events: {
-        Row: {
-          created_at: string
-          event_data: Json
-          event_type: string
-          id: string
-          processed: boolean | null
-          stripe_customer_id: string | null
-          stripe_event_id: string
-          stripe_subscription_id: string | null
-          user_id: string | null
-        }
-        Insert: {
-          created_at?: string
-          event_data: Json
-          event_type: string
-          id?: string
-          processed?: boolean | null
-          stripe_customer_id?: string | null
-          stripe_event_id: string
-          stripe_subscription_id?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          created_at?: string
-          event_data?: Json
-          event_type?: string
-          id?: string
-          processed?: boolean | null
-          stripe_customer_id?: string | null
-          stripe_event_id?: string
-          stripe_subscription_id?: string | null
-          user_id?: string | null
-        }
-        Relationships: []
-      }
-      subscriptions: {
-        Row: {
-          created_at: string | null
-          current_period_end: string | null
-          current_period_start: string | null
-          id: string
-          price_id: string | null
-          quantity: number | null
-          status: string
-          stripe_customer_id: string
-          stripe_subscription_id: string
-          trial_end: string | null
-          trial_start: string | null
-          updated_at: string | null
-          user_id: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          current_period_end?: string | null
-          current_period_start?: string | null
-          id?: string
-          price_id?: string | null
-          quantity?: number | null
-          status: string
-          stripe_customer_id: string
-          stripe_subscription_id: string
-          trial_end?: string | null
-          trial_start?: string | null
-          updated_at?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          current_period_end?: string | null
-          current_period_start?: string | null
-          id?: string
-          price_id?: string | null
-          quantity?: number | null
-          status?: string
-          stripe_customer_id?: string
-          stripe_subscription_id?: string
-          trial_end?: string | null
-          trial_start?: string | null
-          updated_at?: string | null
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "subscriptions_stripe_customer_id_fkey"
-            columns: ["stripe_customer_id"]
-            isOneToOne: false
-            referencedRelation: "customers"
-            referencedColumns: ["stripe_customer_id"]
           },
         ]
       }
@@ -1618,6 +1451,16 @@ export type Database = {
         Args: { user_id: string }
         Returns: undefined
       }
+      sync_stripe_subscription: {
+        Args: {
+          customer_email: string
+          stripe_customer_id: string
+          stripe_subscription_id?: string
+          subscription_status?: string
+          price_id?: string
+        }
+        Returns: Json
+      }
       sync_user_subscription_from_stripe: {
         Args: {
           user_email: string
@@ -1636,6 +1479,12 @@ export type Database = {
       update_subscription_status: {
         Args:
           | {
+              stripe_customer_id: string
+              status: string
+              tier: string
+              end_date: string
+            }
+          | {
               target_user_id: string
               new_subscription_status: string
               new_subscription_tier: string
@@ -1653,7 +1502,7 @@ export type Database = {
               new_stripe_customer_id?: string
               new_stripe_subscription_id?: string
             }
-        Returns: boolean
+        Returns: undefined
       }
     }
     Enums: {

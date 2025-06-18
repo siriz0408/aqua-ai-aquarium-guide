@@ -41,6 +41,7 @@ serve(async (req) => {
       throw new Error("STRIPE_WEBHOOK_SECRET is not set");
     }
 
+    // Use service role key to bypass RLS
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
@@ -65,7 +66,7 @@ serve(async (req) => {
     
     logStep("Webhook verified successfully", { type: event.type, id: event.id });
 
-    // Store webhook event in enhanced tracking table
+    // Store webhook event for monitoring
     await supabaseClient
       .from('webhook_events')
       .upsert({
@@ -82,7 +83,7 @@ serve(async (req) => {
       case 'customer.subscription.created':
       case 'customer.subscription.updated':
       case 'customer.subscription.deleted':
-        processResult = await handleSubscriptionEventWithFreshData(event, stripe, supabaseClient);
+        processResult = await handleSubscriptionEvent(event, stripe, supabaseClient);
         break;
       
       case 'invoice.payment_succeeded':
@@ -164,18 +165,18 @@ serve(async (req) => {
   }
 });
 
-async function handleSubscriptionEventWithFreshData(
+async function handleSubscriptionEvent(
   event: Stripe.Event, 
   stripe: Stripe, 
   supabaseClient: any
 ) {
   try {
-    logStep("Processing subscription event with fresh Stripe data", { eventType: event.type });
+    logStep("Processing subscription event", { eventType: event.type });
     
     const subscription = event.data.object as Stripe.Subscription;
     const customerId = subscription.customer as string;
     
-    // Get fresh customer data from Stripe API
+    // Get customer data from Stripe
     const customer = await stripe.customers.retrieve(customerId) as Stripe.Customer;
     if (!customer.email) {
       logStep("No email found for customer", { customerId });
@@ -188,91 +189,36 @@ async function handleSubscriptionEventWithFreshData(
     
     logStep("Customer retrieved", { email: customer.email, customerId });
     
-    // First ensure profile exists using our database function
-    const { error: ensureError } = await supabaseClient.rpc('ensure_user_profile', {
-      user_id: null // We don't have the user_id here, so the function will need to handle email lookup
-    });
-    
-    if (ensureError) {
-      logStep("Error ensuring profile exists", { error: ensureError });
-    }
-    
-    // Try to find and update the profile with stripe_customer_id
-    const { data: profile, error: profileError } = await supabaseClient
-      .from('profiles')
-      .select('id, stripe_customer_id')
-      .eq('email', customer.email)
-      .single();
-    
-    if (profile) {
-      // Update the profile with stripe_customer_id if not already set
-      if (!profile.stripe_customer_id || profile.stripe_customer_id !== customerId) {
-        await supabaseClient
-          .from('profiles')
-          .update({ 
-            stripe_customer_id: customerId,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', profile.id);
-        
-        logStep("Updated profile with stripe_customer_id", { 
-          profileId: profile.id, 
-          customerId 
-        });
-      }
-    } else {
-      logStep("No profile found for email", { 
-        email: customer.email,
-        profileError: profileError?.message 
-      });
-      
-      // Profile doesn't exist, we'll let the sync function handle this case
-    }
-    
-    // Get fresh subscription data from Stripe API
-    const freshSubscription = await stripe.subscriptions.retrieve(subscription.id);
-    
-    logStep("Fresh subscription data retrieved", { 
-      subscriptionId: freshSubscription.id,
-      status: freshSubscription.status,
-      currentPeriodEnd: freshSubscription.current_period_end
-    });
-    
-    // Use the enhanced sync function with fresh data
-    const { data: syncResult, error: syncError } = await supabaseClient.rpc('sync_user_subscription_from_stripe', {
-      user_email: customer.email,
+    // Use the simplified sync function
+    const { data: syncResult, error: syncError } = await supabaseClient.rpc('sync_stripe_subscription', {
+      customer_email: customer.email,
       stripe_customer_id: customerId,
-      stripe_subscription_id: freshSubscription.id,
-      subscription_status: freshSubscription.status,
-      subscription_tier: 'pro',
-      current_period_end: new Date(freshSubscription.current_period_end * 1000).toISOString()
+      stripe_subscription_id: subscription.id,
+      subscription_status: subscription.status,
+      price_id: subscription.items.data[0]?.price?.id || null
     });
     
     if (syncError) {
       logStep("Error in subscription sync", { error: syncError });
-      
-      // If sync failed due to missing user, we can't do much more from here
-      // The sync function should handle user creation/profile management
       return {
         success: false,
         error: `Sync failed: ${syncError.message}`,
         userEmail: customer.email,
         customerId,
-        subscriptionId: freshSubscription.id
+        subscriptionId: subscription.id
       };
     } else {
       logStep("Subscription sync completed successfully", { result: syncResult });
-      
       return {
         success: true,
         message: 'Subscription processed successfully',
         userEmail: customer.email,
         customerId,
-        subscriptionId: freshSubscription.id
+        subscriptionId: subscription.id
       };
     }
   } catch (error) {
-    logStep("Error in handleSubscriptionEventWithFreshData", { 
+    logStep("Error in handleSubscriptionEvent", { 
       error: error instanceof Error ? error.message : String(error),
       eventType: event.type
     });

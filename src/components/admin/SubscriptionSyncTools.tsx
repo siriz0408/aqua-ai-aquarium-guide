@@ -4,66 +4,79 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { RefreshCw, Search, User, CreditCard, AlertTriangle, CheckCircle } from 'lucide-react';
-import { useManualSync } from '@/hooks/useManualSync';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { RefreshCw, UserPlus, AlertCircle } from 'lucide-react';
 
 export const SubscriptionSyncTools: React.FC = () => {
-  const [userEmail, setUserEmail] = useState('');
+  const [email, setEmail] = useState('');
   const [stripeCustomerId, setStripeCustomerId] = useState('');
   const [stripeSubscriptionId, setStripeSubscriptionId] = useState('');
   const [subscriptionStatus, setSubscriptionStatus] = useState('active');
-  const [syncResults, setSyncResults] = useState<any>(null);
-  
-  const { syncUserSubscription, refreshUserAccess, isLoading } = useManualSync();
+  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
   const handleManualSync = async () => {
-    if (!userEmail || !stripeCustomerId || !stripeSubscriptionId) {
+    if (!email || !stripeCustomerId) {
       toast({
-        title: "Missing Information",
-        description: "Please fill in all required fields",
+        title: "Validation Error",
+        description: "Email and Stripe Customer ID are required",
         variant: "destructive",
       });
       return;
     }
 
-    const result = await syncUserSubscription(
-      userEmail,
-      stripeCustomerId,
-      stripeSubscriptionId,
-      subscriptionStatus
-    );
+    setIsLoading(true);
+    try {
+      console.log('Starting manual sync with data:', {
+        email,
+        stripeCustomerId,
+        stripeSubscriptionId,
+        subscriptionStatus
+      });
 
-    setSyncResults(result);
-  };
+      // Use the simplified sync function
+      const { data, error } = await supabase.rpc('sync_stripe_subscription', {
+        customer_email: email,
+        stripe_customer_id: stripeCustomerId,
+        stripe_subscription_id: stripeSubscriptionId || null,
+        subscription_status: subscriptionStatus,
+        price_id: null
+      });
 
-  const handleAccessRefresh = async () => {
-    if (!userEmail) {
+      if (error) {
+        console.error('Sync error:', error);
+        throw error;
+      }
+
+      console.log('Sync result:', data);
+
+      if (data?.success) {
+        toast({
+          title: "Sync Successful",
+          description: `User ${email} has been synced successfully`,
+        });
+
+        // Clear form
+        setEmail('');
+        setStripeCustomerId('');
+        setStripeSubscriptionId('');
+        setSubscriptionStatus('active');
+      } else {
+        throw new Error(data?.error || 'Sync failed');
+      }
+    } catch (error) {
+      console.error('Manual sync error:', error);
       toast({
-        title: "Missing Email",
-        description: "Please enter a user email address",
+        title: "Sync Failed",
+        description: error instanceof Error ? error.message : 'An error occurred during sync',
         variant: "destructive",
       });
-      return;
+    } finally {
+      setIsLoading(false);
     }
-
-    // For now, we'll use a placeholder user ID - in a real implementation,
-    // you'd look up the user ID by email first
-    const result = await refreshUserAccess(userEmail);
-    setSyncResults(result);
-  };
-
-  const clearForm = () => {
-    setUserEmail('');
-    setStripeCustomerId('');
-    setStripeSubscriptionId('');
-    setSubscriptionStatus('active');
-    setSyncResults(null);
   };
 
   return (
@@ -71,133 +84,116 @@ export const SubscriptionSyncTools: React.FC = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <CreditCard className="h-5 w-5" />
+            <UserPlus className="h-5 w-5" />
             Manual Subscription Sync
           </CardTitle>
           <CardDescription>
-            Manually sync subscription data from Stripe when webhooks fail
+            Manually sync a user's subscription status with Stripe data
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="userEmail">User Email *</Label>
+            <div className="space-y-2">
+              <Label htmlFor="email">User Email</Label>
               <Input
-                id="userEmail"
-                value={userEmail}
-                onChange={(e) => setUserEmail(e.target.value)}
+                id="email"
+                type="email"
                 placeholder="user@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
               />
             </div>
-            
-            <div>
-              <Label htmlFor="subscriptionStatus">Subscription Status</Label>
+
+            <div className="space-y-2">
+              <Label htmlFor="customer-id">Stripe Customer ID</Label>
+              <Input
+                id="customer-id"
+                placeholder="cus_..."
+                value={stripeCustomerId}
+                onChange={(e) => setStripeCustomerId(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="subscription-id">Stripe Subscription ID (Optional)</Label>
+              <Input
+                id="subscription-id"
+                placeholder="sub_..."
+                value={stripeSubscriptionId}
+                onChange={(e) => setStripeSubscriptionId(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="status">Subscription Status</Label>
               <Select value={subscriptionStatus} onValueChange={setSubscriptionStatus}>
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder="Select status" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="trialing">Trialing</SelectItem>
                   <SelectItem value="canceled">Canceled</SelectItem>
                   <SelectItem value="past_due">Past Due</SelectItem>
+                  <SelectItem value="unpaid">Unpaid</SelectItem>
                   <SelectItem value="incomplete">Incomplete</SelectItem>
-                  <SelectItem value="trialing">Trialing</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
 
-          <div>
-            <Label htmlFor="stripeCustomerId">Stripe Customer ID *</Label>
-            <Input
-              id="stripeCustomerId"
-              value={stripeCustomerId}
-              onChange={(e) => setStripeCustomerId(e.target.value)}
-              placeholder="cus_..."
-            />
-          </div>
+          <Alert>
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              This will update the user's subscription status in our database based on the provided Stripe data. 
+              Make sure the information is accurate as this directly affects user access.
+            </AlertDescription>
+          </Alert>
 
-          <div>
-            <Label htmlFor="stripeSubscriptionId">Stripe Subscription ID *</Label>
-            <Input
-              id="stripeSubscriptionId"
-              value={stripeSubscriptionId}
-              onChange={(e) => setStripeSubscriptionId(e.target.value)}
-              placeholder="sub_..."
-            />
-          </div>
-
-          <div className="flex gap-2 pt-4">
-            <Button 
-              onClick={handleManualSync} 
-              disabled={isLoading}
-              className="flex-1"
-            >
-              {isLoading ? (
+          <Button 
+            onClick={handleManualSync} 
+            disabled={isLoading || !email || !stripeCustomerId}
+            className="w-full"
+          >
+            {isLoading ? (
+              <>
                 <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <RefreshCw className="h-4 w-4 mr-2" />
-              )}
-              Sync Subscription
-            </Button>
-            
-            <Button 
-              onClick={handleAccessRefresh} 
-              disabled={isLoading}
-              variant="outline"
-            >
-              <User className="h-4 w-4 mr-2" />
-              Refresh Access
-            </Button>
-            
-            <Button 
-              onClick={clearForm} 
-              variant="outline"
-            >
-              Clear
-            </Button>
-          </div>
+                Syncing...
+              </>
+            ) : (
+              'Sync Subscription'
+            )}
+          </Button>
         </CardContent>
       </Card>
 
-      {syncResults && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              {syncResults.success ? (
-                <CheckCircle className="h-5 w-5 text-green-600" />
-              ) : (
-                <AlertTriangle className="h-5 w-5 text-red-600" />
-              )}
-              Sync Results
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <Badge variant={syncResults.success ? "default" : "destructive"}>
-                  {syncResults.success ? "Success" : "Failed"}
-                </Badge>
-                <span className="text-sm text-muted-foreground">
-                  {syncResults.message}
-                </span>
-              </div>
-              
-              {syncResults.details && (
-                <div>
-                  <Label>Details:</Label>
-                  <Textarea
-                    value={JSON.stringify(syncResults.details, null, 2)}
-                    readOnly
-                    className="mt-1 font-mono text-xs"
-                    rows={8}
-                  />
-                </div>
-              )}
+      <Card>
+        <CardHeader>
+          <CardTitle>Sync Instructions</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3 text-sm">
+            <div>
+              <strong>1. Get Stripe Customer ID:</strong>
+              <p className="text-gray-600">
+                Go to your Stripe Dashboard → Customers → Search by email → Copy Customer ID (starts with "cus_")
+              </p>
             </div>
-          </CardContent>
-        </Card>
-      )}
+            <div>
+              <strong>2. Get Subscription ID (if applicable):</strong>
+              <p className="text-gray-600">
+                In the customer's details, find their subscription and copy the ID (starts with "sub_")
+              </p>
+            </div>
+            <div>
+              <strong>3. Choose Status:</strong>
+              <p className="text-gray-600">
+                Select the current status of the subscription as shown in Stripe
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
