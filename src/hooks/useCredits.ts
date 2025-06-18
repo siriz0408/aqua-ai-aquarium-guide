@@ -14,25 +14,36 @@ export const useCredits = () => {
   const { getSubscriptionInfo } = useSubscriptionInfo(profile, trialStatus);
 
   const canUseFeature = (feature: string = 'chat') => {
-    if (!profile) return false;
+    if (!profile) {
+      console.log('No profile found, denying access');
+      return false;
+    }
+    
+    console.log('Checking feature access for profile:', profile);
     
     // Admins always have access
-    if (profile.is_admin) return true;
+    if (profile.is_admin) {
+      console.log('User is admin, granting access');
+      return true;
+    }
     
-    // Check subscription type
+    // Check subscription type and status
     const subscriptionInfo = getSubscriptionInfo();
+    console.log('Subscription info:', subscriptionInfo);
     
-    // Paid users have access
+    // Users with active pro subscription have access
     if (subscriptionInfo.tier === 'pro' && subscriptionInfo.status === 'active') {
+      console.log('User has active pro subscription, granting access');
       return true;
     }
     
     // Trial users have access if trial is still active
     if (subscriptionInfo.isTrial && subscriptionInfo.trialHoursRemaining > 0) {
+      console.log('User has active trial, granting access');
       return true;
     }
     
-    // Expired users don't have access
+    console.log('User does not have access - Status:', subscriptionInfo.status, 'Tier:', subscriptionInfo.tier, 'Trial Hours:', subscriptionInfo.trialHoursRemaining);
     return false;
   };
 
@@ -44,7 +55,7 @@ export const useCredits = () => {
     
     const subscriptionInfo = getSubscriptionInfo();
     
-    // Paid users don't need upgrade
+    // Users with active pro subscription don't need upgrade
     if (subscriptionInfo.tier === 'pro' && subscriptionInfo.status === 'active') {
       return false;
     }

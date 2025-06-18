@@ -30,6 +30,16 @@ export const useSubscriptionInfo = (
                      (isActive && profile.subscription_tier === 'pro') || 
                      (isTrial && trialHoursRemaining > 0);
 
+    // Log the access decision for debugging
+    console.log('Subscription access check:', {
+      isAdmin: profile.is_admin,
+      isActive,
+      tier: profile.subscription_tier,
+      isTrial,
+      trialHoursRemaining,
+      hasAccess
+    });
+
     return {
       tier: profile.subscription_tier || 'free',
       status: profile.subscription_status || 'free',
