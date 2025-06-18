@@ -160,21 +160,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signOut = async () => {
     try {
+      console.log('Starting sign out process...');
       setLoading(true);
+      
+      // Get current session before signing out
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      
+      if (!currentSession) {
+        console.log('No active session found');
+        toast({
+          title: "Already signed out",
+          description: "You are already signed out.",
+        });
+        return;
+      }
+
       const { error } = await supabase.auth.signOut();
+      
       if (error) {
+        console.error('Sign out error:', error);
         toast({
           title: "Sign out failed",
           description: error.message,
           variant: "destructive",
         });
       } else {
+        console.log('Sign out successful');
         toast({
           title: "Signed out",
           description: "You've been successfully signed out.",
         });
       }
     } catch (error: any) {
+      console.error('Unexpected sign out error:', error);
       toast({
         title: "Sign out failed",
         description: error.message || "An unexpected error occurred",
