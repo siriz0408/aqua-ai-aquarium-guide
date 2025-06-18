@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { Layout } from '@/components/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -34,35 +35,25 @@ const Index = () => {
   };
 
   const subscriptionInfo = getSubscriptionInfo();
-  console.log('Current subscription info:', subscriptionInfo);
 
-  // Show trial banner for trial users only (not for paid users)
-  const showTrialBanner = user && subscriptionInfo.isTrial && !subscriptionInfo.isAdmin;
+  // Show trial banner only for trial users with time remaining (not admins, not expired)
+  const showTrialBanner = user && 
+                          subscriptionInfo.isTrial && 
+                          subscriptionInfo.trialHoursRemaining > 0 && 
+                          !subscriptionInfo.isAdmin;
+  
   const isTrialExpired = subscriptionInfo.isTrial && subscriptionInfo.trialHoursRemaining <= 0;
 
   return (
     <Layout title="AquaAI - Intelligent Aquarium Management">
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-gray-900 dark:to-blue-900">
         <div className="container mx-auto px-4 py-8">
-          {/* Trial Banner for trial users only */}
+          {/* Trial Banner for active trial users only */}
           {showTrialBanner && (
             <TrialBanner 
               hoursRemaining={subscriptionInfo.trialHoursRemaining}
               isExpired={isTrialExpired}
             />
-          )}
-          
-          {/* Debug info - remove in production */}
-          {user && (
-            <div className="mb-4 p-4 bg-gray-100 rounded text-xs">
-              <strong>Debug Info:</strong><br/>
-              Has Access: {subscriptionInfo.hasAccess ? 'Yes' : 'No'}<br/>
-              Status: {subscriptionInfo.status}<br/>
-              Tier: {subscriptionInfo.tier}<br/>
-              Is Admin: {subscriptionInfo.isAdmin ? 'Yes' : 'No'}<br/>
-              Is Trial: {subscriptionInfo.isTrial ? 'Yes' : 'No'}<br/>
-              Trial Hours: {subscriptionInfo.trialHoursRemaining}
-            </div>
           )}
           
           <div className="text-center mb-12">
