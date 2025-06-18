@@ -3,11 +3,12 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Users, CreditCard, Settings, Activity } from 'lucide-react';
+import { Users, CreditCard, Settings, Activity, Webhook } from 'lucide-react';
 import { AdminUserManagement } from '@/components/admin/AdminUserManagement';
 import { AdminSubscriptionManagement } from '@/components/admin/AdminSubscriptionManagement';
 import { AdminSystemSettings } from '@/components/admin/AdminSystemSettings';
 import { AdminActivityLogs } from '@/components/admin/AdminActivityLogs';
+import { WebhookMonitor } from '@/components/admin/WebhookMonitor';
 import { Layout } from '@/components/Layout';
 import { checkAdminStatus } from '@/utils/adminAuth';
 
@@ -57,7 +58,7 @@ const Admin = () => {
         </div>
 
         <Tabs defaultValue="users" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="users" className="flex items-center gap-2">
               <Users className="h-4 w-4" />
               Users
@@ -65,6 +66,10 @@ const Admin = () => {
             <TabsTrigger value="subscriptions" className="flex items-center gap-2">
               <CreditCard className="h-4 w-4" />
               Subscriptions
+            </TabsTrigger>
+            <TabsTrigger value="webhooks" className="flex items-center gap-2">
+              <Webhook className="h-4 w-4" />
+              Webhooks
             </TabsTrigger>
             <TabsTrigger value="settings" className="flex items-center gap-2">
               <Settings className="h-4 w-4" />
@@ -100,6 +105,20 @@ const Admin = () => {
               </CardHeader>
               <CardContent>
                 <AdminSubscriptionManagement />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="webhooks">
+            <Card>
+              <CardHeader>
+                <CardTitle>Webhook Monitoring</CardTitle>
+                <CardDescription>
+                  Monitor Stripe webhook events and troubleshoot sync issues
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <WebhookMonitor />
               </CardContent>
             </Card>
           </TabsContent>

@@ -50,7 +50,10 @@ export const useManualSync = () => {
 
       console.log('Manual sync result:', data);
       
-      if (data?.success) {
+      // Fix TypeScript errors by properly typing the response
+      const syncData = data as any;
+      
+      if (syncData?.success) {
         toast({
           title: "Sync Successful",
           description: `Successfully synced subscription for ${targetEmail}`,
@@ -58,16 +61,16 @@ export const useManualSync = () => {
         return { 
           success: true, 
           message: 'Subscription synced successfully',
-          details: data 
+          details: syncData 
         };
       } else {
-        const errorMessage = data?.sync_result?.error || 'Unknown sync error';
+        const errorMessage = syncData?.sync_result?.error || syncData?.error || 'Unknown sync error';
         toast({
           title: "Sync Failed",
           description: errorMessage,
           variant: "destructive",
         });
-        return { success: false, message: errorMessage, details: data };
+        return { success: false, message: errorMessage, details: syncData };
       }
     } catch (error) {
       console.error('Manual sync exception:', error);

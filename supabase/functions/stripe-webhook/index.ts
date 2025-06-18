@@ -9,8 +9,9 @@ const corsHeaders = {
 };
 
 const logStep = (step: string, details?: any) => {
-  const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
-  console.log(`[STRIPE-WEBHOOK-ENHANCED] ${step}${detailsStr}`);
+  const timestamp = new Date().toISOString();
+  const detailsStr = details ? ` - ${JSON.stringify(details, null, 2)}` : '';
+  console.log(`[${timestamp}] [STRIPE-WEBHOOK] ${step}${detailsStr}`);
 };
 
 serve(async (req) => {
@@ -19,10 +20,23 @@ serve(async (req) => {
   }
 
   try {
-    logStep("Enhanced webhook received");
+    logStep("Webhook received", { 
+      method: req.method, 
+      url: req.url,
+      headers: Object.fromEntries(req.headers.entries())
+    });
 
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
-    if (!stripeKey) throw new Error("STRIPE_SECRET_KEY is not set");
+    if (!stripeKey) {
+      logStep("ERROR: STRIPE_SECRET_KEY not configured");
+      throw new Error("STRIPE_SECRET_KEY is not set");
+    }
+
+    const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET");
+    if (!webhookSecret) {
+      logStep("ERROR: STRIPE_WEBHOOK_SECRET not configured");
+      throw new Error("STRIPE_WEBHOOK_SECRET is not set");
+    }
 
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
@@ -36,18 +50,15 @@ serve(async (req) => {
     const signature = req.headers.get("stripe-signature");
     
     if (!signature) {
+      logStep("ERROR: No Stripe signature found");
       throw new Error("No Stripe signature found");
     }
 
-    const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET");
-    if (!webhookSecret) {
-      throw new Error("STRIPE_WEBHOOK_SECRET is not set");
-    }
-
+    logStep("Verifying webhook signature");
     const event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
-    logStep("Event verified and enhanced processing started", { type: event.type, id: event.id });
+    logStep("Webhook verified successfully", { type: event.type, id: event.id });
 
-    // Use the new enhanced webhook processing function
+    // Process the event using the enhanced database function
     const { data: processResult, error: processError } = await supabaseClient.rpc('process_webhook_event', {
       event_id: event.id,
       event_type: event.type,
@@ -55,20 +66,22 @@ serve(async (req) => {
     });
 
     if (processError) {
-      logStep("Error in enhanced webhook processing", { error: processError });
+      logStep("Error in webhook processing", { error: processError });
       throw processError;
     }
 
-    logStep("Enhanced webhook processing completed", { result: processResult });
+    logStep("Webhook processing completed", { result: processResult });
 
-    // For subscription events, also sync directly with Stripe API to ensure accuracy
+    // For subscription events, also perform additional sync with fresh Stripe data
     if (['customer.subscription.created', 'customer.subscription.updated', 'customer.subscription.deleted'].includes(event.type)) {
-      await handleSubscriptionEventWithStripeSync(event, stripe, supabaseClient);
+      await handleSubscriptionEventWithFreshData(event, stripe, supabaseClient);
     }
 
     return new Response(JSON.stringify({ 
       received: true, 
       processed: true,
+      event_id: event.id,
+      event_type: event.type,
       result: processResult 
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -76,12 +89,16 @@ serve(async (req) => {
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    logStep("ERROR in enhanced stripe-webhook", { message: errorMessage });
+    logStep("ERROR in stripe-webhook", { 
+      message: errorMessage,
+      stack: error instanceof Error ? error.stack : undefined
+    });
     
     return new Response(JSON.stringify({ 
       error: errorMessage,
       received: true,
-      processed: false 
+      processed: false,
+      timestamp: new Date().toISOString()
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 400,
@@ -89,32 +106,36 @@ serve(async (req) => {
   }
 });
 
-async function handleSubscriptionEventWithStripeSync(
+async function handleSubscriptionEventWithFreshData(
   event: Stripe.Event, 
   stripe: Stripe, 
   supabaseClient: any
 ) {
   try {
+    logStep("Processing subscription event with fresh Stripe data", { eventType: event.type });
+    
     const subscription = event.data.object as Stripe.Subscription;
     const customerId = subscription.customer as string;
     
-    // Get fresh customer data from Stripe
+    // Get fresh customer data from Stripe API
     const customer = await stripe.customers.retrieve(customerId) as Stripe.Customer;
     if (!customer.email) {
       logStep("No email found for customer", { customerId });
       return;
     }
     
-    // Get fresh subscription data from Stripe
+    logStep("Customer retrieved", { email: customer.email, customerId });
+    
+    // Get fresh subscription data from Stripe API
     const freshSubscription = await stripe.subscriptions.retrieve(subscription.id);
     
-    logStep("Syncing with fresh Stripe data", { 
-      email: customer.email, 
-      subscriptionStatus: freshSubscription.status,
-      subscriptionId: freshSubscription.id 
+    logStep("Fresh subscription data retrieved", { 
+      subscriptionId: freshSubscription.id,
+      status: freshSubscription.status,
+      currentPeriodEnd: freshSubscription.current_period_end
     });
     
-    // Use the enhanced sync function
+    // Use the enhanced sync function with fresh data
     const { data: syncResult, error: syncError } = await supabaseClient.rpc('sync_user_subscription_from_stripe', {
       user_email: customer.email,
       stripe_customer_id: customerId,
@@ -125,11 +146,14 @@ async function handleSubscriptionEventWithStripeSync(
     });
     
     if (syncError) {
-      logStep("Error in Stripe sync", { error: syncError });
+      logStep("Error in subscription sync", { error: syncError });
     } else {
-      logStep("Stripe sync completed successfully", { result: syncResult });
+      logStep("Subscription sync completed successfully", { result: syncResult });
     }
   } catch (error) {
-    logStep("Error in handleSubscriptionEventWithStripeSync", { error: error.message });
+    logStep("Error in handleSubscriptionEventWithFreshData", { 
+      error: error instanceof Error ? error.message : String(error),
+      eventType: event.type
+    });
   }
 }
