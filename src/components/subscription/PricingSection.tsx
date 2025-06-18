@@ -1,4 +1,5 @@
 
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,7 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 
-const PRICE_ID = "price_1QfEhUDPfVB3fFaLGkWvdP4Q"; // Your Stripe price ID
+const PRICE_ID = "price_1Rb8vR1d1AvgoBGoNIjxLKRR"; // Your Stripe price ID for $4.99/month
 
 export const PricingSection: React.FC = () => {
   const { toast } = useToast();
@@ -113,7 +114,7 @@ export const PricingSection: React.FC = () => {
                 Unlock all features with AI-powered insights and advanced tools
               </CardDescription>
               <div className="text-3xl font-bold">
-                $9.99<span className="text-base font-normal text-gray-600">/month</span>
+                $4.99<span className="text-base font-normal text-gray-600">/month</span>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -163,3 +164,4 @@ export const PricingSection: React.FC = () => {
     </section>
   );
 };
+
