@@ -1,6 +1,7 @@
 
 export interface UserProfile {
   id: string;
+  full_name?: string;
   subscription_status: 'trial' | 'active' | 'expired' | 'free';
   subscription_tier: 'free' | 'pro';
   subscription_start_date?: string;
