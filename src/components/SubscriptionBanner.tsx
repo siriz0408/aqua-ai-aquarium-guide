@@ -3,18 +3,20 @@ import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Crown, Star, Clock, AlertTriangle } from 'lucide-react';
+import { Crown, Star, Clock, AlertTriangle, Settings } from 'lucide-react';
 import { useCredits } from '@/hooks/useCredits';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useNavigate } from 'react-router-dom';
 
 const PRICE_IDS = {
-  pro: "price_pro_monthly",  // Replace with your actual Stripe price ID
+  pro: "price_1Rb8vR1d1AvgoBGoNIjxLKRR",  // Replace with your actual Stripe price ID
 };
 
 export const SubscriptionBanner: React.FC = () => {
   const { profile, profileLoading, getSubscriptionInfo, trialStatus } = useCredits();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const handleUpgrade = async (priceId: string) => {
     try {
@@ -62,7 +64,7 @@ export const SubscriptionBanner: React.FC = () => {
 
   const subscriptionInfo = getSubscriptionInfo();
 
-  // Admin users - show full access
+  // Admin users - show admin access banner
   if (subscriptionInfo.isAdmin) {
     return (
       <Card className="mb-6 border-green-200 bg-green-50">
@@ -79,16 +81,26 @@ export const SubscriptionBanner: React.FC = () => {
                 </p>
               </div>
             </div>
-            <Badge className="bg-green-600">
-              Admin
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Badge className="bg-green-600">
+                Admin
+              </Badge>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => navigate('/settings')}
+              >
+                <Settings className="h-4 w-4 mr-1" />
+                Settings
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
     );
   }
 
-  // Pro subscribers - show manage subscription
+  // Pro subscribers - show pro status banner
   if (subscriptionInfo.tier === 'pro' && subscriptionInfo.status === 'active') {
     return (
       <Card className="mb-6 border-blue-200 bg-blue-50">
@@ -98,10 +110,10 @@ export const SubscriptionBanner: React.FC = () => {
               <Star className="h-5 w-5 text-blue-600" />
               <div>
                 <h3 className="font-semibold text-blue-800">
-                  Pro Subscription Active
+                  Pro Plan Active
                 </h3>
                 <p className="text-sm text-blue-600">
-                  Unlimited access to all features
+                  Enjoying unlimited access to all premium features
                 </p>
               </div>
             </div>
@@ -112,9 +124,10 @@ export const SubscriptionBanner: React.FC = () => {
               <Button 
                 variant="outline" 
                 size="sm"
-                onClick={handleManageSubscription}
+                onClick={() => navigate('/settings')}
               >
-                Manage
+                <Settings className="h-4 w-4 mr-1" />
+                Settings
               </Button>
             </div>
           </div>
@@ -196,7 +209,7 @@ export const SubscriptionBanner: React.FC = () => {
             </Button>
           </div>
         </div>
-      </CardContent>
+      </div>
     </Card>
   );
 };
