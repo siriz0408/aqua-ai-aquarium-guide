@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { AquariumProvider } from "@/contexts/AquariumContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AdminProtectedRoute } from "@/components/admin/AdminProtectedRoute";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -39,85 +40,87 @@ const App = () => (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <AuthProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-cyan-50 dark:from-slate-900 dark:via-blue-900 dark:to-cyan-900">
-                <Routes>
-                  <Route path="/auth" element={<Auth />} />
-                  <Route path="/" element={
-                    <ProtectedRoute>
-                      <Index />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/tanks" element={
-                    <ProtectedRoute>
-                      <Tanks />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/add-tank" element={
-                    <ProtectedRoute>
-                      <AddTank />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/tank/:tankId" element={
-                    <ProtectedRoute>
-                      <TankDetails />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/tank/:tankId/edit" element={
-                    <ProtectedRoute>
-                      <EditTank />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/tank/:tankId/log-parameters" element={
-                    <ProtectedRoute>
-                      <LogParameters />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/tank/:tankId/equipment" element={
-                    <ProtectedRoute>
-                      <Equipment />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/tank/:tankId/livestock" element={
-                    <ProtectedRoute>
-                      <Livestock />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/setup-planner" element={
-                    <ProtectedRoute>
-                      <SetupPlanner />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/aquabot" element={
-                    <ProtectedRoute>
-                      <AquaBot />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/reminders" element={
-                    <ProtectedRoute>
-                      <Reminders />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/education" element={
-                    <ProtectedRoute>
-                      <Education />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/admin" element={
-                    <ProtectedRoute>
-                      <AdminProtectedRoute>
-                        <Admin />
-                      </AdminProtectedRoute>
-                    </ProtectedRoute>
-                  } />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </div>
-            </BrowserRouter>
-          </TooltipProvider>
+          <AquariumProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter>
+                <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-cyan-50 dark:from-slate-900 dark:via-blue-900 dark:to-cyan-900">
+                  <Routes>
+                    <Route path="/auth" element={<Auth />} />
+                    <Route path="/" element={
+                      <ProtectedRoute>
+                        <Index />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/tanks" element={
+                      <ProtectedRoute>
+                        <Tanks />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/add-tank" element={
+                      <ProtectedRoute>
+                        <AddTank />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/tank/:tankId" element={
+                      <ProtectedRoute>
+                        <TankDetails />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/tank/:tankId/edit" element={
+                      <ProtectedRoute>
+                        <EditTank />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/tank/:tankId/log-parameters" element={
+                      <ProtectedRoute>
+                        <LogParameters />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/tank/:tankId/equipment" element={
+                      <ProtectedRoute>
+                        <Equipment />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/tank/:tankId/livestock" element={
+                      <ProtectedRoute>
+                        <Livestock />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/setup-planner" element={
+                      <ProtectedRoute>
+                        <SetupPlanner />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/aquabot" element={
+                      <ProtectedRoute>
+                        <AquaBot />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/reminders" element={
+                      <ProtectedRoute>
+                        <Reminders />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/education" element={
+                      <ProtectedRoute>
+                        <Education />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin" element={
+                      <ProtectedRoute>
+                        <AdminProtectedRoute>
+                          <Admin />
+                        </AdminProtectedRoute>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </div>
+              </BrowserRouter>
+            </TooltipProvider>
+          </AquariumProvider>
         </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>
