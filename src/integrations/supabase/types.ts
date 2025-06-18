@@ -1295,12 +1295,8 @@ export type Database = {
         Args: { user_id: string }
         Returns: boolean
       }
-      get_user_by_email: {
-        Args: { user_email: string }
-        Returns: string
-      }
       get_user_by_stripe_customer: {
-        Args: { customer_id: string } | { customer_id: string }
+        Args: { customer_id: string }
         Returns: {
           user_id: string
           email: string
@@ -1313,10 +1309,6 @@ export type Database = {
       promote_user_to_admin: {
         Args: { user_email: string; role?: string }
         Returns: boolean
-      }
-      refresh_subscription_status: {
-        Args: { user_id: string }
-        Returns: undefined
       }
       update_expired_trials: {
         Args: Record<PropertyKey, never>

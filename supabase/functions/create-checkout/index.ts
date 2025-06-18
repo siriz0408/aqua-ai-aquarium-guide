@@ -68,21 +68,6 @@ serve(async (req) => {
     }
     logStep("User authenticated", { userId: user.id, email: user.email });
 
-    // Check if user already has an active pro subscription
-    const { data: profile } = await supabaseClient
-      .from('profiles')
-      .select('subscription_status, subscription_tier, stripe_customer_id')
-      .eq('id', user.id)
-      .single();
-
-    if (profile?.subscription_tier === 'pro' && profile?.subscription_status === 'active') {
-      logStep("User already has active pro subscription", { 
-        tier: profile.subscription_tier, 
-        status: profile.subscription_status 
-      });
-      throw new Error("You already have an active Pro subscription. No need to upgrade!");
-    }
-
     // Get request body
     const { priceId } = await req.json();
     if (!priceId) {
@@ -117,15 +102,6 @@ serve(async (req) => {
     if (customers.data.length > 0) {
       customerId = customers.data[0].id;
       logStep("Existing customer found", { customerId });
-
-      // Update profile with stripe customer ID if not already set
-      if (!profile?.stripe_customer_id) {
-        await supabaseClient
-          .from('profiles')
-          .update({ stripe_customer_id: customerId })
-          .eq('id', user.id);
-        logStep("Updated profile with stripe customer ID");
-      }
     } else {
       const customer = await stripe.customers.create({
         email: user.email,
@@ -133,12 +109,6 @@ serve(async (req) => {
       });
       customerId = customer.id;
       logStep("New customer created", { customerId });
-
-      // Update profile with stripe customer ID
-      await supabaseClient
-        .from('profiles')
-        .update({ stripe_customer_id: customerId })
-        .eq('id', user.id);
     }
 
     const origin = req.headers.get("origin") || "http://localhost:3000";
