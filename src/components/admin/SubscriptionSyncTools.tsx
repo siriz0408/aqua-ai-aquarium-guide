@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -62,10 +61,10 @@ export const SubscriptionSyncTools: React.FC = () => {
 
       console.log('Sync result:', data);
 
-      // Safely cast the response to our expected type
-      const syncResult = data as SyncResponse;
+      // Safely cast the response to our expected type with proper type checking
+      const syncResult = data as unknown as SyncResponse;
 
-      if (syncResult && typeof syncResult === 'object' && syncResult.success) {
+      if (syncResult && typeof syncResult === 'object' && !Array.isArray(syncResult) && syncResult.success) {
         toast({
           title: "Sync Successful",
           description: `User ${email} has been synced successfully`,
@@ -77,7 +76,9 @@ export const SubscriptionSyncTools: React.FC = () => {
         setStripeSubscriptionId('');
         setSubscriptionStatus('active');
       } else {
-        const errorMessage = syncResult?.error || 'Sync failed - unknown error';
+        const errorMessage = (syncResult && typeof syncResult === 'object' && !Array.isArray(syncResult) && syncResult.error) 
+          ? syncResult.error 
+          : 'Sync failed - unknown error';
         throw new Error(errorMessage);
       }
     } catch (error) {
