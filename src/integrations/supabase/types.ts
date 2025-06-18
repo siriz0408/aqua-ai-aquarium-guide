@@ -1295,6 +1295,13 @@ export type Database = {
         Args: { user_id: string }
         Returns: boolean
       }
+      get_user_by_stripe_customer: {
+        Args: { customer_id: string }
+        Returns: {
+          user_id: string
+          email: string
+        }[]
+      }
       is_admin: {
         Args: { user_id: string }
         Returns: boolean
@@ -1306,6 +1313,19 @@ export type Database = {
       update_expired_trials: {
         Args: Record<PropertyKey, never>
         Returns: number
+      }
+      update_subscription_status: {
+        Args: {
+          target_user_id: string
+          new_subscription_status: string
+          new_subscription_tier: string
+          new_stripe_customer_id: string
+          new_stripe_subscription_id: string
+          new_stripe_price_id: string
+          new_subscription_start_date: string
+          new_subscription_end_date: string
+        }
+        Returns: boolean
       }
     }
     Enums: {
