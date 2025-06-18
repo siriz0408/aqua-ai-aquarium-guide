@@ -41,7 +41,7 @@ const Settings = () => {
     }
   };
 
-  const formatDate = (dateString: string | null | undefined) => {
+  const formatDate = (dateString: string | null) => {
     if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
