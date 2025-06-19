@@ -13,23 +13,23 @@
   "dir": "ltr",
   "icons": [
     {
-      "src": "/placeholder.svg",
+      "src": "/favicon.ico",
       "sizes": "192x192",
-      "type": "image/svg+xml",
+      "type": "image/x-icon",
       "purpose": "any maskable"
     },
     {
-      "src": "/placeholder.svg",
+      "src": "/favicon.ico",
       "sizes": "512x512",
-      "type": "image/svg+xml",
+      "type": "image/x-icon",
       "purpose": "any maskable"
     }
   ],
   "screenshots": [
     {
-      "src": "/placeholder.svg",
+      "src": "/favicon.ico",
       "sizes": "540x720",
-      "type": "image/svg+xml",
+      "type": "image/x-icon",
       "form_factor": "narrow"
     }
   ],
@@ -41,9 +41,9 @@
       "url": "/aquabot",
       "icons": [
         {
-          "src": "/placeholder.svg",
+          "src": "/favicon.ico",
           "sizes": "96x96",
-          "type": "image/svg+xml"
+          "type": "image/x-icon"
         }
       ]
     },
@@ -54,9 +54,9 @@
       "url": "/setup-planner",
       "icons": [
         {
-          "src": "/placeholder.svg",
+          "src": "/favicon.ico",
           "sizes": "96x96",
-          "type": "image/svg+xml"
+          "type": "image/x-icon"
         }
       ]
     }
