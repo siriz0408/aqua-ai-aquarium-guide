@@ -1,5 +1,5 @@
+
 import { useState, useEffect } from 'react';
-import { useMaintenanceScheduler } from './useMaintenanceScheduler';
 
 interface ServiceWorkerState {
   isSupported: boolean;
@@ -10,7 +10,6 @@ interface ServiceWorkerState {
 }
 
 export const useServiceWorker = () => {
-  const { completeTask } = useMaintenanceScheduler();
   const [state, setState] = useState<ServiceWorkerState>({
     isSupported: 'serviceWorker' in navigator,
     isInstalled: false,
@@ -29,46 +28,6 @@ export const useServiceWorker = () => {
 
     registerServiceWorker();
   }, [state.isSupported]);
-
-  // Handle messages from service worker
-  useEffect(() => {
-    const handleMessage = (event: MessageEvent) => {
-      console.log('Message from service worker:', event.data);
-      
-      if (event.data && event.data.type === 'VERSION_INFO') {
-        console.log('Service Worker version:', event.data.version);
-      }
-
-      // Handle notification actions
-      if (event.data && event.data.type === 'COMPLETE_TASK') {
-        const { taskId } = event.data;
-        completeTask({ scheduleId: taskId });
-      }
-
-      if (event.data && event.data.type === 'SNOOZE_TASK') {
-        const { taskId } = event.data;
-        // Calculate next due date (1 day from now)
-        const nextDueDate = new Date();
-        nextDueDate.setDate(nextDueDate.getDate() + 1);
-        
-        // This would update the task's next due date
-        console.log('Snoozing task:', taskId, 'until', nextDueDate.toISOString().split('T')[0]);
-      }
-
-      if (event.data && event.data.type === 'NAVIGATE') {
-        const { url } = event.data;
-        window.location.href = url;
-      }
-    };
-
-    if (state.isSupported) {
-      navigator.serviceWorker.addEventListener('message', handleMessage);
-      
-      return () => {
-        navigator.serviceWorker.removeEventListener('message', handleMessage);
-      };
-    }
-  }, [state.isSupported, completeTask]);
 
   const registerServiceWorker = async () => {
     try {
@@ -127,6 +86,15 @@ export const useServiceWorker = () => {
           isUpdateAvailable: true,
         }));
       }
+
+      // Listen for messages from service worker
+      navigator.serviceWorker.addEventListener('message', (event) => {
+        console.log('Message from service worker:', event.data);
+        
+        if (event.data && event.data.type === 'VERSION_INFO') {
+          console.log('Service Worker version:', event.data.version);
+        }
+      });
 
     } catch (error) {
       console.error('Service Worker registration failed:', error);

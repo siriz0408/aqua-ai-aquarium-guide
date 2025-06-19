@@ -11,7 +11,6 @@ import { useTasks } from '@/hooks/useTasks';
 import { Table as TableComponent, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
-import TaskExtractionPanel from './TaskExtractionPanel';
 
 interface MessageBubbleProps {
   message: Message;
@@ -385,46 +384,31 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onFollowU
   const { toast } = useToast();
   const { createTask } = useTasks();
   const isMobile = useIsMobile();
-  const [isTaskPanelCollapsed, setIsTaskPanelCollapsed] = useState(false);
   
-  // Parse AI responses for actionable tasks using enhanced parser
-  const parsedTasks = useMemo(() => {
-    if (isUser) return [];
-    return parseAIRecommendations(message.content);
-  }, [message.content, isUser]);
+  // Parse AI responses for actionable tasks
+  const parsedTasks = !isUser ? parseAIRecommendations(message.content) : [];
   
   // Generate enhanced contextual follow-up questions for AI responses
   const followUpQuestions = !isUser ? generateContextualFollowUps(message.content) : [];
 
   const addToPlanner = async (task: ParsedTask) => {
     try {
-      // Convert ParsedTask to the format expected by createTask
       createTask({
         title: task.title,
         description: task.description || '',
-        task_type: task.category || 'general',
+        task_type: task.category,
         priority: task.priority as 'low' | 'medium' | 'high' | 'urgent',
         conversation_id: message.conversation_id,
       });
       
-      // Track task creation for analytics
-      console.log('Task created from AI response:', {
-        source: task.source,
-        category: task.category,
-        priority: task.priority,
-        conversationId: message.conversation_id,
-        taskTitle: task.title
-      });
-      
       toast({
-        title: "Task added to planner",
-        description: `"${task.title}" has been added to your maintenance tasks`,
+        title: "Task added",
+        description: `"${task.title}" added to your maintenance planner`,
       });
     } catch (error) {
-      console.error('Error adding task to planner:', error);
       toast({
         title: "Error",
-        description: "Failed to add task to planner. Please try again.",
+        description: "Failed to add task to planner",
         variant: "destructive"
       });
     }
@@ -469,8 +453,8 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onFollowU
             <MarkdownContent content={message.content} onAddTask={addToPlanner} />
           )}
           
-          {/* Legacy task suggestions - only show if no parsed tasks are found */}
-          {!isUser && parsedTasks.length === 0 && !message.content.includes('☐') && (
+          {/* Task suggestions for AI messages - only show if no checkboxes are already in content */}
+          {!isUser && parsedTasks.length > 0 && !message.content.includes('☐') && (
             <div className={cn(
               "mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-border/50"
             )}>
@@ -481,23 +465,50 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onFollowU
                 <Sparkles className={cn(
                   isMobile ? "h-2 w-2" : "h-3 w-3"
                 )} />
-                No actionable tasks detected
+                Found {parsedTasks.length} actionable items:
               </p>
+              <div className="space-y-1">
+                {parsedTasks.slice(0, 3).map((task, idx) => (
+                  <div 
+                    key={idx} 
+                    className={cn(
+                      "flex items-center justify-between gap-2 p-2 rounded bg-background/50",
+                      isMobile && "text-xs"
+                    )}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className={cn(
+                        "font-medium truncate",
+                        isMobile ? "text-xs" : "text-xs"
+                      )}>{task.title}</p>
+                      <p className={cn(
+                        "text-muted-foreground",
+                        isMobile ? "text-xs" : "text-xs"
+                      )}>
+                        {task.category} • {task.priority} priority
+                      </p>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => addToPlanner(task)}
+                      className={cn(
+                        "shrink-0",
+                        isMobile ? "h-5 text-xs px-1" : "h-6 text-xs"
+                      )}
+                    >
+                      <Plus className={cn(
+                        "mr-1",
+                        isMobile ? "h-2 w-2" : "h-3 w-3"
+                      )} />
+                      Add
+                    </Button>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </Card>
-        
-        {/* New Task Extraction Panel */}
-        {!isUser && parsedTasks.length > 0 && (
-          <div className="w-full max-w-full">
-            <TaskExtractionPanel
-              tasks={parsedTasks}
-              onAddTask={addToPlanner}
-              isCollapsed={isTaskPanelCollapsed}
-              onToggleCollapse={() => setIsTaskPanelCollapsed(prev => !prev)}
-            />
-          </div>
-        )}
         
         {/* Enhanced Follow-up questions for AI responses */}
         {!isUser && followUpQuestions.length > 0 && onFollowUpClick && (
