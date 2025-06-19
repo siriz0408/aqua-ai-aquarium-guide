@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Layout } from '@/components/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,6 +8,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAquarium, WaterParameters } from '@/contexts/AquariumContext';
 import { useToast } from '@/hooks/use-toast';
+import { useAutoSave } from '@/hooks/useAutoSave';
+import { AutoSaveIndicator } from '@/components/ui/auto-save-indicator';
 import { Save } from 'lucide-react';
 
 const LogParameters = () => {
@@ -29,6 +31,32 @@ const LogParameters = () => {
     calcium: '',
     magnesium: '',
   });
+
+  // Auto-save configuration
+  const autoSave = useAutoSave(parameters, {
+    key: `water-parameters-${tankId}`,
+    delay: 2000,
+    onSave: async (data) => {
+      // Only auto-save if we have some essential data
+      if (data.ph || data.salinity || data.temperature) {
+        console.log('Auto-saving parameters:', data);
+        // This is just for backup - we don't actually save to database until manual save
+      }
+    },
+    enabled: true
+  });
+
+  // Load saved data on mount
+  useEffect(() => {
+    const savedData = autoSave.loadFromLocalStorage();
+    if (savedData) {
+      setParameters(savedData);
+      toast({
+        title: "Draft restored",
+        description: "Your previous water test data has been restored",
+      });
+    }
+  }, []);
 
   if (!tank) {
     return (
@@ -113,6 +141,9 @@ const LogParameters = () => {
 
       await addParameters(tankId!, newParameters);
       
+      // Clear auto-save backup after successful save
+      autoSave.clearLocalStorage();
+      
       toast({
         title: "Parameters logged successfully!",
         description: "AI analysis complete. Your test data has been saved.",
@@ -139,14 +170,17 @@ const LogParameters = () => {
       title="Log Water Parameters" 
       showBackButton
       actions={
-        <Button 
-          onClick={handleSave} 
-          disabled={isLoading}
-          className="ocean-gradient text-white"
-        >
-          <Save className="mr-1 h-3 w-3" />
-          {isLoading ? 'Analyzing...' : 'Save & Analyze'}
-        </Button>
+        <div className="flex items-center gap-3">
+          <AutoSaveIndicator status={autoSave.status} />
+          <Button 
+            onClick={handleSave} 
+            disabled={isLoading}
+            className="ocean-gradient text-white"
+          >
+            <Save className="mr-1 h-3 w-3" />
+            {isLoading ? 'Analyzing...' : 'Save & Analyze'}
+          </Button>
+        </div>
       }
     >
       <div className="space-y-6 pb-20">
