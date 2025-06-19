@@ -15,6 +15,7 @@ export interface WaterParameters {
   kh: number;
   calcium: number;
   magnesium: number;
+  phosphate: number;
   aiInsights?: string;
 }
 
@@ -156,6 +157,7 @@ export function AquariumProvider({ children }: { children: React.ReactNode }) {
           kh: test.alkalinity || 0,
           calcium: test.calcium || 0,
           magnesium: test.magnesium || 0,
+          phosphate: test.phosphate || 0,
           aiInsights: test.notes || undefined,
         }));
 
@@ -231,6 +233,7 @@ export function AquariumProvider({ children }: { children: React.ReactNode }) {
         kh: test.alkalinity || 0,
         calcium: test.calcium || 0,
         magnesium: test.magnesium || 0,
+        phosphate: test.phosphate || 0,
         aiInsights: test.notes || undefined,
       }));
 
@@ -409,6 +412,7 @@ export function AquariumProvider({ children }: { children: React.ReactNode }) {
             alkalinity: parametersData.kh,
             calcium: parametersData.calcium,
             magnesium: parametersData.magnesium,
+            phosphate: parametersData.phosphate,
             notes: parametersData.aiInsights,
           });
 

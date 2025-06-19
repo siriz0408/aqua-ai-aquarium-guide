@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { useAquarium, WaterParameters } from '@/contexts/AquariumContext';
 import { useToast } from '@/hooks/use-toast';
 import { Save } from 'lucide-react';
+import { ParameterTooltip } from '@/components/ui/parameter-tooltip';
 
 const LogParameters = () => {
   const { tankId } = useParams<{ tankId: string }>();
@@ -28,6 +29,7 @@ const LogParameters = () => {
     kh: '',
     calcium: '',
     magnesium: '',
+    phosphate: '',
   });
 
   if (!tank) {
@@ -66,6 +68,26 @@ const LogParameters = () => {
     
     if (parseFloat(params.calcium) < 380) {
       insights.push("Calcium levels low for coral growth (ideal: 380-450 ppm)");
+    } else if (parseFloat(params.calcium) > 450) {
+      insights.push("Calcium levels high - monitor and adjust dosing");
+    }
+
+    if (parseFloat(params.kh) < 7) {
+      insights.push("Alkalinity is low - may cause pH instability (ideal: 8-12 dKH)");
+    } else if (parseFloat(params.kh) > 12) {
+      insights.push("Alkalinity is high - reduce alkalinity supplementation");
+    }
+
+    if (parseFloat(params.magnesium) < 1250) {
+      insights.push("Magnesium is low - essential for calcium/alkalinity balance");
+    } else if (parseFloat(params.magnesium) > 1350) {
+      insights.push("Magnesium levels are elevated");
+    }
+
+    if (parseFloat(params.phosphate) > 0.10) {
+      insights.push("Phosphate levels elevated - may cause algae growth");
+    } else if (parseFloat(params.phosphate) < 0.03) {
+      insights.push("Phosphate levels very low - corals may need supplementation");
     }
 
     if (insights.length === 0) {
@@ -108,6 +130,7 @@ const LogParameters = () => {
         kh: parseFloat(parameters.kh) || 0,
         calcium: parseFloat(parameters.calcium) || 0,
         magnesium: parseFloat(parameters.magnesium) || 0,
+        phosphate: parseFloat(parameters.phosphate) || 0,
         aiInsights,
       };
 
@@ -163,7 +186,14 @@ const LogParameters = () => {
               <h3 className="font-medium text-primary">Essential Parameters *</h3>
               <div className="grid grid-cols-1 gap-4">
                 <div>
-                  <Label htmlFor="ph">pH Level</Label>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Label htmlFor="ph">pH Level</Label>
+                    <ParameterTooltip
+                      parameter="pH Level"
+                      normalRange="8.1 - 8.4"
+                      description="Measures acidity/alkalinity. Stable pH is crucial for coral health and fish well-being."
+                    />
+                  </div>
                   <Input
                     id="ph"
                     type="number"
@@ -174,7 +204,14 @@ const LogParameters = () => {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="salinity">Salinity (specific gravity)</Label>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Label htmlFor="salinity">Salinity (specific gravity)</Label>
+                    <ParameterTooltip
+                      parameter="Salinity"
+                      normalRange="1.025 - 1.026"
+                      description="Measures salt concentration. Critical for osmotic balance in marine organisms."
+                    />
+                  </div>
                   <Input
                     id="salinity"
                     type="number"
@@ -185,7 +222,14 @@ const LogParameters = () => {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="temperature">Temperature (°F)</Label>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Label htmlFor="temperature">Temperature (°F)</Label>
+                    <ParameterTooltip
+                      parameter="Temperature"
+                      normalRange="76 - 82°F"
+                      description="Water temperature affects metabolism, oxygen levels, and overall tank stability."
+                    />
+                  </div>
                   <Input
                     id="temperature"
                     type="number"
@@ -202,7 +246,14 @@ const LogParameters = () => {
               <h3 className="font-medium text-accent">Nitrogen Cycle</h3>
               <div className="grid grid-cols-1 gap-4">
                 <div>
-                  <Label htmlFor="ammonia">Ammonia (ppm)</Label>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Label htmlFor="ammonia">Ammonia (ppm)</Label>
+                    <ParameterTooltip
+                      parameter="Ammonia"
+                      normalRange="0.0 ppm"
+                      description="Toxic waste product. Should always be 0 in established tanks. Presence indicates cycle issues."
+                    />
+                  </div>
                   <Input
                     id="ammonia"
                     type="number"
@@ -213,7 +264,14 @@ const LogParameters = () => {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="nitrite">Nitrite (ppm)</Label>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Label htmlFor="nitrite">Nitrite (ppm)</Label>
+                    <ParameterTooltip
+                      parameter="Nitrite"
+                      normalRange="0.0 ppm"
+                      description="Intermediate nitrogen compound. Should be 0 in established tanks. Toxic to fish."
+                    />
+                  </div>
                   <Input
                     id="nitrite"
                     type="number"
@@ -224,7 +282,14 @@ const LogParameters = () => {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="nitrate">Nitrate (ppm)</Label>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Label htmlFor="nitrate">Nitrate (ppm)</Label>
+                    <ParameterTooltip
+                      parameter="Nitrate"
+                      normalRange="5 - 20 ppm"
+                      description="End product of nitrogen cycle. Keep low to prevent algae growth. Remove through water changes."
+                    />
+                  </div>
                   <Input
                     id="nitrate"
                     type="number"
@@ -241,7 +306,14 @@ const LogParameters = () => {
               <h3 className="font-medium text-green-600">Reef Chemistry</h3>
               <div className="grid grid-cols-1 gap-4">
                 <div>
-                  <Label htmlFor="kh">KH (Alkalinity) dKH</Label>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Label htmlFor="kh">KH (Alkalinity) dKH</Label>
+                    <ParameterTooltip
+                      parameter="Alkalinity (KH)"
+                      normalRange="8 - 12 dKH"
+                      description="Buffering capacity that stabilizes pH. Essential for coral skeleton formation and pH stability."
+                    />
+                  </div>
                   <Input
                     id="kh"
                     type="number"
@@ -252,7 +324,14 @@ const LogParameters = () => {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="calcium">Calcium (ppm)</Label>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Label htmlFor="calcium">Calcium (ppm)</Label>
+                    <ParameterTooltip
+                      parameter="Calcium"
+                      normalRange="380 - 450 ppm"
+                      description="Building block for coral skeletons and shells. Must be balanced with alkalinity and magnesium."
+                    />
+                  </div>
                   <Input
                     id="calcium"
                     type="number"
@@ -262,13 +341,38 @@ const LogParameters = () => {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="magnesium">Magnesium (ppm)</Label>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Label htmlFor="magnesium">Magnesium (ppm)</Label>
+                    <ParameterTooltip
+                      parameter="Magnesium"
+                      normalRange="1250 - 1350 ppm"
+                      description="Essential for calcium and alkalinity balance. Prevents calcium carbonate precipitation."
+                    />
+                  </div>
                   <Input
                     id="magnesium"
                     type="number"
                     placeholder="1300"
                     value={parameters.magnesium}
                     onChange={(e) => updateParameter('magnesium', e.target.value)}
+                  />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Label htmlFor="phosphate">Phosphate (ppm)</Label>
+                    <ParameterTooltip
+                      parameter="Phosphate"
+                      normalRange="0.03 - 0.10 ppm"
+                      description="Nutrient for coral growth. Too high causes algae, too low starves corals. Balance is key."
+                    />
+                  </div>
+                  <Input
+                    id="phosphate"
+                    type="number"
+                    step="0.01"
+                    placeholder="0.05"
+                    value={parameters.phosphate}
+                    onChange={(e) => updateParameter('phosphate', e.target.value)}
                   />
                 </div>
               </div>
