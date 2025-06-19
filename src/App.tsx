@@ -1,4 +1,5 @@
 
+import { Suspense, lazy } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -10,17 +11,22 @@ import { AquariumProvider } from "@/contexts/AquariumContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AdminProtectedRoute } from "@/components/admin/AdminProtectedRoute";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { LoadingFallback } from "@/components/LoadingFallback";
+
+// Lazy-loaded components
+const Admin = lazy(() => import("./pages/Admin"));
+const SetupPlanner = lazy(() => import("./pages/SetupPlanner"));
+const AquaBot = lazy(() => import("./pages/AquaBot"));
+const Education = lazy(() => import("./pages/Education"));
+const Equipment = lazy(() => import("./pages/Equipment"));
+const Livestock = lazy(() => import("./pages/Livestock"));
+
+// Regular imports for components that should load immediately
 import Index from "./pages/Index";
 import TankDetails from "./pages/TankDetails";
 import LogParameters from "./pages/LogParameters";
-import Equipment from "./pages/Equipment";
-import Livestock from "./pages/Livestock";
-import SetupPlanner from "./pages/SetupPlanner";
-import AquaBot from "./pages/AquaBot";
 import Reminders from "./pages/Reminders";
-import Education from "./pages/Education";
 import Auth from "./pages/Auth";
-import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 import Tanks from "./pages/Tanks";
 import AddTank from "./pages/AddTank";
@@ -96,22 +102,30 @@ const App = () => (
                     } />
                     <Route path="/tank/:tankId/equipment" element={
                       <ProtectedRoute>
-                        <Equipment />
+                        <Suspense fallback={<LoadingFallback />}>
+                          <Equipment />
+                        </Suspense>
                       </ProtectedRoute>
                     } />
                     <Route path="/tank/:tankId/livestock" element={
                       <ProtectedRoute>
-                        <Livestock />
+                        <Suspense fallback={<LoadingFallback />}>
+                          <Livestock />
+                        </Suspense>
                       </ProtectedRoute>
                     } />
                     <Route path="/setup-planner" element={
                       <ProtectedRoute>
-                        <SetupPlanner />
+                        <Suspense fallback={<LoadingFallback />}>
+                          <SetupPlanner />
+                        </Suspense>
                       </ProtectedRoute>
                     } />
                     <Route path="/aquabot" element={
                       <ProtectedRoute>
-                        <AquaBot />
+                        <Suspense fallback={<LoadingFallback />}>
+                          <AquaBot />
+                        </Suspense>
                       </ProtectedRoute>
                     } />
                     <Route path="/reminders" element={
@@ -121,13 +135,17 @@ const App = () => (
                     } />
                     <Route path="/education" element={
                       <ProtectedRoute>
-                        <Education />
+                        <Suspense fallback={<LoadingFallback />}>
+                          <Education />
+                        </Suspense>
                       </ProtectedRoute>
                     } />
                     <Route path="/admin" element={
                       <ProtectedRoute>
                         <AdminProtectedRoute>
-                          <Admin />
+                          <Suspense fallback={<LoadingFallback />}>
+                            <Admin />
+                          </Suspense>
                         </AdminProtectedRoute>
                       </ProtectedRoute>
                     } />
