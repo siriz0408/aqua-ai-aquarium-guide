@@ -49,4 +49,3 @@ export const FeatureTooltip: React.FC<FeatureTooltipProps> = ({
     </TooltipProvider>
   );
 };
-</FeatureTooltip>

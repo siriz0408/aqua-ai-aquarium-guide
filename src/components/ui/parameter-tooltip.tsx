@@ -43,4 +43,3 @@ export const ParameterTooltip: React.FC<ParameterTooltipProps> = ({
     </TooltipProvider>
   );
 };
-</ParameterTooltip>
