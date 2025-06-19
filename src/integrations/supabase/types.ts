@@ -576,6 +576,199 @@ export type Database = {
           },
         ]
       }
+      maintenance_events: {
+        Row: {
+          actual_duration: number | null
+          completed_date: string | null
+          created_at: string
+          difficulty_rating: number | null
+          id: string
+          notes: string | null
+          schedule_id: string | null
+          scheduled_date: string
+          status: string
+          tank_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          actual_duration?: number | null
+          completed_date?: string | null
+          created_at?: string
+          difficulty_rating?: number | null
+          id?: string
+          notes?: string | null
+          schedule_id?: string | null
+          scheduled_date: string
+          status?: string
+          tank_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          actual_duration?: number | null
+          completed_date?: string | null
+          created_at?: string
+          difficulty_rating?: number | null
+          id?: string
+          notes?: string | null
+          schedule_id?: string | null
+          scheduled_date?: string
+          status?: string
+          tank_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maintenance_events_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "maintenance_schedules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      maintenance_schedules: {
+        Row: {
+          created_at: string
+          custom_instructions: string | null
+          custom_priority: string | null
+          description: string | null
+          frequency_days: number
+          id: string
+          is_active: boolean | null
+          is_custom: boolean | null
+          last_completed_date: string | null
+          name: string
+          next_due_date: string | null
+          notifications_enabled: boolean | null
+          tank_id: string | null
+          template_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          custom_instructions?: string | null
+          custom_priority?: string | null
+          description?: string | null
+          frequency_days: number
+          id?: string
+          is_active?: boolean | null
+          is_custom?: boolean | null
+          last_completed_date?: string | null
+          name: string
+          next_due_date?: string | null
+          notifications_enabled?: boolean | null
+          tank_id?: string | null
+          template_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          custom_instructions?: string | null
+          custom_priority?: string | null
+          description?: string | null
+          frequency_days?: number
+          id?: string
+          is_active?: boolean | null
+          is_custom?: boolean | null
+          last_completed_date?: string | null
+          name?: string
+          next_due_date?: string | null
+          notifications_enabled?: boolean | null
+          tank_id?: string | null
+          template_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maintenance_schedules_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "maintenance_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      maintenance_templates: {
+        Row: {
+          base_interval_days: number
+          bioload_dependent: boolean | null
+          created_at: string
+          description: string | null
+          difficulty: string | null
+          equipment_dependent: boolean | null
+          equipment_types: string[] | null
+          estimated_time: string | null
+          experience_modifier: Json | null
+          frequency: string
+          id: string
+          instructions: string | null
+          maturity_modifier: Json | null
+          name: string
+          priority: string
+          required_tools: string[] | null
+          size_dependent: boolean | null
+          tank_type: string
+          task_type: string
+          tips: string[] | null
+          updated_at: string
+          warnings: string[] | null
+        }
+        Insert: {
+          base_interval_days: number
+          bioload_dependent?: boolean | null
+          created_at?: string
+          description?: string | null
+          difficulty?: string | null
+          equipment_dependent?: boolean | null
+          equipment_types?: string[] | null
+          estimated_time?: string | null
+          experience_modifier?: Json | null
+          frequency: string
+          id?: string
+          instructions?: string | null
+          maturity_modifier?: Json | null
+          name: string
+          priority?: string
+          required_tools?: string[] | null
+          size_dependent?: boolean | null
+          tank_type: string
+          task_type?: string
+          tips?: string[] | null
+          updated_at?: string
+          warnings?: string[] | null
+        }
+        Update: {
+          base_interval_days?: number
+          bioload_dependent?: boolean | null
+          created_at?: string
+          description?: string | null
+          difficulty?: string | null
+          equipment_dependent?: boolean | null
+          equipment_types?: string[] | null
+          estimated_time?: string | null
+          experience_modifier?: Json | null
+          frequency?: string
+          id?: string
+          instructions?: string | null
+          maturity_modifier?: Json | null
+          name?: string
+          priority?: string
+          required_tools?: string[] | null
+          size_dependent?: boolean | null
+          tank_type?: string
+          task_type?: string
+          tips?: string[] | null
+          updated_at?: string
+          warnings?: string[] | null
+        }
+        Relationships: []
+      }
       manual_sync_operations: {
         Row: {
           admin_user_id: string | null
@@ -1315,8 +1508,27 @@ export type Database = {
           is_trial_expired: boolean
         }[]
       }
+      complete_maintenance_task: {
+        Args: {
+          p_schedule_id: string
+          p_completion_date?: string
+          p_notes?: string
+        }
+        Returns: undefined
+      }
       ensure_user_profile: {
         Args: { user_id: string }
+        Returns: undefined
+      }
+      generate_tank_maintenance_schedule: {
+        Args: {
+          p_user_id: string
+          p_tank_id: string
+          p_tank_type: string
+          p_tank_size_gallons: number
+          p_user_experience?: string
+          p_tank_age_months?: number
+        }
         Returns: undefined
       }
       get_user_admin_status: {
