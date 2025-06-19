@@ -23,13 +23,17 @@ export const useSubscriptionSync = () => {
 
     setIsLoading(true);
     try {
-      console.log('Starting subscription sync with simplified function:', targetEmail);
+      console.log('Starting subscription sync:', {
+        targetEmail,
+        stripeCustomerId,
+        stripeSubscriptionId,
+        subscriptionStatus
+      });
       
-      // Use the simplified sync function
       const { data, error } = await supabase.rpc('sync_stripe_subscription', {
         customer_email: targetEmail,
         stripe_customer_id: stripeCustomerId,
-        stripe_subscription_id: stripeSubscriptionId,
+        stripe_subscription_id: stripeSubscriptionId || null,
         subscription_status: subscriptionStatus,
         price_id: null
       });
@@ -47,7 +51,6 @@ export const useSubscriptionSync = () => {
 
       console.log('Subscription sync result:', data);
       
-      // Cast the data to the expected type with proper type safety
       const syncResult = data as unknown as SyncStripeSubscriptionResponse;
       
       if (syncResult?.success) {

@@ -34,7 +34,6 @@ export const ManualSyncForm: React.FC = () => {
     try {
       console.log('Starting manual sync with simplified function...');
       
-      // Use the simplified sync function
       const { data, error } = await supabase.rpc('sync_stripe_subscription', {
         customer_email: email,
         stripe_customer_id: stripeCustomerId,
@@ -56,7 +55,6 @@ export const ManualSyncForm: React.FC = () => {
 
       console.log('Manual sync result:', data);
       
-      // Cast the data to the expected type with proper type safety
       const syncResult = data as unknown as SyncStripeSubscriptionResponse;
       
       if (syncResult?.success) {
@@ -172,7 +170,6 @@ export const ManualSyncForm: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Result Display */}
       {lastResult && (
         <Card>
           <CardHeader>

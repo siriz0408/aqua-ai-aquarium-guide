@@ -21,7 +21,7 @@ export const SyncInstructions: React.FC = () => {
           <InfoIcon className="h-4 w-4" />
           <AlertDescription>
             <strong>Schema Simplified:</strong> We now use only the profiles table for subscription tracking. 
-            Redundant tables have been removed for better performance and maintainability.
+            All subscription data is centralized for better performance and maintainability.
           </AlertDescription>
         </Alert>
 
@@ -51,6 +51,7 @@ export const SyncInstructions: React.FC = () => {
               <li>User's subscription tier (pro/free)</li>
               <li>Stripe Customer ID and Subscription ID</li>
               <li>Subscription end date (for canceled subscriptions)</li>
+              <li>Profile updated timestamp</li>
             </ul>
           </div>
 
@@ -61,13 +62,22 @@ export const SyncInstructions: React.FC = () => {
               All webhook events are tracked in the webhook_events table for monitoring.
             </p>
           </div>
+
+          <div>
+            <h4 className="font-medium text-sm">Performance Improvements:</h4>
+            <p className="text-sm text-muted-foreground mt-2">
+              The simplified schema includes optimized indexes for faster queries 
+              on email, Stripe IDs, and subscription status fields. RLS policies have been 
+              simplified to prevent recursion issues.
+            </p>
+          </div>
         </div>
 
         <Alert>
           <InfoIcon className="h-4 w-4" />
           <AlertDescription>
-            <strong>Performance:</strong> The simplified schema includes optimized indexes for faster queries 
-            on email, Stripe IDs, and subscription status fields.
+            <strong>Security:</strong> All sync operations use security definer functions 
+            with proper RLS policies to ensure data integrity and access control.
           </AlertDescription>
         </Alert>
       </CardContent>

@@ -8,8 +8,9 @@ export const SyncInstructionsAlert: React.FC = () => {
     <Alert>
       <InfoIcon className="h-4 w-4" />
       <AlertDescription>
-        <strong>Simplified Schema:</strong> The database has been optimized with a single profiles table for subscription tracking. 
-        Use the manual sync form for failed webhook events or direct Stripe data updates.
+        <strong>Simplified Schema Active:</strong> The database has been optimized with the profiles table 
+        as the single source of truth for subscription tracking. Use the manual sync form for failed 
+        webhook events or direct Stripe data updates.
       </AlertDescription>
     </Alert>
   );
