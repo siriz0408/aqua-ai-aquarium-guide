@@ -36,7 +36,7 @@ export const QuickParameterModal: React.FC<QuickParameterModalProps> = ({
     nitrate: '',
   });
   
-  const { addWaterTest } = useAquarium();
+  const { addParameters } = useAquarium();
   const { toast } = useToast();
 
   const handleInputChange = (field: string, value: string) => {
@@ -66,23 +66,21 @@ export const QuickParameterModal: React.FC<QuickParameterModalProps> = ({
     
     try {
       const testData = {
-        aquarium_id: tankId,
-        test_date: new Date().toISOString().split('T')[0],
-        ph: parameters.ph ? parseFloat(parameters.ph) : null,
-        ammonia: parameters.ammonia ? parseFloat(parameters.ammonia) : null,
-        nitrite: parameters.nitrite ? parseFloat(parameters.nitrite) : null,
-        nitrate: parameters.nitrate ? parseFloat(parameters.nitrate) : null,
-        // Set other parameters to null for quick logging
-        temperature: null,
-        salinity: null,
-        alkalinity: null,
-        calcium: null,
-        magnesium: null,
-        phosphate: null,
-        notes: 'Quick log entry',
+        date: new Date().toISOString(),
+        ph: parameters.ph ? parseFloat(parameters.ph) : 0,
+        ammonia: parameters.ammonia ? parseFloat(parameters.ammonia) : 0,
+        nitrite: parameters.nitrite ? parseFloat(parameters.nitrite) : 0,
+        nitrate: parameters.nitrate ? parseFloat(parameters.nitrate) : 0,
+        // Set other required parameters to 0 for quick logging
+        salinity: 0,
+        temperature: 0,
+        kh: 0,
+        calcium: 0,
+        magnesium: 0,
+        aiInsights: 'Quick log entry',
       };
 
-      await addWaterTest(testData);
+      await addParameters(tankId, testData);
       
       toast({
         title: "Parameters logged",
