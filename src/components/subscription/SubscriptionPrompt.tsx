@@ -33,20 +33,14 @@ export const SubscriptionPrompt: React.FC<SubscriptionPromptProps> = ({
 
     setLoading(true);
     try {
-      // First start the trial in our database
-      const { data: trialData, error: trialError } = await supabase.rpc('start_user_trial', {
-        user_id: user.id
-      });
+      console.log('Starting trial checkout process...');
 
-      if (trialError) {
-        throw trialError;
-      }
-
-      console.log('Trial started:', trialData);
-
-      // Then create the Stripe checkout session
+      // Create the Stripe checkout session with trial period
       const { data, error } = await supabase.functions.invoke('create-checkout', {
-        body: { priceId: STRIPE_PRICE_ID }
+        body: { 
+          priceId: STRIPE_PRICE_ID,
+          trialPeriodDays: 3  // Let Stripe handle the 3-day trial
+        }
       });
 
       if (error) {
@@ -60,7 +54,8 @@ export const SubscriptionPrompt: React.FC<SubscriptionPromptProps> = ({
       }
 
       if (data?.url) {
-        // Redirect to current page after checkout instead of opening new tab
+        console.log('Redirecting to Stripe checkout:', data.url);
+        // Redirect to Stripe checkout
         window.location.href = data.url;
       } else {
         throw new Error('No checkout URL received');
@@ -133,10 +128,10 @@ export const SubscriptionPrompt: React.FC<SubscriptionPromptProps> = ({
         <div className="bg-blue-50 dark:bg-blue-950/50 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
           <h4 className="font-medium text-blue-800 dark:text-blue-200 mb-2">How it works:</h4>
           <ol className="text-sm text-blue-700 dark:text-blue-300 space-y-1 text-left">
-            <li>1. Start your 3-day free trial</li>
+            <li>1. Start your 3-day free trial now</li>
             <li>2. Enjoy full access to all features</li>
-            <li>3. Cancel within 3 days to avoid charges</li>
-            <li>4. Or continue at $4.99/month</li>
+            <li>3. Cancel anytime during trial - no charges</li>
+            <li>4. After trial: $4.99/month (cancel anytime)</li>
           </ol>
         </div>
         

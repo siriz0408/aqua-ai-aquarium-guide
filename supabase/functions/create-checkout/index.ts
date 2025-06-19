@@ -28,7 +28,7 @@ serve(async (req) => {
       throw new Error("STRIPE_SECRET_KEY is not configured. Please set it in Supabase Dashboard.");
     }
     
-    // Validate Stripe key format - this is the critical check that was missing
+    // Validate Stripe key format
     if (!stripeKey.startsWith('sk_')) {
       logStep("ERROR: Invalid STRIPE_SECRET_KEY format", { keyPrefix: stripeKey.substring(0, 7) });
       throw new Error("Invalid STRIPE_SECRET_KEY format. It should start with 'sk_' (secret key), not 'pk_' (publishable key). Please use your secret key from the Stripe Dashboard.");
@@ -69,12 +69,12 @@ serve(async (req) => {
     logStep("User authenticated", { userId: user.id, email: user.email });
 
     // Get request body
-    const { priceId } = await req.json();
+    const { priceId, trialPeriodDays } = await req.json();
     if (!priceId) {
       logStep("ERROR: No price ID provided");
       throw new Error("Price ID is required");
     }
-    logStep("Price ID received", { priceId });
+    logStep("Request body received", { priceId, trialPeriodDays });
 
     // Initialize Stripe with better error handling
     const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
@@ -113,8 +113,8 @@ serve(async (req) => {
 
     const origin = req.headers.get("origin") || "http://localhost:3000";
     
-    // Create checkout session
-    const session = await stripe.checkout.sessions.create({
+    // Create checkout session with proper trial configuration
+    const sessionConfig: any = {
       customer: customerId,
       line_items: [
         {
@@ -124,13 +124,27 @@ serve(async (req) => {
       ],
       mode: "subscription",
       success_url: `${origin}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}/payment-cancelled`,
+      cancel_url: `${origin}/`,
       metadata: {
         user_id: user.id,
       },
       allow_promotion_codes: true,
       billing_address_collection: "auto",
-    });
+    };
+
+    // Add subscription data with trial period if specified
+    if (trialPeriodDays && trialPeriodDays > 0) {
+      sessionConfig.subscription_data = {
+        trial_period_days: trialPeriodDays,
+        metadata: {
+          user_id: user.id,
+          trial_days: trialPeriodDays.toString()
+        }
+      };
+      logStep("Adding trial period to subscription", { trialPeriodDays });
+    }
+
+    const session = await stripe.checkout.sessions.create(sessionConfig);
 
     logStep("Checkout session created", { sessionId: session.id, url: session.url });
 
