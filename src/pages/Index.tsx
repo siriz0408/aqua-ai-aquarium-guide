@@ -3,10 +3,12 @@ import React from 'react';
 import { Layout } from '@/components/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { DropletIcon, FishIcon, Thermometer, Zap, MessageSquare, Calculator, Lock } from 'lucide-react';
+import { DropletIcon, FishIcon, Thermometer, Zap, MessageSquare, Calculator } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { SubscriptionBanner } from '@/components/subscription/SubscriptionBanner';
+import { ExpiredTrialPaywall } from '@/components/subscription/ExpiredTrialPaywall';
+import { SubscriptionPrompt } from '@/components/subscription/SubscriptionPrompt';
 import { useSubscriptionAccess } from '@/hooks/useSubscriptionAccess';
 import { useToast } from '@/hooks/use-toast';
 
@@ -18,37 +20,53 @@ const Index = () => {
     profile,
     subscriptionInfo,
     trialStatus,
-    canAccessFeature,
-    requiresUpgrade,
-    isLoading
+    shouldShowPaywall,
+    shouldShowSubscriptionPrompt,
+    isLoading,
+    isAdmin
   } = useSubscriptionAccess();
 
-  const handleFeatureClick = async (path: string, featureType: 'basic' | 'premium' = 'basic') => {
-    if (!user) {
-      navigate('/auth');
-      return;
-    }
+  // Show loading state
+  if (isLoading) {
+    return (
+      <Layout title="AquaAI - Loading...">
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-center space-y-4">
+            <div className="h-16 w-16 rounded-full ocean-gradient flex items-center justify-center mx-auto animate-pulse">
+              <span className="text-white text-2xl font-bold">🐠</span>
+            </div>
+            <p className="text-muted-foreground">Loading your aquarium dashboard...</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
 
-    if (isLoading) {
-      toast({
-        title: "Loading...",
-        description: "Please wait while we check your subscription status.",
-      });
-      return;
-    }
+  // Redirect non-authenticated users to auth
+  if (!user) {
+    navigate('/auth');
+    return null;
+  }
 
-    // Check if user can access this feature
-    if (!canAccessFeature(featureType)) {
-      toast({
-        title: "Premium Feature",
-        description: "This feature requires a Pro subscription or active trial. Please upgrade to continue.",
-        variant: "destructive",
-      });
-      // Navigate to pricing instead
-      navigate('/#pricing');
-      return;
-    }
-    
+  // Show subscription prompt for users without access who haven't started a trial
+  if (shouldShowSubscriptionPrompt()) {
+    return (
+      <Layout title="AquaAI - Start Your Journey">
+        <SubscriptionPrompt isFullScreen />
+      </Layout>
+    );
+  }
+
+  // Show paywall for expired trials
+  if (shouldShowPaywall()) {
+    return (
+      <Layout title="AquaAI - Trial Expired">
+        <ExpiredTrialPaywall isFullScreen />
+      </Layout>
+    );
+  }
+
+  const handleFeatureClick = async (path: string) => {
     navigate(path);
   };
 
@@ -57,41 +75,25 @@ const Index = () => {
     description, 
     icon: Icon, 
     path, 
-    featureType = 'basic',
     iconColor = 'text-blue-500'
   }: {
     title: string;
     description: string;
     icon: any;
     path: string;
-    featureType?: 'basic' | 'premium';
     iconColor?: string;
   }) => {
-    const needsUpgrade = requiresUpgrade(featureType);
-    
     return (
       <Card 
-        className={`hover:shadow-lg transition-shadow cursor-pointer relative ${needsUpgrade ? 'opacity-75' : ''}`}
-        onClick={() => handleFeatureClick(path, featureType)}
+        className="hover:shadow-lg transition-shadow cursor-pointer"
+        onClick={() => handleFe
+
+tureClick(path)}
       >
         <CardHeader>
-          <div className="flex items-start justify-between">
-            <Icon className={`h-8 w-8 ${iconColor} mb-2`} />
-            {needsUpgrade && (
-              <Lock className="h-5 w-5 text-orange-500" />
-            )}
-          </div>
-          <CardTitle className="flex items-center gap-2">
-            {title}
-            {featureType === 'premium' && needsUpgrade && (
-              <span className="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded-full">
-                Pro
-              </span>
-            )}
-          </CardTitle>
-          <CardDescription>
-            {description}
-          </CardDescription>
+          <Icon className={`h-8 w-8 ${iconColor} mb-2`} />
+          <CardTitle>{title}</CardTitle>
+          <CardDescription>{description}</CardDescription>
         </CardHeader>
       </Card>
     );
@@ -124,22 +126,11 @@ const Index = () => {
               Your intelligent aquarium companion. Track water parameters, get AI-powered advice, 
               and keep your aquatic friends healthy and happy.
             </p>
-            {!user && (
-              <div className="mt-6 space-x-4">
-                <Button 
-                  size="lg" 
-                  className="ocean-gradient hover:opacity-90"
-                  onClick={() => navigate('/auth')}
-                >
-                  Get Started
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="lg"
-                  onClick={() => navigate('/auth')}
-                >
-                  Sign In
-                </Button>
+            {isAdmin && (
+              <div className="mt-4 p-3 bg-purple-100 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
+                <p className="text-purple-800 dark:text-purple-200 font-medium">
+                  👑 Admin Access - You have unlimited access to all features
+                </p>
               </div>
             )}
           </div>
@@ -150,7 +141,6 @@ const Index = () => {
               description="Track multiple aquariums, monitor water parameters, and maintain detailed logs."
               icon={DropletIcon}
               path="/tanks"
-              featureType="basic"
               iconColor="text-blue-500"
             />
 
@@ -159,7 +149,6 @@ const Index = () => {
               description="Get expert advice on fish care, troubleshooting, and aquarium maintenance."
               icon={MessageSquare}
               path="/aquabot"
-              featureType="premium"
               iconColor="text-green-500"
             />
 
@@ -168,7 +157,6 @@ const Index = () => {
               description="Explore comprehensive databases of fish species and aquarium equipment."
               icon={FishIcon}
               path="/education"
-              featureType="basic"
               iconColor="text-orange-500"
             />
 
@@ -177,7 +165,6 @@ const Index = () => {
               description="Plan your dream aquarium with AI-generated equipment and livestock recommendations."
               icon={Calculator}
               path="/setup-planner"
-              featureType="premium"
               iconColor="text-purple-500"
             />
 
@@ -186,7 +173,6 @@ const Index = () => {
               description="Never miss water changes, feedings, or equipment maintenance with intelligent alerts."
               icon={Thermometer}
               path="/reminders"
-              featureType="basic"
               iconColor="text-red-500"
             />
 
@@ -194,120 +180,12 @@ const Index = () => {
               title="Water Testing"
               description="Log water test results and get automated analysis and recommendations."
               icon={Zap}
-              path="/log-parameters"
-              featureType="basic"
+              path="/tanks"
               iconColor="text-yellow-500"
             />
           </div>
 
-          {/* Pricing Section */}
-          <div id="pricing" className="bg-white dark:bg-gray-800 rounded-lg p-8 shadow-lg mb-12">
-            <div className="text-center mb-8">
-              <h2 className="text-3xl font-bold mb-4">Choose Your Plan</h2>
-              <p className="text-muted-foreground">
-                Start with our free plan or upgrade to Pro for unlimited access to AI features
-              </p>
-            </div>
-            
-            <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-              {/* Free Plan */}
-              <Card className="relative">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <DropletIcon className="h-5 w-5 text-blue-600" />
-                    Free Plan
-                  </CardTitle>
-                  <CardDescription>
-                    Perfect for getting started with basic aquarium management
-                  </CardDescription>
-                  <div className="text-3xl font-bold">$0</div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <Zap className="h-4 w-4 text-green-600" />
-                      <span className="text-sm">Basic tank tracking</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Zap className="h-4 w-4 text-green-600" />
-                      <span className="text-sm">Water parameter logging</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Zap className="h-4 w-4 text-green-600" />
-                      <span className="text-sm">Equipment management</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Zap className="h-4 w-4 text-green-600" />
-                      <span className="text-sm">Educational resources</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Pro Plan */}
-              <Card className="relative border-blue-200 shadow-lg">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <MessageSquare className="h-5 w-5 text-blue-600" />
-                    Pro Plan
-                  </CardTitle>
-                  <CardDescription>
-                    Unlock AI-powered insights and advanced planning tools
-                  </CardDescription>
-                  <div className="text-3xl font-bold">
-                    $4.99<span className="text-base font-normal text-gray-600">/month</span>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <Zap className="h-4 w-4 text-green-600" />
-                      <span className="text-sm">Everything in Free</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Zap className="h-4 w-4 text-green-600" />
-                      <span className="text-sm font-medium">AI-Powered AquaBot Chat</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Zap className="h-4 w-4 text-green-600" />
-                      <span className="text-sm">Advanced Setup Planner</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Zap className="h-4 w-4 text-green-600" />
-                      <span className="text-sm">Priority support</span>
-                    </div>
-                  </div>
-                  {user && !isLoading && (
-                    <Button 
-                      onClick={() => {
-                        if (subscriptionInfo.hasAccess) {
-                          toast({
-                            title: "Already subscribed",
-                            description: "You already have access to Pro features!",
-                          });
-                        } else {
-                          navigate('/pricing');
-                        }
-                      }}
-                      className="w-full bg-blue-600 hover:bg-blue-700"
-                      disabled={subscriptionInfo.hasAccess}
-                    >
-                      {subscriptionInfo.hasAccess ? "Current Plan" : "Upgrade to Pro"}
-                    </Button>
-                  )}
-                  {!user && (
-                    <Button 
-                      onClick={() => navigate('/auth')}
-                      className="w-full bg-blue-600 hover:bg-blue-700"
-                    >
-                      Sign Up for Pro
-                    </Button>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-
+          {/* Benefits Section */}
           <div className="bg-white dark:bg-gray-800 rounded-lg p-8 shadow-lg">
             <div className="text-center mb-8">
               <h2 className="text-3xl font-bold mb-4">Why Choose AquaAI?</h2>
