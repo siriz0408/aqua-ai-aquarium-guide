@@ -1,10 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
 import { Layout } from '@/components/Layout';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader,    } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { RotateCcw, Sparkles, Edit } from 'lucide-react';
-import SetupWizard from '@/components/setup-wizard/SetupWizard';
+import PlannerWizard from '@/components/setup-wizard/PlannerWizard';
 import PlanGenerationLoading from '@/components/setup-wizard/PlanGenerationLoading';
 import EnhancedPlanDisplay from '@/components/setup-wizard/EnhancedPlanDisplay';
 import SavePlanDialog from '@/components/setup-wizard/SavePlanDialog';
@@ -69,10 +70,24 @@ const SetupPlanner = () => {
     }
   }, []);
 
-  const handlePlanGeneration = async (planData: any) => {
+  const handlePlanGeneration = async (wizardData: any) => {
     setIsGenerating(true);
     
     try {
+      // Convert wizard data to the expected format for plan generation
+      const planData = {
+        tankSpecs: {
+          tankSize: wizardData.tankSize,
+          customSize: wizardData.customSize,
+          experienceLevel: wizardData.experienceLevel,
+          goals: wizardData.tankTypeGoals
+        },
+        budgetTimeline: {
+          budgetRange: wizardData.budgetRange,
+          aestheticPreferences: wizardData.aestheticPreferences
+        }
+      };
+
       const mockPlan = await generateSetupPlan(planData);
       setSetupPlan(mockPlan);
       
@@ -121,6 +136,9 @@ const SetupPlanner = () => {
     setSetupPlan(null);
     setIsEditMode(false);
     setEditingPlanId(null);
+    // Clear wizard localStorage as well
+    localStorage.removeItem('planner-wizard-data');
+    localStorage.removeItem('planner-wizard-step');
     toast({
       title: "Plan reset",
       description: "Start over with new specifications",
@@ -188,7 +206,7 @@ const SetupPlanner = () => {
           </CardHeader>
           <CardContent>
             {!setupPlan && !isGenerating && (
-              <SetupWizard onPlanGenerated={handlePlanGeneration} />
+              <PlannerWizard onPlanGenerated={handlePlanGeneration} />
             )}
 
             {isGenerating && <PlanGenerationLoading />}
