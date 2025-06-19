@@ -20,6 +20,7 @@ const AquaBot = lazy(() => import("./pages/AquaBot"));
 const Education = lazy(() => import("./pages/Education"));
 const Equipment = lazy(() => import("./pages/Equipment"));
 const Livestock = lazy(() => import("./pages/Livestock"));
+const WaterChangeCalculator = lazy(() => import("./pages/WaterChangeCalculator"));
 
 // Regular imports for components that should load immediately
 import Index from "./pages/Index";
@@ -35,6 +36,7 @@ import PaymentSuccess from "./pages/PaymentSuccess";
 import PaymentCancelled from "./pages/PaymentCancelled";
 import Pricing from "./pages/Pricing";
 import Account from "./pages/Account";
+import Tools from "./pages/Tools";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -114,10 +116,22 @@ const App = () => (
                         </Suspense>
                       </ProtectedRoute>
                     } />
+                    <Route path="/tools" element={
+                      <ProtectedRoute>
+                        <Tools />
+                      </ProtectedRoute>
+                    } />
                     <Route path="/setup-planner" element={
                       <ProtectedRoute>
                         <Suspense fallback={<LoadingFallback />}>
                           <SetupPlanner />
+                        </Suspense>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/water-change-calculator" element={
+                      <ProtectedRoute>
+                        <Suspense fallback={<LoadingFallback />}>
+                          <WaterChangeCalculator />
                         </Suspense>
                       </ProtectedRoute>
                     } />
