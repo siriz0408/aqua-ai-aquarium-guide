@@ -4,6 +4,8 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 import { format } from 'date-fns';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { WaterParameters } from '@/contexts/AquariumContext';
+import { ParameterTooltip } from '@/components/ui/parameter-tooltip';
+import { FeatureTooltip } from '@/components/ui/feature-tooltip';
 
 interface ParameterChartProps {
   parameters: WaterParameters[];
@@ -59,8 +61,16 @@ const ParameterChart: React.FC<ParameterChartProps> = ({
     return (
       <Card>
         <CardHeader>
-          <CardTitle>{title}</CardTitle>
-          <CardDescription>No parameter data available</CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>{title}</CardTitle>
+              <CardDescription>No parameter data available</CardDescription>
+            </div>
+            <FeatureTooltip
+              title="Parameter Trends"
+              description="Visual charts help you track water quality over time and identify patterns or issues before they become serious problems."
+            />
+          </div>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-center h-64 text-muted-foreground">
@@ -74,10 +84,18 @@ const ParameterChart: React.FC<ParameterChartProps> = ({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{title}</CardTitle>
-        <CardDescription>
-          Last {chartData.length} test{chartData.length !== 1 ? 's' : ''} - Click points for exact values
-        </CardDescription>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle>{title}</CardTitle>
+            <CardDescription>
+              Last {chartData.length} test{chartData.length !== 1 ? 's' : ''} - Click points for exact values
+            </CardDescription>
+          </div>
+          <FeatureTooltip
+            title="Parameter Trends"
+            description="Visual charts help you track water quality over time and identify patterns or issues before they become serious problems."
+          />
+        </div>
       </CardHeader>
       <CardContent>
         <div className="h-80 w-full">
@@ -145,23 +163,47 @@ const ParameterChart: React.FC<ParameterChartProps> = ({
           </ResponsiveContainer>
         </div>
         
-        {/* Parameter status indicators */}
+        {/* Parameter status indicators with tooltips */}
         <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-            <span>pH (8.1-8.4 ideal)</span>
+            <ParameterTooltip
+              parameter="pH"
+              normalRange="8.1 - 8.4"
+              description="Measures water acidity/alkalinity. Stable pH is crucial for fish health and biological processes."
+            >
+              <span className="cursor-help">pH (8.1-8.4 ideal)</span>
+            </ParameterTooltip>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-            <span>Ammonia (0 ppm ideal)</span>
+            <ParameterTooltip
+              parameter="Ammonia (NH₃)"
+              normalRange="0 ppm"
+              description="Toxic waste product from fish and decomposing matter. Should always be 0 in established tanks."
+            >
+              <span className="cursor-help">Ammonia (0 ppm ideal)</span>
+            </ParameterTooltip>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 rounded-full bg-red-500"></div>
-            <span>Nitrite (0 ppm ideal)</span>
+            <ParameterTooltip
+              parameter="Nitrite (NO₂)"
+              normalRange="0 ppm"
+              description="Intermediate product in nitrogen cycle. Highly toxic to fish, should always be 0 in established tanks."
+            >
+              <span className="cursor-help">Nitrite (0 ppm ideal)</span>
+            </ParameterTooltip>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 rounded-full bg-green-600"></div>
-            <span>Nitrate (&lt;20 ppm ideal)</span>
+            <ParameterTooltip
+              parameter="Nitrate (NO₃)"
+              normalRange="< 20 ppm"
+              description="End product of nitrogen cycle. Less toxic but should be kept low through water changes and maintenance."
+            >
+              <span className="cursor-help">Nitrate (&lt;20 ppm ideal)</span>
+            </ParameterTooltip>
           </div>
         </div>
       </CardContent>

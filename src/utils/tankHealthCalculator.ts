@@ -12,6 +12,7 @@ export interface HealthScore {
   factors: HealthFactors;
   status: 'excellent' | 'good' | 'warning' | 'critical';
   color: string;
+  description: string;
 }
 
 export const calculateTankHealth = (tank: Tank): HealthScore => {
@@ -33,12 +34,14 @@ export const calculateTankHealth = (tank: Tank): HealthScore => {
   };
 
   const { status, color } = getHealthStatus(overall);
+  const description = getHealthDescription(overall, factors);
 
   return {
     overall,
     factors,
     status,
-    color
+    color,
+    description
   };
 };
 
@@ -204,5 +207,23 @@ const getHealthStatus = (score: number): { status: 'excellent' | 'good' | 'warni
     return { status: 'warning', color: 'text-yellow-600' };
   } else {
     return { status: 'critical', color: 'text-red-600' };
+  }
+};
+
+const getHealthDescription = (score: number, factors: HealthFactors): string => {
+  if (score >= 85) {
+    return "Excellent tank health! Parameters are stable, maintenance is consistent, and no recent issues detected.";
+  } else if (score >= 70) {
+    return "Good tank health with minor areas for improvement. Continue regular maintenance and monitoring.";
+  } else if (score >= 50) {
+    if (factors.parameterStability < 60) {
+      return "Water parameter instability detected. Consider more frequent testing and gradual adjustments.";
+    } else if (factors.maintenanceAdherence < 60) {
+      return "Maintenance schedule needs improvement. More frequent water changes and testing recommended.";
+    } else {
+      return "Recent water quality issues detected. Monitor closely and consider corrective actions.";
+    }
+  } else {
+    return "Critical tank health issues require immediate attention. Check water parameters and consider emergency measures.";
   }
 };

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Layout } from '@/components/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,6 +10,7 @@ import EnhancedPlanDisplay from '@/components/setup-wizard/EnhancedPlanDisplay';
 import SavePlanDialog from '@/components/setup-wizard/SavePlanDialog';
 import { generateSetupPlan } from '@/components/setup-wizard/PlanGenerationLogic';
 import { useSetupPlans } from '@/hooks/useSetupPlans';
+import { FeatureTooltip } from '@/components/ui/feature-tooltip';
 
 const SetupPlanner = () => {
   const { toast } = useToast();
@@ -140,17 +140,24 @@ const SetupPlanner = () => {
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="flex items-center gap-2">
-                  <Sparkles className="h-5 w-5 text-primary" />
-                  {isEditMode ? 'Edit Setup Plan' : 'Enhanced Setup Planner'}
-                </CardTitle>
-                <CardDescription>
-                  {isEditMode 
-                    ? `Editing: ${setupPlan?.planName || 'Your plan'}` 
-                    : 'Step-by-step guidance for your perfect saltwater aquarium setup'
-                  }
-                </CardDescription>
+              <div className="flex items-center gap-2">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Sparkles className="h-5 w-5 text-primary" />
+                    {isEditMode ? 'Edit Setup Plan' : 'Enhanced Setup Planner'}
+                  </CardTitle>
+                  <CardDescription>
+                    {isEditMode 
+                      ? `Editing: ${setupPlan?.planName || 'Your plan'}` 
+                      : 'Step-by-step guidance for your perfect saltwater aquarium setup'
+                    }
+                  </CardDescription>
+                </div>
+                <FeatureTooltip
+                  title="AI Setup Planner"
+                  description="Our intelligent planner creates customized aquarium setups based on your budget, experience level, and goals. Get equipment recommendations, compatibility checks, and step-by-step timelines."
+                  isPremium={true}
+                />
               </div>
               <div className="flex items-center gap-2">
                 {setupPlan && (

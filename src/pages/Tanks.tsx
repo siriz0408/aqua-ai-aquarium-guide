@@ -9,6 +9,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAquarium, Tank } from '@/contexts/AquariumContext';
 import { useToast } from '@/hooks/use-toast';
 import { HealthIndicator } from '@/components/tank/HealthIndicator';
+import { FeatureTooltip } from '@/components/ui/feature-tooltip';
+import { ParameterTooltip } from '@/components/ui/parameter-tooltip';
 
 export const Tanks = () => {
   const navigate = useNavigate();
@@ -121,7 +123,14 @@ export const Tanks = () => {
                   <div className="flex items-center gap-2">
                     <Fish className="h-4 w-4 text-green-500" />
                     <div>
-                      <p className="text-sm text-muted-foreground">Total Livestock</p>
+                      <div className="flex items-center gap-1">
+                        <p className="text-sm text-muted-foreground">Total Livestock</p>
+                        <FeatureTooltip
+                          title="Livestock Tracking"
+                          description="Keep track of all fish, corals, and invertebrates across your tanks. Monitor compatibility, feeding schedules, and health status."
+                          showIcon={true}
+                        />
+                      </div>
                       <p className="text-xl font-bold">
                         {tanks.reduce((total, tank) => total + (tank.livestock?.length || 0), 0)}
                       </p>
@@ -135,7 +144,14 @@ export const Tanks = () => {
                   <div className="flex items-center gap-2">
                     <Settings className="h-4 w-4 text-purple-500" />
                     <div>
-                      <p className="text-sm text-muted-foreground">Equipment Items</p>
+                      <div className="flex items-center gap-1">
+                        <p className="text-sm text-muted-foreground">Equipment Items</p>
+                        <FeatureTooltip
+                          title="Equipment Management"
+                          description="Track all your aquarium equipment including filters, heaters, lights, and pumps. Set maintenance reminders and monitor performance."
+                          showIcon={true}
+                        />
+                      </div>
                       <p className="text-xl font-bold">
                         {tanks.reduce((total, tank) => total + (tank.equipment?.length || 0), 0)}
                       </p>
@@ -149,7 +165,15 @@ export const Tanks = () => {
                   <div className="flex items-center gap-2">
                     <TestTube2 className="h-4 w-4 text-orange-500" />
                     <div>
-                      <p className="text-sm text-muted-foreground">Total Tests</p>
+                      <div className="flex items-center gap-1">
+                        <p className="text-sm text-muted-foreground">Total Tests</p>
+                        <ParameterTooltip
+                          parameter="Water Testing"
+                          normalRange="Weekly recommended"
+                          description="Regular water testing is essential for maintaining a healthy aquarium. Test key parameters like pH, ammonia, nitrite, and nitrate."
+                          showIcon={true}
+                        />
+                      </div>
                       <p className="text-xl font-bold">
                         {tanks.reduce((total, tank) => total + (tank.parameters?.length || 0), 0)}
                       </p>
@@ -207,7 +231,14 @@ export const Tanks = () => {
                         <Badge variant="secondary" className="w-fit">
                           {tank.type}
                         </Badge>
-                        <HealthIndicator tank={tank} size="sm" />
+                        <div className="flex items-center gap-1">
+                          <HealthIndicator tank={tank} size="sm" />
+                          <FeatureTooltip
+                            title="Tank Health Score"
+                            description="Automated health assessment based on water parameter stability, maintenance frequency, and time since last issues. Helps you quickly identify tanks that need attention."
+                            showIcon={true}
+                          />
+                        </div>
                       </div>
                     </CardHeader>
                     
@@ -233,6 +264,12 @@ export const Tanks = () => {
                         <div className="flex items-center gap-2">
                           <TestTube2 className="h-4 w-4" />
                           <span className="text-sm font-medium">Water Tests</span>
+                          <ParameterTooltip
+                            parameter="Test Status"
+                            normalRange="Weekly testing"
+                            description="Shows when your last water test was performed. Regular testing helps maintain optimal water conditions and prevent problems."
+                            showIcon={true}
+                          />
                         </div>
                         <div className="text-right">
                           <Badge 
