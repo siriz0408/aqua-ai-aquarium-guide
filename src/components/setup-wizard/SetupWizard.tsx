@@ -1,8 +1,11 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useAutoSave } from '@/hooks/useAutoSave';
+import { AutoSaveIndicator } from '@/components/ui/auto-save-indicator';
+import { useToast } from '@/hooks/use-toast';
 import TankSpecsStep from './TankSpecsStep';
 import BudgetTimelineStep from './BudgetTimelineStep';
 
@@ -11,6 +14,7 @@ interface SetupWizardProps {
 }
 
 const SetupWizard: React.FC<SetupWizardProps> = ({ onPlanGenerated }) => {
+  const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState<number>(0);
   const [tankSpecs, setTankSpecs] = useState({
     length: '',
@@ -29,6 +33,31 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onPlanGenerated }) => {
     priority: '',
     monthlyBudget: ''
   });
+
+  // Auto-save for the entire wizard data
+  const wizardData = { currentStep, tankSpecs, budgetTimeline };
+  const autoSave = useAutoSave(wizardData, {
+    key: 'setup-wizard',
+    delay: 2000,
+    onSave: async (data) => {
+      console.log('Auto-saving wizard progress:', data);
+    },
+    enabled: true
+  });
+
+  // Load saved wizard data on mount
+  useEffect(() => {
+    const savedData = autoSave.loadFromLocalStorage();
+    if (savedData) {
+      setCurrentStep(savedData.currentStep || 0);
+      setTankSpecs(savedData.tankSpecs || tankSpecs);
+      setBudgetTimeline(savedData.budgetTimeline || budgetTimeline);
+      toast({
+        title: "Draft restored",
+        description: "Your setup wizard progress has been restored",
+      });
+    }
+  }, []);
 
   const steps = [
     {
@@ -50,6 +79,9 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onPlanGenerated }) => {
         tankSpecs,
         budgetTimeline
       };
+      
+      // Clear auto-save data after successful plan generation
+      autoSave.clearLocalStorage();
       onPlanGenerated(formData);
     }
   };
@@ -87,6 +119,11 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onPlanGenerated }) => {
 
   return (
     <div className="space-y-6">
+      {/* Auto-save indicator */}
+      <div className="flex justify-end">
+        <AutoSaveIndicator status={autoSave.status} />
+      </div>
+
       {/* Progress indicator */}
       <div className="flex items-center justify-between mb-8">
         {steps.map((step, index) => (
