@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Layout } from '@/components/Layout';
@@ -10,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { EnhancedLivestockCard } from '@/components/tank-form/EnhancedLivestockCard';
 import { EnhancedEquipmentCard } from '@/components/tank-form/EnhancedEquipmentCard';
 import WaterTestResultsTable from '@/components/WaterTestResultsTable';
+import ParameterChart from '@/components/tank/ParameterChart';
 import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
@@ -201,6 +203,10 @@ const TankDetails = () => {
           </TabsList>
           
           <TabsContent value="parameters" className="space-y-4">
+            {/* Parameter Chart */}
+            <ParameterChart parameters={tank.parameters} />
+            
+            {/* Parameter Table */}
             <WaterTestResultsTable
               tests={tank.parameters}
               onDeleteTest={handleDeleteTest}
