@@ -11,11 +11,15 @@ export const usePlanGeneration = () => {
     setIsGenerating(true);
     
     try {
+      console.log('Starting plan generation with data:', wizardData);
+      
       // Convert wizard data to the expected format for plan generation
       const planData = {
         tankSpecs: {
+          length: wizardData.customSize?.length || '48',
+          width: wizardData.customSize?.width || '18', 
+          height: wizardData.customSize?.height || '20',
           tankSize: wizardData.tankSize,
-          customSize: wizardData.customSize,
           experienceLevel: wizardData.experienceLevel,
           goals: wizardData.tankTypeGoals
         },
@@ -25,15 +29,19 @@ export const usePlanGeneration = () => {
         }
       };
 
-      const mockPlan = await generateSetupPlan(planData);
+      console.log('Formatted plan data:', planData);
+      
+      const generatedPlan = await generateSetupPlan(planData);
+      console.log('Generated plan:', generatedPlan);
       
       toast({
         title: "Setup plan generated!",
         description: "Your custom aquarium plan is ready with step-by-step guidance",
       });
 
-      return mockPlan;
+      return generatedPlan;
     } catch (error) {
+      console.error('Plan generation error:', error);
       toast({
         title: "Error generating plan",
         description: "Please try again",

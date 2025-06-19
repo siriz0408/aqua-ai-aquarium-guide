@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -102,14 +101,20 @@ const PlannerWizard: React.FC<PlannerWizardProps> = ({ onPlanGenerated }) => {
     return !!value;
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (currentStep < steps.length - 1) {
       setCurrentStep(prev => prev + 1);
     } else {
-      // Generate plan
+      // Generate plan - this is the final step
+      console.log('Generating plan with wizard data:', wizardData);
       localStorage.removeItem('planner-wizard-data');
       localStorage.removeItem('planner-wizard-step');
-      onPlanGenerated(wizardData);
+      
+      try {
+        await onPlanGenerated(wizardData);
+      } catch (error) {
+        console.error('Error in plan generation:', error);
+      }
     }
   };
 

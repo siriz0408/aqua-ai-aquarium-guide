@@ -1,19 +1,25 @@
 
 export const generateSetupPlan = async (planData: any) => {
+  console.log('generateSetupPlan called with:', planData);
+  
   // Simulate AI generation with realistic delay
-  await new Promise(resolve => setTimeout(resolve, 4000));
+  await new Promise(resolve => setTimeout(resolve, 3000));
   
-  const gallons = Math.round((parseInt(planData.tankSpecs.length) * 
-                             parseInt(planData.tankSpecs.width || '18') * 
-                             parseInt(planData.tankSpecs.height || '20')) / 231);
+  // Extract tank dimensions or use defaults
+  const length = planData.tankSpecs.length || '48';
+  const width = planData.tankSpecs.width || '18';
+  const height = planData.tankSpecs.height || '20';
   
-  return {
-    tankSize: `${planData.tankSpecs.length}"L x ${planData.tankSpecs.width || '18'}"W x ${planData.tankSpecs.height || '20'}"H`,
+  // Calculate gallons from dimensions
+  const gallons = Math.round((parseInt(length) * parseInt(width) * parseInt(height)) / 231);
+  
+  const plan = {
+    tankSize: `${length}"L x ${width}"W x ${height}"H`,
     estimatedGallons: gallons,
-    tankType: planData.tankSpecs.tankType,
-    experience: planData.tankSpecs.experience,
-    totalBudget: planData.budgetTimeline.totalBudget,
-    setupBudget: planData.budgetTimeline.setupBudget,
+    tankType: planData.tankSpecs.goals || 'Mixed Reef',
+    experienceLevel: planData.tankSpecs.experienceLevel || 'Beginner',
+    budgetRange: planData.budgetTimeline.budgetRange || '$1000-2000',
+    aestheticStyle: planData.budgetTimeline.aestheticPreferences || 'Natural',
     equipment: [
       { item: 'Tank + Stand', price: '$600-800', priority: 'Essential', category: 'Tank System' },
       { item: 'Protein Skimmer', price: '$200-400', priority: 'Essential', category: 'Filtration' },
@@ -43,12 +49,17 @@ export const generateSetupPlan = async (planData: any) => {
       'Month 3+: Begin adding corals (if reef tank)',
     ],
     totalEstimate: `$1,400 - $2,200`,
-    monthlyMaintenance: planData.budgetTimeline.monthlyBudget ? 
-      `$${planData.budgetTimeline.monthlyBudget}` : '$30-50',
+    monthlyMaintenance: '$30-50',
     recommendations: {
-      beginner: planData.tankSpecs.experience === 'beginner',
-      reef: planData.tankSpecs.tankType.includes('reef'),
-      budget: planData.budgetTimeline.priority === 'budget'
-    }
+      beginner: planData.tankSpecs.experienceLevel === 'beginner',
+      reef: planData.tankSpecs.goals?.includes('reef') || false,
+      budget: planData.budgetTimeline.budgetRange?.includes('1000') || false
+    },
+    // Include original data for saving
+    tankSpecs: planData.tankSpecs,
+    budgetTimeline: planData.budgetTimeline,
   };
+
+  console.log('Plan generated successfully:', plan);
+  return plan;
 };

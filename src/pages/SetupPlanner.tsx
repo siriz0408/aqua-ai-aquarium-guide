@@ -19,9 +19,12 @@ const SetupPlanner = () => {
 
   const onPlanGenerated = async (wizardData: any) => {
     try {
+      console.log('onPlanGenerated called with:', wizardData);
       const generatedPlan = await handlePlanGeneration(wizardData);
+      console.log('Setting plan:', generatedPlan);
       setPlan(generatedPlan);
     } catch (error) {
+      console.error('Plan generation failed:', error);
       // Error handling is done in the hook
     }
   };
@@ -32,6 +35,9 @@ const SetupPlanner = () => {
       description: "You can find it in your saved plans",
     });
   };
+
+  console.log('Current plan state:', planState);
+  console.log('Is generating:', isGenerating);
 
   return (
     <Layout title="Smart Setup Planner">
@@ -76,7 +82,7 @@ const SetupPlanner = () => {
           </CardContent>
         </Card>
 
-        {planState.setupPlan && (
+        {planState.setupPlan && !isGenerating && (
           <EnhancedPlanDisplay 
             setupPlan={planState.setupPlan} 
             onPlanUpdate={updatePlan}
