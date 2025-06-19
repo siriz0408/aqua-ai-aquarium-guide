@@ -33,13 +33,13 @@ export const SubscriptionPrompt: React.FC<SubscriptionPromptProps> = ({
 
     setLoading(true);
     try {
-      console.log('Starting trial checkout process...');
+      console.log('Starting Stripe checkout with trial...');
 
       // Create the Stripe checkout session with trial period
       const { data, error } = await supabase.functions.invoke('create-checkout', {
         body: { 
           priceId: STRIPE_PRICE_ID,
-          trialPeriodDays: 3  // Let Stripe handle the 3-day trial
+          trialPeriodDays: 3
         }
       });
 
