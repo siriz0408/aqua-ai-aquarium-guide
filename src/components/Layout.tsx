@@ -2,13 +2,14 @@
 import React from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { OfflineIndicator } from '@/components/OfflineIndicator';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { useDevice } from '@/hooks/use-device';
 import { useAdminStatus } from '@/hooks/useAdminStatus';
 import { Header } from '@/components/layout/Header';
 import { BottomNavigation } from '@/components/layout/BottomNavigation';
+import { BreadcrumbNavigation } from '@/components/navigation/BreadcrumbNavigation';
 import { cn } from '@/lib/utils';
 
 interface LayoutProps {
@@ -23,6 +24,7 @@ export function Layout({ children, title, showBackButton = false, actions, loadi
   const { theme, setTheme } = useTheme();
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const { isMobile } = useDevice();
   const isAdmin = useAdminStatus();
 
@@ -34,6 +36,9 @@ export function Layout({ children, title, showBackButton = false, actions, loadi
     await signOut();
     navigate('/auth');
   };
+
+  // Don't show breadcrumbs on auth page or root page
+  const showBreadcrumbs = user && location.pathname !== '/' && location.pathname !== '/auth';
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -48,6 +53,8 @@ export function Layout({ children, title, showBackButton = false, actions, loadi
         onToggleTheme={toggleTheme}
         onSignOut={handleSignOut}
       />
+
+      {showBreadcrumbs && <BreadcrumbNavigation />}
 
       <main className={cn(
         "flex-1 container mx-auto px-3 sm:px-4 py-3 sm:py-4 md:py-6",
