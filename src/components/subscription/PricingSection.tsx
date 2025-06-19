@@ -2,16 +2,13 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Check, Star, Zap, ShoppingCart, RefreshCw } from 'lucide-react';
+import { Check, Star, RefreshCw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscriptionStatus } from '@/hooks/useSubscriptionStatus';
-import { OneTimePaymentButton } from './OneTimePaymentButton';
 
 const SUBSCRIPTION_PRICE_ID = "price_1Rb8vR1d1AvgoBGoNIjxLKRR"; // Monthly subscription
-const PRODUCT_ID = "prod_SWBItVMEChp6DI"; // One-time product
 
 export const PricingSection: React.FC = () => {
   const { toast } = useToast();
@@ -23,7 +20,7 @@ export const PricingSection: React.FC = () => {
     if (!user) {
       toast({
         title: "Sign In Required",
-        description: "Please sign in to upgrade your subscription.",
+        description: "Please sign in to start your free trial.",
         variant: "destructive",
       });
       return;
@@ -54,11 +51,11 @@ export const PricingSection: React.FC = () => {
 
   return (
     <section id="pricing" className="py-16 px-4">
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-4xl mx-auto">
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold mb-4">Choose Your Plan</h2>
+          <h2 className="text-3xl font-bold mb-4">Get Full Access to AquaAI</h2>
           <p className="text-gray-600 max-w-2xl mx-auto">
-            Start with our free plan, get a monthly subscription, or make a one-time purchase
+            Start your 3-day free trial today. Cancel anytime within 3 days to avoid charges.
           </p>
           
           {user && (
@@ -77,24 +74,41 @@ export const PricingSection: React.FC = () => {
           )}
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-          {/* Free Plan */}
-          <Card className="relative">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Star className="h-5 w-5 text-blue-600" />
-                Free Plan
+        <div className="flex justify-center">
+          <Card className="relative border-blue-200 shadow-lg max-w-md w-full">
+            <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+              <div className="bg-blue-600 text-white px-4 py-1 rounded-full text-sm font-medium">
+                3-Day Free Trial
+              </div>
+            </div>
+            <CardHeader className="text-center">
+              <CardTitle className="flex items-center justify-center gap-2 text-2xl">
+                <Star className="h-6 w-6 text-blue-600" />
+                AquaAI Pro
               </CardTitle>
               <CardDescription>
-                Perfect for getting started with basic aquarium management
+                Full access to all features and AI-powered tools
               </CardDescription>
-              <div className="text-3xl font-bold">$0</div>
+              <div className="text-4xl font-bold text-center">
+                $4.99<span className="text-base font-normal text-gray-600">/month</span>
+              </div>
+              <p className="text-sm text-gray-500">
+                3-day free trial • Cancel anytime
+              </p>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-6">
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
                   <Check className="h-4 w-4 text-green-600" />
-                  <span className="text-sm">Basic tank tracking</span>
+                  <span className="text-sm font-medium">AI-Powered AquaBot Chat</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-green-600" />
+                  <span className="text-sm">Advanced Setup Planner</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-green-600" />
+                  <span className="text-sm">Unlimited tank tracking</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Check className="h-4 w-4 text-green-600" />
@@ -108,127 +122,40 @@ export const PricingSection: React.FC = () => {
                   <Check className="h-4 w-4 text-green-600" />
                   <span className="text-sm">Educational resources</span>
                 </div>
-              </div>
-              <Button variant="outline" className="w-full" disabled>
-                Current Plan
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* Monthly Pro Plan */}
-          <Card className="relative border-blue-200 shadow-lg">
-            <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-              <Badge className="bg-blue-600 text-white px-4 py-1">
-                Most Popular
-              </Badge>
-            </div>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Zap className="h-5 w-5 text-blue-600" />
-                Monthly Pro
-              </CardTitle>
-              <CardDescription>
-                Full access with monthly billing
-              </CardDescription>
-              <div className="text-3xl font-bold">
-                $4.99<span className="text-base font-normal text-gray-600">/month</span>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-3">
                 <div className="flex items-center gap-2">
                   <Check className="h-4 w-4 text-green-600" />
-                  <span className="text-sm">Everything in Free</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-green-600" />
-                  <span className="text-sm font-medium">AI-Powered AquaBot Chat</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-green-600" />
-                  <span className="text-sm">Advanced Setup Planner</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-green-600" />
-                  <span className="text-sm">Unlimited tanks</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-green-600" />
-                  <span className="text-sm">Priority support</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-green-600" />
-                  <span className="text-sm">Cancel anytime</span>
+                  <span className="text-sm">All future updates</span>
                 </div>
               </div>
+              
+              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                <h4 className="font-medium text-blue-800 mb-2">How it works:</h4>
+                <ol className="text-sm text-blue-700 space-y-1">
+                  <li>1. Start your 3-day free trial</li>
+                  <li>2. Enjoy full access to all features</li>
+                  <li>3. Cancel within 3 days to avoid charges</li>
+                  <li>4. Or continue at $4.99/month</li>
+                </ol>
+              </div>
+              
               <Button 
                 onClick={handleSubscriptionUpgrade}
                 disabled={isLoading}
-                className="w-full bg-blue-600 hover:bg-blue-700"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-lg py-6"
               >
-                {isLoading ? "Processing..." : "Start Monthly Plan"}
+                {isLoading ? "Starting Trial..." : "Start 3-Day Free Trial"}
               </Button>
-            </CardContent>
-          </Card>
-
-          {/* One-time Purchase */}
-          <Card className="relative border-green-200 shadow-lg">
-            <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-              <Badge className="bg-green-600 text-white px-4 py-1">
-                Best Value
-              </Badge>
-            </div>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <ShoppingCart className="h-5 w-5 text-green-600" />
-                One-Time Pro
-              </CardTitle>
-              <CardDescription>
-                Pay once, use forever
-              </CardDescription>
-              <div className="text-3xl font-bold text-green-600">
-                $4.99<span className="text-base font-normal text-gray-600"> once</span>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-green-600" />
-                  <span className="text-sm">Everything in Free</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-green-600" />
-                  <span className="text-sm font-medium">AI-Powered AquaBot Chat</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-green-600" />
-                  <span className="text-sm">Advanced Setup Planner</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-green-600" />
-                  <span className="text-sm">Unlimited tanks</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-green-600" />
-                  <span className="text-sm">Priority support</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-green-600" />
-                  <span className="text-sm font-medium">Lifetime access</span>
-                </div>
-              </div>
-              <OneTimePaymentButton 
-                productName="Pro Features Access"
-                price="$4.99"
-                description="One-time purchase for lifetime access"
-              />
+              
+              <p className="text-xs text-gray-500 text-center">
+                No commitment • Cancel anytime • Secure payment via Stripe
+              </p>
             </CardContent>
           </Card>
         </div>
 
         <div className="text-center mt-8 text-sm text-gray-600">
           <p>
-            All plans include a 7-day free trial. Monthly plan can be cancelled anytime.
+            Questions? All features are included with your subscription.
           </p>
         </div>
       </div>
