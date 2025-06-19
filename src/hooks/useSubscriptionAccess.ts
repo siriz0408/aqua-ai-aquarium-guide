@@ -37,8 +37,8 @@ export const useSubscriptionAccess = () => {
     if (isLoading) return false;
     if (subscriptionInfo.isAdmin) return false;
     
-    // Show paywall if trial is expired or user has no access
-    return trialStatus?.isTrialExpired || !subscriptionInfo.hasAccess;
+    // Show paywall if trial is expired
+    return trialStatus?.isTrialExpired || false;
   };
 
   const shouldShowSubscriptionPrompt = () => {
@@ -46,7 +46,8 @@ export const useSubscriptionAccess = () => {
     if (subscriptionInfo.isAdmin) return false;
     
     // Show subscription prompt if user has no trial and no active subscription
-    return !subscriptionInfo.hasAccess && !trialStatus?.isTrialActive;
+    // This means they are free users who haven't started a trial yet
+    return !subscriptionInfo.hasAccess && !trialStatus?.isTrialActive && !trialStatus?.isTrialExpired;
   };
 
   return {

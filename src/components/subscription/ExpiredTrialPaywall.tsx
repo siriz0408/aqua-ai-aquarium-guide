@@ -47,7 +47,7 @@ export const ExpiredTrialPaywall: React.FC<ExpiredTrialPaywallProps> = ({
       }
 
       if (data?.url) {
-        window.open(data.url, '_blank');
+        window.location.href = data.url;
       } else {
         throw new Error('No checkout URL received');
       }
@@ -74,7 +74,7 @@ export const ExpiredTrialPaywall: React.FC<ExpiredTrialPaywallProps> = ({
           Trial Expired
         </CardTitle>
         <CardDescription className="text-red-600 dark:text-red-300">
-          Your 3-day free trial has ended. Upgrade to continue using AquaAI's powerful features.
+          Your 3-day free trial has ended. Subscribe to continue using AquaAI's powerful features.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6 text-center">
@@ -86,7 +86,7 @@ export const ExpiredTrialPaywall: React.FC<ExpiredTrialPaywallProps> = ({
           <div className="text-3xl font-bold mb-2">
             $4.99<span className="text-base font-normal text-gray-600">/month</span>
           </div>
-          <Badge className="mb-4">New 3-Day Free Trial Available</Badge>
+          <Badge className="mb-4">Continue Where You Left Off</Badge>
           
           <div className="space-y-2 text-sm text-left">
             <div className="flex items-center gap-2">
@@ -117,11 +117,11 @@ export const ExpiredTrialPaywall: React.FC<ExpiredTrialPaywallProps> = ({
           disabled={loading}
           className="w-full bg-red-600 hover:bg-red-700 text-white text-lg py-6"
         >
-          {loading ? "Starting New Trial..." : "Start New 3-Day Free Trial"}
+          {loading ? "Processing..." : "Subscribe Now"}
         </Button>
         
         <p className="text-xs text-red-600 dark:text-red-400">
-          Cancel anytime within 3 days to avoid charges • Secure payment via Stripe
+          Cancel anytime • Secure payment via Stripe
         </p>
       </CardContent>
     </Card>

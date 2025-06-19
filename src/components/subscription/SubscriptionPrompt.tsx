@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Crown, Star, Check } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 
 const STRIPE_PRICE_ID = "price_1Rb8vR1d1AvgoBGoNIjxLKRR";
 
@@ -17,21 +18,33 @@ export const SubscriptionPrompt: React.FC<SubscriptionPromptProps> = ({
   isFullScreen = false 
 }) => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [loading, setLoading] = React.useState(false);
 
   const handleStartTrial = async () => {
+    if (!user?.id) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        toast({
-          title: "Authentication Required",
-          description: "Please sign in to start your free trial.",
-          variant: "destructive",
-        });
-        return;
+      // First start the trial in our database
+      const { data: trialData, error: trialError } = await supabase.rpc('start_user_trial', {
+        user_id: user.id
+      });
+
+      if (trialError) {
+        throw trialError;
       }
-      
+
+      console.log('Trial started:', trialData);
+
+      // Then create the Stripe checkout session
       const { data, error } = await supabase.functions.invoke('create-checkout', {
         body: { priceId: STRIPE_PRICE_ID }
       });
@@ -47,7 +60,8 @@ export const SubscriptionPrompt: React.FC<SubscriptionPromptProps> = ({
       }
 
       if (data?.url) {
-        window.open(data.url, '_blank');
+        // Redirect to current page after checkout instead of opening new tab
+        window.location.href = data.url;
       } else {
         throw new Error('No checkout URL received');
       }

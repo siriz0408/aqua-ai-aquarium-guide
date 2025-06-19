@@ -994,6 +994,7 @@ export type Database = {
           last_active: string | null
           last_admin_login: string | null
           stripe_customer_id: string | null
+          stripe_price_id: string | null
           stripe_subscription_id: string | null
           subscription_end_date: string | null
           subscription_start_date: string | null
@@ -1001,6 +1002,7 @@ export type Database = {
           subscription_tier: string | null
           trial_end_date: string | null
           trial_start_date: string | null
+          trial_started_at: string | null
           updated_at: string
         }
         Insert: {
@@ -1016,6 +1018,7 @@ export type Database = {
           last_active?: string | null
           last_admin_login?: string | null
           stripe_customer_id?: string | null
+          stripe_price_id?: string | null
           stripe_subscription_id?: string | null
           subscription_end_date?: string | null
           subscription_start_date?: string | null
@@ -1023,6 +1026,7 @@ export type Database = {
           subscription_tier?: string | null
           trial_end_date?: string | null
           trial_start_date?: string | null
+          trial_started_at?: string | null
           updated_at?: string
         }
         Update: {
@@ -1038,6 +1042,7 @@ export type Database = {
           last_active?: string | null
           last_admin_login?: string | null
           stripe_customer_id?: string | null
+          stripe_price_id?: string | null
           stripe_subscription_id?: string | null
           subscription_end_date?: string | null
           subscription_start_date?: string | null
@@ -1045,6 +1050,7 @@ export type Database = {
           subscription_tier?: string | null
           trial_end_date?: string | null
           trial_start_date?: string | null
+          trial_started_at?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -1684,6 +1690,10 @@ export type Database = {
       promote_user_to_admin: {
         Args: { user_email: string; role?: string }
         Returns: boolean
+      }
+      start_user_trial: {
+        Args: { user_id: string }
+        Returns: Json
       }
       sync_stripe_subscription: {
         Args: {
