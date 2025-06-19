@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Layout } from '@/components/Layout';
@@ -22,7 +21,7 @@ const LogParameters = () => {
   const { toast } = useToast();
   
   const tank = tankId ? getTank(tankId) : undefined;
-  const [isLoading, setIsLo ading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [showPredictions, setShowPredictions] = useState(true);
   const [parameters, setParameters] = useState({
     ph: '',
