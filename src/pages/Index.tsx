@@ -86,9 +86,7 @@ const Index = () => {
     return (
       <Card 
         className="hover:shadow-lg transition-shadow cursor-pointer"
-        onClick={() => handleFe
-
-tureClick(path)}
+        onClick={() => handleFeatureClick(path)}
       >
         <CardHeader>
           <Icon className={`h-8 w-8 ${iconColor} mb-2`} />
