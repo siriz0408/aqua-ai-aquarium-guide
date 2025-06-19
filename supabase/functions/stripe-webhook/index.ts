@@ -81,6 +81,10 @@ serve(async (req) => {
     // Process different event types
     let processResult;
     switch (event.type) {
+      case 'checkout.session.completed':
+        processResult = await handleCheckoutCompleted(event, stripe, supabaseClient);
+        break;
+        
       case 'customer.subscription.created':
       case 'customer.subscription.updated':
       case 'customer.subscription.deleted':
@@ -93,10 +97,6 @@ serve(async (req) => {
         
       case 'invoice.payment_failed':
         processResult = await handlePaymentFailed(event, stripe, supabaseClient);
-        break;
-
-      case 'checkout.session.completed':
-        processResult = await handleCheckoutCompleted(event, stripe, supabaseClient);
         break;
       
       default:
@@ -184,6 +184,14 @@ async function handleCheckoutCompleted(
     const session = event.data.object as Stripe.Checkout.Session;
     const customerId = session.customer as string;
     
+    if (!customerId) {
+      logStep("No customer ID found in session");
+      return {
+        success: false,
+        error: 'No customer ID found in checkout session'
+      };
+    }
+    
     // Get customer data from Stripe
     const customer = await stripe.customers.retrieve(customerId) as Stripe.Customer;
     if (!customer.email) {
@@ -201,76 +209,97 @@ async function handleCheckoutCompleted(
       mode: session.mode 
     });
 
-    // Handle both subscription and one-time payments
+    // Handle subscription checkout
     if (session.mode === 'subscription' && session.subscription) {
       // Get subscription details
       const subscription = await stripe.subscriptions.retrieve(session.subscription as string);
       
-      // Update user profile for subscription
-      const { error: updateError } = await supabaseClient
-        .from('profiles')
-        .update({
-          subscription_status: 'active',
-          subscription_tier: 'pro',
+      // Use sync_stripe_subscription function to update user profile
+      const { data: syncResult, error: syncError } = await supabaseClient
+        .rpc('sync_stripe_subscription', {
+          customer_email: customer.email,
           stripe_customer_id: customerId,
           stripe_subscription_id: subscription.id,
-          subscription_start_date: new Date(subscription.created * 1000).toISOString(),
-          subscription_end_date: new Date(subscription.current_period_end * 1000).toISOString(),
-          updated_at: new Date().toISOString()
-        })
-        .eq('email', customer.email);
+          subscription_status: subscription.status,
+          price_id: null
+        });
 
-      if (updateError) {
-        logStep("Error updating subscription profile", { error: updateError });
+      if (syncError) {
+        logStep("Error syncing subscription via RPC", { error: syncError });
         return {
           success: false,
-          error: `Failed to update subscription profile: ${updateError.message}`,
+          error: `Failed to sync subscription: ${syncError.message}`,
           userEmail: customer.email,
-          customerId
+          customerId,
+          subscriptionId: subscription.id
         };
       }
-    } else if (session.mode === 'payment') {
-      // Handle one-time payment
-      const { error: updateError } = await supabaseClient
-        .from('profiles')
-        .update({
-          subscription_status: 'active',
-          subscription_tier: 'pro',
+
+      if (!syncResult.success) {
+        logStep("Sync RPC returned failure", { result: syncResult });
+        return {
+          success: false,
+          error: syncResult.error || 'Sync failed',
+          userEmail: customer.email,
+          customerId,
+          subscriptionId: subscription.id
+        };
+      }
+
+      logStep("Subscription checkout completed successfully", { 
+        email: customer.email,
+        subscriptionId: subscription.id,
+        status: subscription.status
+      });
+
+      return {
+        success: true,
+        message: 'Subscription checkout completed successfully',
+        userEmail: customer.email,
+        customerId,
+        subscriptionId: subscription.id
+      };
+    } 
+    
+    // Handle one-time payment checkout
+    if (session.mode === 'payment') {
+      // Use sync function for one-time payment (sets to active/pro status)
+      const { data: syncResult, error: syncError } = await supabaseClient
+        .rpc('sync_stripe_subscription', {
+          customer_email: customer.email,
           stripe_customer_id: customerId,
-          updated_at: new Date().toISOString()
-        })
-        .eq('email', customer.email);
+          stripe_subscription_id: null,
+          subscription_status: 'active',
+          price_id: null
+        });
 
-      if (updateError) {
-        logStep("Error updating one-time payment profile", { error: updateError });
+      if (syncError) {
+        logStep("Error syncing one-time payment via RPC", { error: syncError });
         return {
           success: false,
-          error: `Failed to update one-time payment profile: ${updateError.message}`,
+          error: `Failed to sync one-time payment: ${syncError.message}`,
           userEmail: customer.email,
           customerId
         };
       }
 
-      // Update order status if exists
-      if (session.id) {
-        await supabaseClient
-          .from('orders')
-          .update({
-            status: 'paid',
-            updated_at: new Date().toISOString()
-          })
-          .eq('stripe_session_id', session.id);
-      }
+      logStep("One-time payment checkout completed successfully", { 
+        email: customer.email,
+        sessionId: session.id
+      });
+
+      return {
+        success: true,
+        message: 'One-time payment checkout completed successfully',
+        userEmail: customer.email,
+        customerId
+      };
     }
     
-    logStep("Checkout completed successfully", { 
-      email: customer.email,
-      mode: session.mode
-    });
-    
+    logStep("Unsupported checkout mode", { mode: session.mode });
     return {
-      success: true,
-      message: 'Checkout completed successfully',
+      success: false,
+      error: `Unsupported checkout mode: ${session.mode}`,
       userEmail: customer.email,
       customerId
     };
@@ -310,44 +339,32 @@ async function handleSubscriptionEvent(
     
     logStep("Customer retrieved", { email: customer.email, customerId });
     
-    // Update subscription status based on event type and subscription status
-    let subscriptionStatus = 'free';
-    let subscriptionTier = 'free';
-    let subscriptionEndDate = null;
-    
-    if (event.type === 'customer.subscription.deleted' || subscription.status === 'canceled') {
-      subscriptionStatus = 'expired';
-      subscriptionTier = 'free';
-      subscriptionEndDate = new Date().toISOString();
-    } else if (subscription.status === 'active' || subscription.status === 'trialing') {
-      subscriptionStatus = 'active';
-      subscriptionTier = 'pro';
-      subscriptionEndDate = new Date(subscription.current_period_end * 1000).toISOString();
-    } else if (subscription.status === 'past_due' || subscription.status === 'unpaid') {
-      subscriptionStatus = 'expired';
-      subscriptionTier = 'free';
-      subscriptionEndDate = new Date().toISOString();
-    }
-    
-    // Update user profile in Supabase
-    const { error: updateError } = await supabaseClient
-      .from('profiles')
-      .update({
-        subscription_status: subscriptionStatus,
-        subscription_tier: subscriptionTier,
+    // Use sync_stripe_subscription function
+    const { data: syncResult, error: syncError } = await supabaseClient
+      .rpc('sync_stripe_subscription', {
+        customer_email: customer.email,
         stripe_customer_id: customerId,
         stripe_subscription_id: subscription.id,
-        subscription_start_date: subscription.status === 'active' ? new Date(subscription.created * 1000).toISOString() : null,
-        subscription_end_date: subscriptionEndDate,
-        updated_at: new Date().toISOString()
-      })
-      .eq('email', customer.email);
-    
-    if (updateError) {
-      logStep("Error updating user profile", { error: updateError });
+        subscription_status: subscription.status,
+        price_id: null
+      });
+
+    if (syncError) {
+      logStep("Error syncing subscription via RPC", { error: syncError });
       return {
         success: false,
-        error: `Failed to update user profile: ${updateError.message}`,
+        error: `Failed to sync subscription: ${syncError.message}`,
+        userEmail: customer.email,
+        customerId,
+        subscriptionId: subscription.id
+      };
+    }
+
+    if (!syncResult.success) {
+      logStep("Sync RPC returned failure", { result: syncResult });
+      return {
+        success: false,
+        error: syncResult.error || 'Sync failed',
         userEmail: customer.email,
         customerId,
         subscriptionId: subscription.id
@@ -356,8 +373,8 @@ async function handleSubscriptionEvent(
     
     logStep("Subscription sync completed successfully", { 
       email: customer.email,
-      status: subscriptionStatus,
-      tier: subscriptionTier
+      subscriptionId: subscription.id,
+      status: subscription.status
     });
     
     return {
@@ -397,23 +414,29 @@ async function handlePaymentSucceeded(
       throw new Error(`No email found for customer ${customerId}`);
     }
     
-    // If this is a subscription invoice, get the subscription
+    // If this is a subscription invoice, sync the subscription
     if (invoice.subscription) {
       const subscription = await stripe.subscriptions.retrieve(invoice.subscription as string);
       
-      // Update user profile to active status
-      await supabaseClient
-        .from('profiles')
-        .update({
-          subscription_status: 'active',
-          subscription_tier: 'pro',
+      // Use sync_stripe_subscription function
+      const { data: syncResult, error: syncError } = await supabaseClient
+        .rpc('sync_stripe_subscription', {
+          customer_email: customer.email,
           stripe_customer_id: customerId,
           stripe_subscription_id: subscription.id,
-          subscription_start_date: new Date(subscription.created * 1000).toISOString(),
-          subscription_end_date: new Date(subscription.current_period_end * 1000).toISOString(),
-          updated_at: new Date().toISOString()
-        })
-        .eq('email', customer.email);
+          subscription_status: subscription.status,
+          price_id: null
+        });
+
+      if (syncError) {
+        logStep("Error syncing payment via RPC", { error: syncError });
+        return {
+          success: false,
+          error: `Failed to sync payment: ${syncError.message}`,
+          userEmail: customer.email,
+          customerId
+        };
+      }
     }
     
     logStep("Payment succeeded event processed", { 
