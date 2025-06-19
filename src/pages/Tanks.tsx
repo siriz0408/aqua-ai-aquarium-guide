@@ -1,24 +1,19 @@
-import React, { useState } from 'react';
+
+import React from 'react';
 import { Layout } from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Droplets, Fish, Settings, TestTube2, Calendar, Edit, Trash2, Zap } from 'lucide-react';
+import { Plus, Droplets, Fish, Settings, TestTube2, Calendar, Edit, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAquarium } from '@/contexts/AquariumContext';
 import { useToast } from '@/hooks/use-toast';
 import { HealthIndicator } from '@/components/tank/HealthIndicator';
-import { QuickParameterModal } from '@/components/tank/QuickParameterModal';
 
 export const Tanks = () => {
   const navigate = useNavigate();
   const { tanks, isLoading, deleteTank } = useAquarium();
   const { toast } = useToast();
-  const [quickLogModal, setQuickLogModal] = useState<{ isOpen: boolean; tankId: string; tankName: string }>({
-    isOpen: false,
-    tankId: '',
-    tankName: '',
-  });
 
   const handleDeleteTank = async (tankId: string, tankName: string) => {
     if (window.confirm(`Are you sure you want to delete "${tankName}"? This action cannot be undone.`)) {
@@ -37,22 +32,6 @@ export const Tanks = () => {
         });
       }
     }
-  };
-
-  const handleQuickLog = (tankId: string, tankName: string) => {
-    setQuickLogModal({
-      isOpen: true,
-      tankId,
-      tankName,
-    });
-  };
-
-  const handleCloseQuickLog = () => {
-    setQuickLogModal({
-      isOpen: false,
-      tankId: '',
-      tankName: '',
-    });
   };
 
   const getLastTestDate = (tank: any) => {
@@ -279,11 +258,11 @@ export const Tanks = () => {
                           className="flex-1"
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleQuickLog(tank.id, tank.name);
+                            navigate(`/tank/${tank.id}/log-parameters`);
                           }}
                         >
-                          <Zap className="h-3 w-3 mr-1" />
-                          Quick Log
+                          <TestTube2 className="h-3 w-3 mr-1" />
+                          Log Test
                         </Button>
                         <Button 
                           size="sm" 
@@ -304,14 +283,6 @@ export const Tanks = () => {
           </>
         )}
       </div>
-
-      {/* Quick Parameter Modal */}
-      <QuickParameterModal
-        tankId={quickLogModal.tankId}
-        tankName={quickLogModal.tankName}
-        isOpen={quickLogModal.isOpen}
-        onClose={handleCloseQuickLog}
-      />
     </Layout>
   );
 };
