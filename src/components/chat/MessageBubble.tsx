@@ -1,5 +1,4 @@
-
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -18,62 +17,116 @@ interface MessageBubbleProps {
   onFollowUpClick?: (prompt: string) => void;
 }
 
-// Generate contextual follow-up questions based on AI response content
-const generateFollowUpQuestions = (content: string): string[] => {
+// Enhanced contextual follow-up question generator
+const generateContextualFollowUps = (content: string): string[] => {
   const followUps: string[] = [];
   const lowerContent = content.toLowerCase();
 
-  // Water parameter related follow-ups
-  if (lowerContent.includes('water') || lowerContent.includes('parameter') || lowerContent.includes('test')) {
-    followUps.push("What's the ideal testing schedule for these parameters?");
-    followUps.push("How do I correct these water parameters if they're off?");
-    followUps.push("What equipment do you recommend for maintaining stable water chemistry?");
+  // Water parameter analysis
+  if (lowerContent.includes('ph') || lowerContent.includes('alkalinity') || lowerContent.includes('salinity')) {
+    followUps.push("How often should I test these water parameters?");
+    followUps.push("What causes these parameters to fluctuate?");
+    followUps.push("Which parameter should I prioritize adjusting first?");
   }
-
-  // Fish/livestock related follow-ups
-  if (lowerContent.includes('fish') || lowerContent.includes('coral') || lowerContent.includes('livestock')) {
-    followUps.push("What are the compatibility requirements for these species?");
-    followUps.push("What should I feed them and how often?");
-    followUps.push("How do I know if they're healthy and thriving?");
+  
+  // Temperature issues
+  else if (lowerContent.includes('temperature') || lowerContent.includes('heating') || lowerContent.includes('cooling')) {
+    followUps.push("What's the ideal temperature range for my tank type?");
+    followUps.push("How quickly can I safely adjust temperature?");
+    followUps.push("What equipment do you recommend for temperature control?");
   }
-
-  // Equipment related follow-ups
-  if (lowerContent.includes('equipment') || lowerContent.includes('filter') || lowerContent.includes('skimmer') || lowerContent.includes('lighting')) {
-    followUps.push("What's the maintenance schedule for this equipment?");
-    followUps.push("How do I know when it needs upgrading or replacement?");
-    followUps.push("What are some alternative equipment options?");
-  }
-
-  // Problem/issue related follow-ups
-  if (lowerContent.includes('problem') || lowerContent.includes('issue') || lowerContent.includes('sick') || lowerContent.includes('algae')) {
-    followUps.push("What should I do if this problem persists?");
+  
+  // Disease/health problems
+  else if (lowerContent.includes('ich') || lowerContent.includes('disease') || lowerContent.includes('sick') || lowerContent.includes('infection')) {
+    followUps.push("How long should I continue this treatment?");
+    followUps.push("What are signs the treatment is working?");
     followUps.push("How can I prevent this from happening again?");
+  }
+  
+  // Algae problems
+  else if (lowerContent.includes('algae') || lowerContent.includes('green') || lowerContent.includes('brown algae') || lowerContent.includes('hair algae')) {
+    followUps.push("What lighting changes should I make?");
+    followUps.push("How do I adjust my feeding schedule?");
+    followUps.push("Which cleanup crew would help with this algae?");
+  }
+  
+  // Coral care
+  else if (lowerContent.includes('coral') || lowerContent.includes('polyp') || lowerContent.includes('calcium') || lowerContent.includes('magnesium')) {
+    followUps.push("What lighting requirements do these corals have?");
+    followUps.push("How should I dose calcium and alkalinity?");
+    followUps.push("What are signs of coral stress to watch for?");
+  }
+  
+  // Fish compatibility
+  else if (lowerContent.includes('fish') || lowerContent.includes('compatibility') || lowerContent.includes('aggressive') || lowerContent.includes('peaceful')) {
+    followUps.push("What order should I add these fish?");
+    followUps.push("How long should I quarantine new fish?");
+    followUps.push("What are signs of fish stress or aggression?");
+  }
+  
+  // Equipment recommendations
+  else if (lowerContent.includes('equipment') || lowerContent.includes('filter') || lowerContent.includes('skimmer') || lowerContent.includes('pump')) {
+    followUps.push("What size/capacity do I need for my tank?");
+    followUps.push("How often does this equipment need maintenance?");
+    followUps.push("What are alternative options in my budget range?");
+  }
+  
+  // Water changes
+  else if (lowerContent.includes('water change') || lowerContent.includes('salt mix') || lowerContent.includes('rodi')) {
+    followUps.push("How do I prepare saltwater for water changes?");
+    followUps.push("What's the best schedule for my tank size?");
+    followUps.push("Should I vacuum the substrate during changes?");
+  }
+  
+  // Tank setup/cycling
+  else if (lowerContent.includes('cycle') || lowerContent.includes('setup') || lowerContent.includes('new tank') || lowerContent.includes('ammonia')) {
+    followUps.push("How long does the cycling process typically take?");
+    followUps.push("When can I add my first fish safely?");
+    followUps.push("What should I do if ammonia spikes occur?");
+  }
+  
+  // Feeding related
+  else if (lowerContent.includes('feed') || lowerContent.includes('food') || lowerContent.includes('nutrition') || lowerContent.includes('diet')) {
+    followUps.push("How much should I feed at each feeding?");
+    followUps.push("What's the best feeding schedule?");
+    followUps.push("How can I tell if I'm overfeeding?");
+  }
+  
+  // Lighting issues
+  else if (lowerContent.includes('light') || lowerContent.includes('led') || lowerContent.includes('spectrum') || lowerContent.includes('photoperiod')) {
+    followUps.push("What photoperiod schedule should I use?");
+    followUps.push("How do I prevent algae with lighting changes?");
+    followUps.push("When should I upgrade my lighting system?");
+  }
+  
+  // Generic troubleshooting
+  else if (lowerContent.includes('problem') || lowerContent.includes('issue') || lowerContent.includes('help') || lowerContent.includes('wrong')) {
+    followUps.push("What should I monitor closely over the next few days?");
     followUps.push("Are there any warning signs I should watch for?");
+    followUps.push("What's the most important step to take first?");
   }
-
-  // Setup/planning related follow-ups
-  if (lowerContent.includes('setup') || lowerContent.includes('plan') || lowerContent.includes('new') || lowerContent.includes('beginner')) {
-    followUps.push("What's the typical timeline for this setup process?");
-    followUps.push("What are the most common mistakes to avoid?");
-    followUps.push("How much should I budget for this project?");
+  
+  // Planning/setup advice
+  else if (lowerContent.includes('plan') || lowerContent.includes('recommend') || lowerContent.includes('suggest') || lowerContent.includes('consider')) {
+    followUps.push("What's the timeline for implementing these changes?");
+    followUps.push("What's the estimated cost for this approach?");
+    followUps.push("What are the most critical items to prioritize?");
   }
-
-  // Maintenance related follow-ups
-  if (lowerContent.includes('maintenance') || lowerContent.includes('clean') || lowerContent.includes('change')) {
-    followUps.push("How often should I perform these maintenance tasks?");
-    followUps.push("What tools do I need for proper maintenance?");
-    followUps.push("Can you create a maintenance schedule for me?");
-  }
-
-  // Generic follow-ups if no specific context
+  
+  // Generic fallbacks if no specific context is found
   if (followUps.length === 0) {
     followUps.push("Can you explain this in more detail?");
     followUps.push("What are the next steps I should take?");
     followUps.push("Are there any risks or precautions I should know about?");
   }
 
-  // Return max 3 follow-ups
-  return followUps.slice(0, 3);
+  // Return exactly 3 follow-ups, shuffling if we have more
+  if (followUps.length > 3) {
+    const shuffled = followUps.sort(() => 0.5 - Math.random());
+    return shuffled.slice(0, 3);
+  }
+  
+  return followUps;
 };
 
 // Component to render markdown-style content with enhanced table and checkbox support
@@ -259,6 +312,73 @@ const MarkdownContent: React.FC<{ content: string; onAddTask: (task: ParsedTask)
   );
 };
 
+// Animated Follow-up Questions Component
+const FollowUpQuestions: React.FC<{
+  questions: string[];
+  onQuestionClick: (question: string) => void;
+  isMobile: boolean;
+}> = ({ questions, onQuestionClick, isMobile }) => {
+  const [showQuestions, setShowQuestions] = useState(false);
+  const [clickedQuestions, setClickedQuestions] = useState<Set<number>>(new Set());
+
+  useEffect(() => {
+    // Animate in after a short delay
+    const timer = setTimeout(() => setShowQuestions(true), 500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const handleQuestionClick = (question: string, index: number) => {
+    // Track clicked questions for analytics
+    console.log('Follow-up question clicked:', question);
+    setClickedQuestions(prev => new Set([...prev, index]));
+    onQuestionClick(question);
+  };
+
+  return (
+    <div className={cn(
+      "mt-2 sm:mt-3 w-full transition-all duration-500 ease-out",
+      showQuestions ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2",
+      isMobile && "max-w-full"
+    )}>
+      <p className={cn(
+        "font-medium mb-2 flex items-center gap-1 text-muted-foreground",
+        isMobile ? "text-xs" : "text-xs"
+      )}>
+        <MessageCircle className={cn(
+          isMobile ? "h-2 w-2" : "h-3 w-3"
+        )} />
+        Quick questions:
+      </p>
+      <div className="space-y-1">
+        {questions.map((question, idx) => (
+          <div
+            key={idx}
+            className={cn(
+              "transition-all duration-300 ease-out",
+              showQuestions ? "opacity-100 translate-x-0" : "opacity-0 translate-x-4"
+            )}
+            style={{ transitionDelay: `${idx * 100}ms` }}
+          >
+            <Button
+              variant="ghost"
+              size="sm"
+              className={cn(
+                "h-auto p-2 text-left justify-start w-full bg-background/50 hover:bg-background border border-border/30 hover:border-border transition-all duration-200",
+                clickedQuestions.has(idx) && "opacity-60 bg-muted",
+                isMobile ? "text-xs" : "text-xs"
+              )}
+              onClick={() => handleQuestionClick(question, idx)}
+              disabled={clickedQuestions.has(idx)}
+            >
+              <span className="text-left leading-relaxed">{question}</span>
+            </Button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onFollowUpClick }) => {
   const isUser = message.role === 'user';
   const { toast } = useToast();
@@ -268,8 +388,8 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onFollowU
   // Parse AI responses for actionable tasks
   const parsedTasks = !isUser ? parseAIRecommendations(message.content) : [];
   
-  // Generate follow-up questions for AI responses
-  const followUpQuestions = !isUser ? generateFollowUpQuestions(message.content) : [];
+  // Generate enhanced contextual follow-up questions for AI responses
+  const followUpQuestions = !isUser ? generateContextualFollowUps(message.content) : [];
 
   const addToPlanner = async (task: ParsedTask) => {
     try {
@@ -390,38 +510,13 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onFollowU
           )}
         </Card>
         
-        {/* Follow-up questions for AI responses */}
+        {/* Enhanced Follow-up questions for AI responses */}
         {!isUser && followUpQuestions.length > 0 && onFollowUpClick && (
-          <div className={cn(
-            "mt-2 sm:mt-3 w-full",
-            isMobile && "max-w-full"
-          )}>
-            <p className={cn(
-              "font-medium mb-2 flex items-center gap-1 text-muted-foreground",
-              isMobile ? "text-xs" : "text-xs"
-            )}>
-              <MessageCircle className={cn(
-                isMobile ? "h-2 w-2" : "h-3 w-3"
-              )} />
-              Follow-up questions:
-            </p>
-            <div className="space-y-1">
-              {followUpQuestions.map((question, idx) => (
-                <Button
-                  key={idx}
-                  variant="ghost"
-                  size="sm"
-                  className={cn(
-                    "h-auto p-2 text-left justify-start w-full bg-background/50 hover:bg-background border border-border/30 hover:border-border",
-                    isMobile ? "text-xs" : "text-xs"
-                  )}
-                  onClick={() => onFollowUpClick(question)}
-                >
-                  {question}
-                </Button>
-              ))}
-            </div>
-          </div>
+          <FollowUpQuestions
+            questions={followUpQuestions}
+            onQuestionClick={onFollowUpClick}
+            isMobile={isMobile}
+          />
         )}
         
         <span className={cn(
