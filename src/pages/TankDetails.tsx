@@ -10,6 +10,7 @@ import TankParametersTab from '@/components/tank/TankParametersTab';
 import TankEquipmentTab from '@/components/tank/TankEquipmentTab';
 import TankLivestockTab from '@/components/tank/TankLivestockTab';
 import TankRemindersTab from '@/components/tank/TankRemindersTab';
+import { HealthIndicator } from '@/components/tank/HealthIndicator';
 
 const TankDetails = () => {
   const {
@@ -66,6 +67,9 @@ const TankDetails = () => {
       <div className="space-y-6 pb-20">
         {/* Tank Info */}
         <TankInfoCard tank={tank} />
+
+        {/* Health Indicator */}
+        <HealthIndicator tank={tank} showDetails />
 
         {/* Tabs */}
         <Tabs defaultValue="parameters" className="w-full">

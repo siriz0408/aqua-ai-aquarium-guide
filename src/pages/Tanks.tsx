@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Layout } from '@/components/Layout';
 import { Button } from '@/components/ui/button';
@@ -7,6 +8,7 @@ import { Plus, Droplets, Fish, Settings, TestTube2, Calendar, Edit, Trash2 } fro
 import { useNavigate } from 'react-router-dom';
 import { useAquarium } from '@/contexts/AquariumContext';
 import { useToast } from '@/hooks/use-toast';
+import { HealthIndicator } from '@/components/tank/HealthIndicator';
 
 export const Tanks = () => {
   const navigate = useNavigate();
@@ -201,9 +203,12 @@ export const Tanks = () => {
                           </Button>
                         </div>
                       </div>
-                      <Badge variant="secondary" className="w-fit">
-                        {tank.type}
-                      </Badge>
+                      <div className="flex items-center justify-between">
+                        <Badge variant="secondary" className="w-fit">
+                          {tank.type}
+                        </Badge>
+                        <HealthIndicator tank={tank} size="sm" />
+                      </div>
                     </CardHeader>
                     
                     <CardContent className="space-y-4">
