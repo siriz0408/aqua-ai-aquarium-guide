@@ -20,6 +20,7 @@ const Auth = () => {
   const [stayLoggedIn, setStayLoggedIn] = useState(true);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(false);
   const [showAdminSignup, setShowAdminSignup] = useState(false);
   const { signIn, signUp, user } = useAuth();
   const { toast } = useToast();
@@ -36,7 +37,7 @@ const Auth = () => {
     setLoading(true);
 
     try {
-      if (showAdminSignup) {
+      if (isSignUp || showAdminSignup) {
         if (!fullName.trim()) {
           toast({
             title: "Full name required",
@@ -90,8 +91,20 @@ const Auth = () => {
     }
   };
 
+  const getTitle = () => {
+    if (showAdminSignup) return 'Admin Registration';
+    if (isSignUp) return 'Start Your Free Trial';
+    return 'Welcome Back';
+  };
+
+  const getDescription = () => {
+    if (showAdminSignup) return 'Create an admin account for AquaAI';
+    if (isSignUp) return 'Create your account and start your 3-day free trial';
+    return 'Sign in to access your AquaAI account';
+  };
+
   return (
-    <Layout title={showAdminSignup ? 'Admin Registration' : 'Sign In'}>
+    <Layout title={getTitle()}>
       <div className="min-h-[60vh] flex items-center justify-center">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
@@ -99,17 +112,14 @@ const Auth = () => {
               <span className="text-white font-bold text-lg">🐠</span>
             </div>
             <CardTitle className="text-2xl bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
-              {showAdminSignup ? 'Admin Registration' : 'Welcome Back'}
+              {getTitle()}
             </CardTitle>
             <CardDescription>
-              {showAdminSignup 
-                ? 'Create an admin account for AquaAI' 
-                : 'Sign in to access your AquaAI account'
-              }
+              {getDescription()}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* Google OAuth Button - only show for regular sign in */}
+            {/* Google OAuth Button - only show for regular flows */}
             {!showAdminSignup && (
               <>
                 <Button
@@ -164,7 +174,7 @@ const Auth = () => {
 
             {/* Email/Password Form */}
             <form onSubmit={handleSubmit} className="space-y-4">
-              {showAdminSignup && (
+              {(isSignUp || showAdminSignup) && (
                 <div className="space-y-2">
                   <Label htmlFor="fullName">Full Name</Label>
                   <Input
@@ -173,7 +183,7 @@ const Auth = () => {
                     placeholder="Enter your full name"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
-                    required={showAdminSignup}
+                    required={isSignUp || showAdminSignup}
                     disabled={loading || googleLoading}
                   />
                 </div>
@@ -204,7 +214,7 @@ const Auth = () => {
                   disabled={loading || googleLoading}
                   minLength={6}
                 />
-                {showAdminSignup && (
+                {(isSignUp || showAdminSignup) && (
                   <p className="text-xs text-muted-foreground">
                     Password must be at least 6 characters long
                   </p>
@@ -237,7 +247,7 @@ const Auth = () => {
               )}
 
               {/* Stay Logged In Option - only show for sign in */}
-              {!showAdminSignup && (
+              {!isSignUp && !showAdminSignup && (
                 <div className="flex items-center space-x-2">
                   <Checkbox
                     id="stayLoggedIn"
@@ -262,26 +272,81 @@ const Auth = () => {
                 {loading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    {showAdminSignup ? 'Creating Account...' : 'Signing In...'}
+                    {isSignUp || showAdminSignup ? 'Creating Account...' : 'Signing In...'}
                   </>
                 ) : (
-                  showAdminSignup ? 'Create Admin Account' : 'Sign In'
+                  <>
+                    {showAdminSignup ? 'Create Admin Account' : 
+                     isSignUp ? 'Start Free Trial' : 'Sign In'}
+                  </>
                 )}
               </Button>
             </form>
+
+            {/* Trial Benefits - only show for regular signup */}
+            {isSignUp && !showAdminSignup && (
+              <div className="bg-blue-50 dark:bg-blue-950/30 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+                <h4 className="font-medium text-blue-800 dark:text-blue-200 mb-2">
+                  🎉 3-Day Free Trial Includes:
+                </h4>
+                <ul className="text-sm text-blue-700 dark:text-blue-300 space-y-1">
+                  <li>• AI-Powered AquaBot Chat</li>
+                  <li>• Advanced Setup Planner</li>
+                  <li>• Unlimited tank tracking</li>
+                  <li>• Water parameter logging</li>
+                  <li>• Equipment management</li>
+                </ul>
+                <p className="text-xs text-blue-600 dark:text-blue-400 mt-2">
+                  No credit card required • Cancel anytime
+                </p>
+              </div>
+            )}
             
-            <div className="text-center">
-              <p className="text-sm text-muted-foreground">
-                {showAdminSignup ? 'Already have an admin account?' : 'Need admin access?'}
-              </p>
-              <Button 
-                variant="link" 
-                className="text-blue-600 hover:text-blue-700"
-                onClick={() => setShowAdminSignup(!showAdminSignup)}
-                disabled={loading || googleLoading}
-              >
-                {showAdminSignup ? 'Sign In' : 'Admin Registration'}
-              </Button>
+            {/* Toggle between sign in/up and admin registration */}
+            <div className="text-center space-y-2">
+              {!showAdminSignup ? (
+                <>
+                  <p className="text-sm text-muted-foreground">
+                    {isSignUp ? 'Already have an account?' : "Don't have an account?"}
+                  </p>
+                  <Button 
+                    variant="link" 
+                    className="text-blue-600 hover:text-blue-700"
+                    onClick={() => setIsSignUp(!isSignUp)}
+                    disabled={loading || googleLoading}
+                  >
+                    {isSignUp ? 'Sign In' : 'Start Free Trial'}
+                  </Button>
+                  <div className="pt-2 border-t">
+                    <p className="text-sm text-muted-foreground">Need admin access?</p>
+                    <Button 
+                      variant="link" 
+                      className="text-blue-600 hover:text-blue-700 text-sm"
+                      onClick={() => setShowAdminSignup(true)}
+                      disabled={loading || googleLoading}
+                    >
+                      Admin Registration
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm text-muted-foreground">
+                    Already have an account?
+                  </p>
+                  <Button 
+                    variant="link" 
+                    className="text-blue-600 hover:text-blue-700"
+                    onClick={() => {
+                      setShowAdminSignup(false);
+                      setIsSignUp(false);
+                    }}
+                    disabled={loading || googleLoading}
+                  >
+                    Sign In
+                  </Button>
+                </>
+              )}
             </div>
           </CardContent>
         </Card>
