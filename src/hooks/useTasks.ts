@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -38,6 +37,7 @@ interface CreateTaskData {
   task_type: string;
   priority: 'low' | 'medium' | 'high' | 'urgent';
   conversation_id?: string;
+  due_date?: string;
 }
 
 export const useTasks = () => {
@@ -87,7 +87,7 @@ export const useTasks = () => {
     enabled: !!user,
   });
 
-  // Create task mutation
+  // Create task mutation - Updated to handle due dates
   const createTaskMutation = useMutation({
     mutationFn: async (taskData: CreateTaskData) => {
       if (!user) throw new Error('User not authenticated');
@@ -100,6 +100,7 @@ export const useTasks = () => {
           task_type: taskData.task_type,
           priority: taskData.priority,
           conversation_id: taskData.conversation_id,
+          due_date: taskData.due_date,
           user_id: user.id,
         })
         .select()
@@ -108,11 +109,18 @@ export const useTasks = () => {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      toast({
-        title: "Task created",
-        description: "Task has been added successfully.",
+      
+      // Analytics tracking
+      console.log('Task created successfully:', {
+        taskId: data.id,
+        title: data.title,
+        type: data.task_type,
+        priority: data.priority,
+        hasConversation: !!data.conversation_id,
+        hasDueDate: !!data.due_date,
+        timestamp: new Date().toISOString()
       });
     },
     onError: (error) => {
