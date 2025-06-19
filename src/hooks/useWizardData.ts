@@ -62,16 +62,16 @@ export const useWizardData = () => {
     }));
   };
 
-  const isStepValid = () => {
+  const isStepValid = (): boolean => {
     const currentStepKey = steps[currentStep].key;
     const value = wizardData[currentStepKey];
     
     if (currentStepKey === 'tankSize') {
       if (value === 'custom') {
-        return wizardData.customSize && 
-               wizardData.customSize.length && 
-               wizardData.customSize.width && 
-               wizardData.customSize.height;
+        return !!(wizardData.customSize && 
+                 wizardData.customSize.length && 
+                 wizardData.customSize.width && 
+                 wizardData.customSize.height);
       }
       return !!value;
     }
