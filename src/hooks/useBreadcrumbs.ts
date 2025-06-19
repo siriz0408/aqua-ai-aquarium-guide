@@ -16,21 +16,21 @@ export const useBreadcrumbs = () => {
   const params = useParams();
   const { user } = useAuth();
 
-  // Fetch tank data if we have a tankId
-  const { data: tank } = useQuery({
-    queryKey: ['tank', params.tankId],
+  // Fetch aquarium data if we have a tankId (aquarium ID)
+  const { data: aquarium } = useQuery({
+    queryKey: ['aquarium', params.tankId],
     queryFn: async () => {
       if (!params.tankId || !user?.id) return null;
       
       const { data, error } = await supabase
-        .from('tanks')
+        .from('aquariums')
         .select('name')
         .eq('id', params.tankId)
         .eq('user_id', user.id)
         .single();
       
       if (error) {
-        console.error('Error fetching tank:', error);
+        console.error('Error fetching aquarium:', error);
         return null;
       }
       
@@ -75,12 +75,12 @@ export const useBreadcrumbs = () => {
       });
     }
 
-    if (params.tankId && tank) {
-      const tankName = tank.name || 'Tank';
+    if (params.tankId && aquarium) {
+      const aquariumName = aquarium.name || 'Tank';
       const isOnTankDetails = pathSegments.length === 2 && pathSegments[0] === 'tank';
       
       breadcrumbItems.push({
-        label: tankName,
+        label: aquariumName,
         href: isOnTankDetails ? undefined : `/tank/${params.tankId}`,
         isCurrentPage: isOnTankDetails,
       });
@@ -166,7 +166,7 @@ export const useBreadcrumbs = () => {
     }
 
     return breadcrumbItems;
-  }, [location.pathname, params.tankId, tank]);
+  }, [location.pathname, params.tankId, aquarium]);
 
   return breadcrumbs;
 };

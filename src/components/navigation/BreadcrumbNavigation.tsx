@@ -13,6 +13,13 @@ import {
 } from '@/components/ui/breadcrumb';
 import { useBreadcrumbs } from '@/hooks/useBreadcrumbs';
 
+interface BreadcrumbDisplayItem {
+  label: string;
+  href?: string;
+  isCurrentPage?: boolean;
+  isEllipsis?: boolean;
+}
+
 export const BreadcrumbNavigation: React.FC = () => {
   const breadcrumbs = useBreadcrumbs();
   const { isMobile } = useDevice();
@@ -23,7 +30,7 @@ export const BreadcrumbNavigation: React.FC = () => {
   }
 
   // On mobile, show only last 2 items with ellipsis if needed
-  const displayBreadcrumbs = isMobile && breadcrumbs.length > 2 
+  const displayBreadcrumbs: BreadcrumbDisplayItem[] = isMobile && breadcrumbs.length > 2 
     ? [
         breadcrumbs[0], // Keep Home
         { label: '...', isEllipsis: true },
