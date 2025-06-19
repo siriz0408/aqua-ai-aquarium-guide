@@ -15,9 +15,9 @@ export interface HealthScore {
 }
 
 export const calculateTankHealth = (tank: Tank): HealthScore => {
-  const parameterStability = calculateParameterStability(tank.parameters);
-  const maintenanceAdherence = calculateMaintenanceAdherence(tank.parameters);
-  const timeSinceLastIssue = calculateTimeSinceLastIssue(tank.parameters);
+  const parameterStability = calculateParameterStability(tank.parameters || []);
+  const maintenanceAdherence = calculateMaintenanceAdherence(tank.parameters || []);
+  const timeSinceLastIssue = calculateTimeSinceLastIssue(tank.parameters || []);
 
   // Weighted calculation: Parameter stability (40%), Maintenance (30%), Time since issue (30%)
   const overall = Math.round(
@@ -50,11 +50,26 @@ const calculateParameterStability = (parameters: WaterParameters[]): number => {
   const recentParams = parameters.slice(-5);
   
   // Calculate stability scores for key parameters
-  const phStability = calculateStabilityScore(recentParams.map(p => p.ph), { min: 7.8, max: 8.5, ideal: 8.2 });
-  const salinityStability = calculateStabilityScore(recentParams.map(p => p.salinity), { min: 1.020, max: 1.026, ideal: 1.025 });
-  const tempStability = calculateStabilityScore(recentParams.map(p => p.temperature), { min: 74, max: 82, ideal: 78 });
-  const ammoniaStability = calculateStabilityScore(recentParams.map(p => p.ammonia), { min: 0, max: 0.25, ideal: 0 });
-  const nitrateStability = calculateStabilityScore(recentParams.map(p => p.nitrate), { min: 0, max: 20, ideal: 5 });
+  const phStability = calculateStabilityScore(
+    recentParams.map(p => p.ph).filter((val): val is number => val !== undefined), 
+    { min: 7.8, max: 8.5, ideal: 8.2 }
+  );
+  const salinityStability = calculateStabilityScore(
+    recentParams.map(p => p.salinity).filter((val): val is number => val !== undefined), 
+    { min: 1.020, max: 1.026, ideal: 1.025 }
+  );
+  const tempStability = calculateStabilityScore(
+    recentParams.map(p => p.temperature).filter((val): val is number => val !== undefined), 
+    { min: 74, max: 82, ideal: 78 }
+  );
+  const ammoniaStability = calculateStabilityScore(
+    recentParams.map(p => p.ammonia).filter((val): val is number => val !== undefined), 
+    { min: 0, max: 0.25, ideal: 0 }
+  );
+  const nitrateStability = calculateStabilityScore(
+    recentParams.map(p => p.nitrate).filter((val): val is number => val !== undefined), 
+    { min: 0, max: 20, ideal: 5 }
+  );
 
   // Average all stability scores
   return Math.round((phStability + salinityStability + tempStability + ammoniaStability + nitrateStability) / 5);
@@ -152,12 +167,12 @@ const calculateTimeSinceLastIssue = (parameters: WaterParameters[]): number => {
     
     // Define what constitutes an "issue"
     const hasIssue = 
-      param.ph < 7.8 || param.ph > 8.5 ||
-      param.salinity < 1.020 || param.salinity > 1.026 ||
-      param.ammonia > 0.25 ||
-      param.nitrite > 0.1 ||
-      param.nitrate > 25 ||
-      param.temperature < 74 || param.temperature > 82;
+      (param.ph !== undefined && (param.ph < 7.8 || param.ph > 8.5)) ||
+      (param.salinity !== undefined && (param.salinity < 1.020 || param.salinity > 1.026)) ||
+      (param.ammonia !== undefined && param.ammonia > 0.25) ||
+      (param.nitrite !== undefined && param.nitrite > 0.1) ||
+      (param.nitrate !== undefined && param.nitrate > 25) ||
+      (param.temperature !== undefined && (param.temperature < 74 || param.temperature > 82));
 
     if (hasIssue && daysAgo < daysSinceLastIssue) {
       daysSinceLastIssue = daysAgo;

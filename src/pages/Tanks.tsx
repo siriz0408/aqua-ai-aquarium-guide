@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Plus, Droplets, Fish, Settings, TestTube2, Calendar, Edit, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useAquarium } from '@/contexts/AquariumContext';
+import { useAquarium, Tank } from '@/contexts/AquariumContext';
 import { useToast } from '@/hooks/use-toast';
 import { HealthIndicator } from '@/components/tank/HealthIndicator';
 
@@ -34,13 +34,13 @@ export const Tanks = () => {
     }
   };
 
-  const getLastTestDate = (tank: any) => {
+  const getLastTestDate = (tank: Tank): string | null => {
     if (!tank.parameters || tank.parameters.length === 0) return null;
     const latestTest = tank.parameters[tank.parameters.length - 1];
     return new Date(latestTest.date).toLocaleDateString();
   };
 
-  const getParameterStatus = (tank: any) => {
+  const getParameterStatus = (tank: Tank): { status: 'warning' | 'error' | 'success'; text: string } => {
     if (!tank.parameters || tank.parameters.length === 0) {
       return { status: 'warning', text: 'No tests logged' };
     }

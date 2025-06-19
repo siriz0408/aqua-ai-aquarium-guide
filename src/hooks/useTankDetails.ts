@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useAquarium, WaterParameters } from '@/contexts/AquariumContext';
+import { useAquarium, WaterParameters, Livestock, Equipment } from '@/contexts/AquariumContext';
 import { useToast } from '@/hooks/use-toast';
 
 export const useTankDetails = () => {
@@ -11,8 +11,8 @@ export const useTankDetails = () => {
   const { toast } = useToast();
   
   const tank = tankId ? getTank(tankId) : undefined;
-  const [livestock, setLivestock] = useState(tank?.livestock || []);
-  const [equipment, setEquipment] = useState(tank?.equipment || []);
+  const [livestock, setLivestock] = useState<Livestock[]>(tank?.livestock || []);
+  const [equipment, setEquipment] = useState<Equipment[]>(tank?.equipment || []);
 
   // Load water test logs when component mounts
   useEffect(() => {
@@ -24,14 +24,15 @@ export const useTankDetails = () => {
   // Update local state when tank data changes
   useEffect(() => {
     if (tank) {
-      setLivestock(tank.livestock);
-      setEquipment(tank.equipment);
+      setLivestock(tank.livestock || []);
+      setEquipment(tank.equipment || []);
     }
   }, [tank]);
 
   const handleDeleteTest = async (testId: string) => {
+    if (!tankId) return;
     try {
-      await deleteParameters(tankId!, testId);
+      await deleteParameters(tankId, testId);
     } catch (error) {
       console.error('Error deleting test:', error);
     }
@@ -55,15 +56,16 @@ export const useTankDetails = () => {
       tankName: tank?.name
     };
     
-    const message = `Please analyze my water test results from ${new Date(test.date).toLocaleDateString()} for my ${tank?.name} tank:\n\n${JSON.stringify(testData.parameters, null, 2)}\n\nPlease provide detailed analysis, highlight any issues, and suggest actions if needed.`;
+    const message = `Please analyze my water test results from ${new Date(test.date).toLocaleDateString()} for my ${tank?.name || 'tank'}:\n\n${JSON.stringify(testData.parameters, null, 2)}\n\nPlease provide detailed analysis, highlight any issues, and suggest actions if needed.`;
     
     // Store the message in sessionStorage to be picked up by the chat page
     sessionStorage.setItem('chatMessage', message);
     navigate('/aqua-bot');
   };
 
-  const updateLivestockLocal = async (id: string, updates: any) => {
-    await updateLivestock(tankId!, id, updates);
+  const updateLivestockLocal = async (id: string, updates: Partial<Livestock>) => {
+    if (!tankId) return;
+    await updateLivestock(tankId, id, updates);
     
     toast({
       title: "Livestock updated",
@@ -72,7 +74,8 @@ export const useTankDetails = () => {
   };
 
   const deleteLivestockLocal = async (id: string) => {
-    await deleteLivestock(tankId!, id);
+    if (!tankId) return;
+    await deleteLivestock(tankId, id);
     
     toast({
       title: "Livestock removed",
@@ -80,8 +83,9 @@ export const useTankDetails = () => {
     });
   };
 
-  const updateEquipmentLocal = async (id: string, updates: any) => {
-    await updateEquipment(tankId!, id, updates);
+  const updateEquipmentLocal = async (id: string, updates: Partial<Equipment>) => {
+    if (!tankId) return;
+    await updateEquipment(tankId, id, updates);
     
     toast({
       title: "Equipment updated",
@@ -90,7 +94,8 @@ export const useTankDetails = () => {
   };
 
   const deleteEquipmentLocal = async (id: string) => {
-    await deleteEquipment(tankId!, id);
+    if (!tankId) return;
+    await deleteEquipment(tankId, id);
     
     toast({
       title: "Equipment removed",
