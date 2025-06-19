@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { CheckCircle, SkipForward, Repeat, Calendar, Clock } from 'lucide-react';
-import { Task, useTasks } from '@/hooks/useTasks';
+import { Task } from '@/types/tasks';
+import { useTasks } from '@/hooks/useTasks';
 import { format } from 'date-fns';
 
 interface RecurringTaskModalProps {

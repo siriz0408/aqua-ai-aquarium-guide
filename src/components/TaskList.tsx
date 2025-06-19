@@ -1,10 +1,10 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { useTasks, Task } from '@/hooks/useTasks';
+import { useTasks } from '@/hooks/useTasks';
+import { Task } from '@/types/tasks';
 import { MoreHorizontal, CheckCircle, Play, Pause, Trash2, Bell, Calendar, AlertTriangle, Clock, Repeat } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import RecurringTaskModal from './RecurringTaskModal';
@@ -60,26 +60,20 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onTaskSelect }) => {
     }
   };
 
-  // Function to clean and format task title
   const formatTaskTitle = (title: string) => {
-    // Remove markdown asterisks and clean up the title
     return title.replace(/\*\*/g, '').trim();
   };
 
-  // Function to extract summary from description, excluding the title
   const getTaskSummary = (task: Task) => {
     const cleanTitle = formatTaskTitle(task.title);
     
-    // If description exists and is different from title, use it as summary
     if (task.description && task.description.trim()) {
       const cleanDescription = task.description.replace(/\*\*/g, '').trim();
-      // Don't show description if it's the same as the title
       if (cleanDescription !== cleanTitle) {
         return cleanDescription;
       }
     }
     
-    // If title contains a colon, use only the part after colon as summary
     if (cleanTitle.includes(':')) {
       const parts = cleanTitle.split(':');
       const summary = parts.slice(1).join(':').trim();
@@ -89,7 +83,6 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onTaskSelect }) => {
     return null;
   };
 
-  // Function to get the main title (before colon if exists)
   const getMainTitle = (title: string) => {
     const cleanTitle = formatTaskTitle(title);
     if (cleanTitle.includes(':')) {
@@ -100,7 +93,6 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onTaskSelect }) => {
 
   const handleStatusChange = async (task: Task, newStatus: string) => {
     try {
-      // If it's a recurring task and we're trying to complete it, show the modal
       if (task.is_recurring && newStatus === 'completed') {
         setRecurringTaskModal(task);
         return;
