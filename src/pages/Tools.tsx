@@ -18,8 +18,8 @@ interface FeatureCardProps {
 
 const FeatureCard: React.FC<FeatureCardProps> = ({ title, description, icon, isPremium, href }) => {
   const navigate = useNavigate();
-  const { hasAccess } = useSubscriptionAccess();
-  const canAccess = !isPremium || hasAccess;
+  const { canAccessFeature } = useSubscriptionAccess();
+  const canAccess = !isPremium || canAccessFeature('premium');
 
   return (
     <Card className={`relative transition-all hover:shadow-lg ${!canAccess ? 'opacity-75' : ''}`}>
@@ -56,7 +56,7 @@ const FeatureCard: React.FC<FeatureCardProps> = ({ title, description, icon, isP
 
 const Tools = () => {
   return (
-    <Layout>
+    <Layout title="Aquarium Tools">
       <div className="container mx-auto px-4 py-8 max-w-6xl">
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">Aquarium Tools</h1>

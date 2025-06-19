@@ -322,7 +322,7 @@ export const WaterChangeCalculator: React.FC<WaterChangeCalculatorProps> = ({
                 {Object.entries(calculation.predictedParameters).map(([key, value]) => {
                   if (value === undefined) return null;
                   const currentValue = currentParams[key as keyof WaterParameters];
-                  const change = value - currentValue;
+                  const change = typeof value === 'number' && typeof currentValue === 'number' ? value - currentValue : 0;
                   const isIncrease = change > 0;
                   
                   return (
