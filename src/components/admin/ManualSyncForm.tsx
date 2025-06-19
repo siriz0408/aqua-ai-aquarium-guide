@@ -9,14 +9,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { RefreshCw, UserPlus, AlertCircle } from 'lucide-react';
-
-interface SyncResponse {
-  success: boolean;
-  error?: string;
-  user_id?: string;
-  email?: string;
-  status_updated?: string;
-}
+import type { SyncStripeSubscriptionResponse } from '@/types/syncResponse';
 
 export const ManualSyncForm: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -24,7 +17,7 @@ export const ManualSyncForm: React.FC = () => {
   const [stripeSubscriptionId, setStripeSubscriptionId] = useState('');
   const [subscriptionStatus, setSubscriptionStatus] = useState('active');
   const [isLoading, setIsLoading] = useState(false);
-  const [lastResult, setLastResult] = useState<SyncResponse | null>(null);
+  const [lastResult, setLastResult] = useState<SyncStripeSubscriptionResponse | null>(null);
   const { toast } = useToast();
 
   const handleManualSync = async () => {
@@ -63,12 +56,15 @@ export const ManualSyncForm: React.FC = () => {
 
       console.log('Manual sync result:', data);
       
-      if (data?.success) {
+      // Cast the data to the expected type
+      const syncResult = data as SyncStripeSubscriptionResponse;
+      
+      if (syncResult?.success) {
         toast({
           title: "Sync Successful",
           description: `Successfully synced subscription for ${email}`,
         });
-        setLastResult(data);
+        setLastResult(syncResult);
         
         // Clear form on success
         setEmail('');
@@ -76,7 +72,7 @@ export const ManualSyncForm: React.FC = () => {
         setStripeSubscriptionId('');
         setSubscriptionStatus('active');
       } else {
-        const errorMessage = data?.error || 'Unknown sync error';
+        const errorMessage = syncResult?.error || 'Unknown sync error';
         toast({
           title: "Sync Failed",
           description: errorMessage,

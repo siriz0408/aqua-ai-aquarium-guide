@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import type { ManualSyncResult } from './types/manualSyncTypes';
+import type { SyncStripeSubscriptionResponse } from '@/types/syncResponse';
 
 export const useSubscriptionSync = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -46,7 +47,10 @@ export const useSubscriptionSync = () => {
 
       console.log('Subscription sync result:', data);
       
-      if (data?.success) {
+      // Cast the data to the expected type
+      const syncResult = data as SyncStripeSubscriptionResponse;
+      
+      if (syncResult?.success) {
         toast({
           title: "Sync Successful",
           description: `Successfully synced subscription for ${targetEmail}`,
@@ -54,16 +58,16 @@ export const useSubscriptionSync = () => {
         return { 
           success: true, 
           message: 'Subscription synced successfully',
-          details: data 
+          details: syncResult 
         };
       } else {
-        const errorMessage = data?.error || 'Unknown sync error';
+        const errorMessage = syncResult?.error || 'Unknown sync error';
         toast({
           title: "Sync Failed",
           description: errorMessage,
           variant: "destructive",
         });
-        return { success: false, message: errorMessage, details: data };
+        return { success: false, message: errorMessage, details: syncResult };
       }
     } catch (error) {
       console.error('Subscription sync exception:', error);
