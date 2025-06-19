@@ -7,6 +7,14 @@ import { EnhancedLivestockCard } from '@/components/tank-form/EnhancedLivestockC
 
 interface Livestock {
   id: string;
+  name: string;
+  species: string;
+  careLevel: string;
+  compatibility: string;
+  imageUrl?: string;
+  healthNotes?: string;
+  quantity?: number;
+  size?: string;
   [key: string]: any;
 }
 
@@ -33,8 +41,9 @@ const TankLivestockTab: React.FC<TankLivestockTabProps> = ({
           onClick={() => onNavigate(`/tank/${tankId}/livestock`)}
           variant="outline"
           size="sm"
+          className="gap-2 min-h-[48px]"
         >
-          <Plus className="mr-2 h-4 w-4" />
+          <Plus className="h-4 w-4" />
           Add Livestock
         </Button>
       </div>
@@ -58,8 +67,11 @@ const TankLivestockTab: React.FC<TankLivestockTabProps> = ({
               <h4 className="font-medium">No livestock added</h4>
               <p className="text-sm text-muted-foreground">Upload photos to identify your fish and coral</p>
             </div>
-            <Button onClick={() => onNavigate(`/tank/${tankId}/livestock`)}>
-              <Upload className="mr-2 h-4 w-4" />
+            <Button 
+              onClick={() => onNavigate(`/tank/${tankId}/livestock`)}
+              className="gap-2 min-h-[48px]"
+            >
+              <Upload className="h-4 w-4" />
               Add Livestock
             </Button>
           </div>

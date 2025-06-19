@@ -31,7 +31,7 @@ const TankDetails = () => {
       <Layout title="Tank Not Found" showBackButton>
         <div className="text-center py-12">
           <h2 className="text-2xl font-bold mb-4">Tank not found</h2>
-          <Button onClick={() => navigate('/')}>Go Home</Button>
+          <Button onClick={() => navigate('/')} className="min-h-[48px]">Go Home</Button>
         </div>
       </Layout>
     );
@@ -47,7 +47,7 @@ const TankDetails = () => {
             variant="outline"
             size="sm" 
             onClick={() => navigate(`/tank/${tankId}/edit`)}
-            className="gap-1"
+            className="gap-1 min-h-[48px]"
           >
             <Edit className="h-3 w-3" />
             Edit
@@ -55,7 +55,7 @@ const TankDetails = () => {
           <Button 
             size="sm" 
             onClick={() => navigate(`/tank/${tankId}/log-parameters`)}
-            className="ocean-gradient text-white gap-1"
+            className="ocean-gradient text-white gap-1 min-h-[48px]"
           >
             <Plus className="h-3 w-3" />
             Log Test
@@ -69,11 +69,11 @@ const TankDetails = () => {
 
         {/* Tabs */}
         <Tabs defaultValue="parameters" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="parameters">Parameters</TabsTrigger>
-            <TabsTrigger value="equipment">Equipment</TabsTrigger>
-            <TabsTrigger value="livestock">Livestock</TabsTrigger>
-            <TabsTrigger value="reminders">Reminders</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-4 min-h-[48px]">
+            <TabsTrigger value="parameters" className="min-h-[44px] touch-manipulation">Parameters</TabsTrigger>
+            <TabsTrigger value="equipment" className="min-h-[44px] touch-manipulation">Equipment</TabsTrigger>
+            <TabsTrigger value="livestock" className="min-h-[44px] touch-manipulation">Livestock</TabsTrigger>
+            <TabsTrigger value="reminders" className="min-h-[44px] touch-manipulation">Reminders</TabsTrigger>
           </TabsList>
           
           <TabsContent value="parameters" className="space-y-4">

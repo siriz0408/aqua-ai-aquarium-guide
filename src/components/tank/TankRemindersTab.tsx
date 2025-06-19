@@ -17,8 +17,11 @@ const TankRemindersTab: React.FC<TankRemindersTabProps> = ({ onNavigate }) => {
           <h4 className="font-medium">No reminders set</h4>
           <p className="text-sm text-muted-foreground">Set up maintenance reminders for your tank</p>
         </div>
-        <Button onClick={() => onNavigate('/reminders')}>
-          <Plus className="mr-2 h-4 w-4" />
+        <Button 
+          onClick={() => onNavigate('/reminders')}
+          className="gap-2 min-h-[48px]"
+        >
+          <Plus className="h-4 w-4" />
           Add Reminder
         </Button>
       </div>

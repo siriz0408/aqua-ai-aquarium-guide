@@ -7,6 +7,13 @@ import { EnhancedEquipmentCard } from '@/components/tank-form/EnhancedEquipmentC
 
 interface Equipment {
   id: string;
+  name: string;
+  type: string;
+  model?: string;
+  imageUrl?: string;
+  maintenanceTips?: string;
+  upgradeNotes?: string;
+  quantity?: number;
   [key: string]: any;
 }
 
@@ -33,8 +40,9 @@ const TankEquipmentTab: React.FC<TankEquipmentTabProps> = ({
           onClick={() => onNavigate(`/tank/${tankId}/equipment`)}
           variant="outline"
           size="sm"
+          className="gap-2 min-h-[48px]"
         >
-          <Plus className="mr-2 h-4 w-4" />
+          <Plus className="h-4 w-4" />
           Add Equipment
         </Button>
       </div>
@@ -58,8 +66,11 @@ const TankEquipmentTab: React.FC<TankEquipmentTabProps> = ({
               <h4 className="font-medium">No equipment added</h4>
               <p className="text-sm text-muted-foreground">Upload photos to identify your equipment</p>
             </div>
-            <Button onClick={() => onNavigate(`/tank/${tankId}/equipment`)}>
-              <Upload className="mr-2 h-4 w-4" />
+            <Button 
+              onClick={() => onNavigate(`/tank/${tankId}/equipment`)}
+              className="gap-2 min-h-[48px]"
+            >
+              <Upload className="h-4 w-4" />
               Add Equipment
             </Button>
           </div>

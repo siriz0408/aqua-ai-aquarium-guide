@@ -29,7 +29,7 @@ export function BottomNavigation() {
       <div className="container px-1 sm:px-2">
         <div className={cn(
           "flex items-center justify-around",
-          isMobile ? "py-1" : "py-2"
+          "py-1 sm:py-2"
         )}>
           {navItems.map(({ path, icon: Icon, label, pattern }) => (
             <Button
@@ -38,16 +38,15 @@ export function BottomNavigation() {
               size="sm"
               onClick={() => navigate(path)}
               className={cn(
-                "flex flex-col gap-0.5 text-xs min-w-0 px-1 sm:px-2",
-                isMobile ? "h-12 min-h-[48px]" : "h-10 sm:h-12",
-                isTouch && "min-h-[44px]"
+                "flex flex-col gap-0.5 text-xs min-w-0 px-2 sm:px-3",
+                // Ensure minimum 48x48px touch target
+                "min-h-[48px] min-w-[48px] h-12 sm:h-14",
+                // Better touch feedback
+                "touch-manipulation active:scale-95 transition-transform duration-100"
               )}
             >
-              <Icon className={cn(
-                "flex-shrink-0",
-                isMobile ? "h-5 w-5" : "h-4 w-4"
-              )} />
-              <span className="truncate leading-none">{label}</span>
+              <Icon className="h-5 w-5 sm:h-6 sm:w-6 flex-shrink-0" />
+              <span className="truncate leading-none text-[10px] sm:text-xs">{label}</span>
             </Button>
           ))}
         </div>
