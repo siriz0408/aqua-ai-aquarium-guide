@@ -28,8 +28,8 @@ export const calculateTankHealth = (tank: Tank): HealthScore => {
   );
 
   // Tank age bonus - mature tanks get stability bonus
-  const tankAge = tank.setup_date ? 
-    Math.floor((Date.now() - new Date(tank.setup_date).getTime()) / (1000 * 60 * 60 * 24 * 30)) : 0;
+  const tankAge = tank.createdAt ? 
+    Math.floor((Date.now() - new Date(tank.createdAt).getTime()) / (1000 * 60 * 60 * 24 * 30)) : 0;
   
   if (tankAge > 6) {
     overall = Math.min(100, overall + 10);
