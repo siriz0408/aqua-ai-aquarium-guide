@@ -24,6 +24,7 @@ export const ManualSyncForm: React.FC = () => {
   const [stripeSubscriptionId, setStripeSubscriptionId] = useState('');
   const [subscriptionStatus, setSubscriptionStatus] = useState('active');
   const [isLoading, setIsLoading] = useState(false);
+  const [lastResult, setLastResult] = useState<SyncResponse | null>(null);
   const { toast } = useToast();
 
   const handleManualSync = async () => {
@@ -38,107 +39,116 @@ export const ManualSyncForm: React.FC = () => {
 
     setIsLoading(true);
     try {
-      console.log('Starting manual sync with data:', {
-        email,
-        stripeCustomerId,
-        stripeSubscriptionId,
-        subscriptionStatus
-      });
-
+      console.log('Starting manual sync with simplified function...');
+      
+      // Use the simplified sync function
       const { data, error } = await supabase.rpc('sync_stripe_subscription', {
         customer_email: email,
         stripe_customer_id: stripeCustomerId,
         stripe_subscription_id: stripeSubscriptionId || null,
-        subscription_status: subscriptionStatus
+        subscription_status: subscriptionStatus,
+        price_id: null
       });
 
       if (error) {
-        console.error('Sync error:', error);
-        throw error;
+        console.error('Manual sync error:', error);
+        toast({
+          title: "Sync Failed",
+          description: error.message,
+          variant: "destructive",
+        });
+        setLastResult({ success: false, error: error.message });
+        return;
       }
 
-      console.log('Sync result:', data);
-
-      const syncResult = data as unknown as SyncResponse;
-
-      if (syncResult && typeof syncResult === 'object' && !Array.isArray(syncResult) && syncResult.success) {
+      console.log('Manual sync result:', data);
+      
+      if (data?.success) {
         toast({
           title: "Sync Successful",
-          description: `User ${email} has been synced successfully`,
+          description: `Successfully synced subscription for ${email}`,
         });
-
-        // Clear form
+        setLastResult(data);
+        
+        // Clear form on success
         setEmail('');
         setStripeCustomerId('');
         setStripeSubscriptionId('');
         setSubscriptionStatus('active');
       } else {
-        const errorMessage = (syncResult && typeof syncResult === 'object' && !Array.isArray(syncResult) && syncResult.error) 
-          ? syncResult.error 
-          : 'Sync failed - unknown error';
-        throw new Error(errorMessage);
+        const errorMessage = data?.error || 'Unknown sync error';
+        toast({
+          title: "Sync Failed",
+          description: errorMessage,
+          variant: "destructive",
+        });
+        setLastResult({ success: false, error: errorMessage });
       }
     } catch (error) {
-      console.error('Manual sync error:', error);
+      console.error('Manual sync exception:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       toast({
-        title: "Sync Failed",
-        description: error instanceof Error ? error.message : 'An error occurred during sync',
+        title: "Sync Error",
+        description: errorMessage,
         variant: "destructive",
       });
+      setLastResult({ success: false, error: errorMessage });
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <UserPlus className="h-5 w-5" />
-          Manual Subscription Sync
-        </CardTitle>
-        <CardDescription>
-          Manually sync a user's subscription status with Stripe data
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <RefreshCw className="h-4 w-4" />
+            Manual Subscription Sync
+          </CardTitle>
+          <CardDescription>
+            Manually sync a user's subscription from Stripe data using the simplified schema
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="email">User Email</Label>
+            <Label htmlFor="email">User Email *</Label>
             <Input
               id="email"
               type="email"
-              placeholder="user@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              placeholder="user@example.com"
+              required
             />
           </div>
-
+          
           <div className="space-y-2">
-            <Label htmlFor="customer-id">Stripe Customer ID</Label>
+            <Label htmlFor="stripeCustomerId">Stripe Customer ID *</Label>
             <Input
-              id="customer-id"
-              placeholder="cus_..."
+              id="stripeCustomerId"
               value={stripeCustomerId}
               onChange={(e) => setStripeCustomerId(e.target.value)}
+              placeholder="cus_xxxxxxxxxxxx"
+              required
             />
           </div>
-
+          
           <div className="space-y-2">
-            <Label htmlFor="subscription-id">Stripe Subscription ID (Optional)</Label>
+            <Label htmlFor="stripeSubscriptionId">Stripe Subscription ID</Label>
             <Input
-              id="subscription-id"
-              placeholder="sub_..."
+              id="stripeSubscriptionId"
               value={stripeSubscriptionId}
               onChange={(e) => setStripeSubscriptionId(e.target.value)}
+              placeholder="sub_xxxxxxxxxxxx (optional)"
             />
           </div>
-
+          
           <div className="space-y-2">
-            <Label htmlFor="status">Subscription Status</Label>
+            <Label htmlFor="subscriptionStatus">Subscription Status</Label>
             <Select value={subscriptionStatus} onValueChange={setSubscriptionStatus}>
               <SelectTrigger>
-                <SelectValue placeholder="Select status" />
+                <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="active">Active</SelectItem>
@@ -150,31 +160,56 @@ export const ManualSyncForm: React.FC = () => {
               </SelectContent>
             </Select>
           </div>
-        </div>
-
-        <Alert>
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            This will update the user's subscription status in our database based on the provided Stripe data. 
-            Make sure the information is accurate as this directly affects user access.
-          </AlertDescription>
-        </Alert>
-
-        <Button 
-          onClick={handleManualSync} 
-          disabled={isLoading || !email || !stripeCustomerId}
-          className="w-full"
-        >
-          {isLoading ? (
-            <>
+          
+          <Button 
+            onClick={handleManualSync} 
+            disabled={isLoading || !email || !stripeCustomerId}
+            className="w-full"
+          >
+            {isLoading ? (
               <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-              Syncing...
-            </>
-          ) : (
-            'Sync Subscription'
-          )}
-        </Button>
-      </CardContent>
-    </Card>
+            ) : (
+              <UserPlus className="h-4 w-4 mr-2" />
+            )}
+            {isLoading ? 'Syncing...' : 'Sync Subscription'}
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Result Display */}
+      {lastResult && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              {lastResult.success ? (
+                <div className="h-4 w-4 rounded-full bg-green-500" />
+              ) : (
+                <AlertCircle className="h-4 w-4 text-red-500" />
+              )}
+              Sync Result
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {lastResult.success ? (
+              <div className="space-y-2">
+                <p className="text-sm text-green-600 font-medium">✅ Sync completed successfully!</p>
+                <div className="text-sm text-muted-foreground">
+                  <p><strong>User ID:</strong> {lastResult.user_id}</p>
+                  <p><strong>Email:</strong> {lastResult.email}</p>
+                  <p><strong>Status:</strong> {lastResult.status_updated}</p>
+                </div>
+              </div>
+            ) : (
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  <strong>Error:</strong> {lastResult.error}
+                </AlertDescription>
+              </Alert>
+            )}
+          </CardContent>
+        </Card>
+      )}
+    </div>
   );
 };

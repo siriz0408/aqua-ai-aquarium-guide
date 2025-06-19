@@ -22,18 +22,19 @@ export const useSubscriptionSync = () => {
 
     setIsLoading(true);
     try {
-      console.log('Starting manual sync for user:', targetEmail);
+      console.log('Starting subscription sync with simplified function:', targetEmail);
       
-      // Use simplified sync function call
+      // Use the simplified sync function
       const { data, error } = await supabase.rpc('sync_stripe_subscription', {
         customer_email: targetEmail,
         stripe_customer_id: stripeCustomerId,
         stripe_subscription_id: stripeSubscriptionId,
-        subscription_status: subscriptionStatus
+        subscription_status: subscriptionStatus,
+        price_id: null
       });
 
       if (error) {
-        console.error('Manual sync error:', error);
+        console.error('Subscription sync error:', error);
         const errorMessage = error.message || 'Failed to sync user subscription';
         toast({
           title: "Sync Failed",
@@ -43,11 +44,9 @@ export const useSubscriptionSync = () => {
         return { success: false, message: errorMessage };
       }
 
-      console.log('Manual sync result:', data);
+      console.log('Subscription sync result:', data);
       
-      const syncData = data as any;
-      
-      if (syncData?.success) {
+      if (data?.success) {
         toast({
           title: "Sync Successful",
           description: `Successfully synced subscription for ${targetEmail}`,
@@ -55,19 +54,19 @@ export const useSubscriptionSync = () => {
         return { 
           success: true, 
           message: 'Subscription synced successfully',
-          details: syncData 
+          details: data 
         };
       } else {
-        const errorMessage = syncData?.error || 'Unknown sync error';
+        const errorMessage = data?.error || 'Unknown sync error';
         toast({
           title: "Sync Failed",
           description: errorMessage,
           variant: "destructive",
         });
-        return { success: false, message: errorMessage, details: syncData };
+        return { success: false, message: errorMessage, details: data };
       }
     } catch (error) {
-      console.error('Manual sync exception:', error);
+      console.error('Subscription sync exception:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       toast({
         title: "Sync Error",
