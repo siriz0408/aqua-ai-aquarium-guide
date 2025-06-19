@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -34,6 +33,8 @@ export const SubscriptionPrompt: React.FC<SubscriptionPromptProps> = ({
     setLoading(true);
     try {
       console.log('Starting Stripe checkout with trial...');
+      console.log('User ID:', user.id);
+      console.log('Price ID:', STRIPE_PRICE_ID);
 
       // Create the Stripe checkout session with trial period
       const { data, error } = await supabase.functions.invoke('create-checkout', {
@@ -42,6 +43,8 @@ export const SubscriptionPrompt: React.FC<SubscriptionPromptProps> = ({
           trialPeriodDays: 3
         }
       });
+
+      console.log('Checkout response:', { data, error });
 
       if (error) {
         console.error('Supabase function error:', error);
@@ -55,10 +58,12 @@ export const SubscriptionPrompt: React.FC<SubscriptionPromptProps> = ({
 
       if (data?.url) {
         console.log('Redirecting to Stripe checkout:', data.url);
-        // Redirect to Stripe checkout
+        
+        // Use window.location.href for more reliable redirect
         window.location.href = data.url;
       } else {
-        throw new Error('No checkout URL received');
+        console.error('No checkout URL received:', data);
+        throw new Error('No checkout URL received from Stripe');
       }
     } catch (error) {
       console.error('Error creating checkout session:', error);

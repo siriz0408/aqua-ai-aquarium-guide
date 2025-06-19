@@ -112,6 +112,7 @@ serve(async (req) => {
     }
 
     const origin = req.headers.get("origin") || "http://localhost:3000";
+    logStep("Origin detected", { origin });
     
     // Create checkout session with proper trial configuration
     const sessionConfig: any = {
@@ -144,9 +145,25 @@ serve(async (req) => {
       logStep("Adding trial period to subscription", { trialPeriodDays });
     }
 
+    logStep("Creating checkout session with config", { 
+      mode: sessionConfig.mode,
+      successUrl: sessionConfig.success_url,
+      cancelUrl: sessionConfig.cancel_url,
+      trialDays: trialPeriodDays 
+    });
+
     const session = await stripe.checkout.sessions.create(sessionConfig);
 
-    logStep("Checkout session created", { sessionId: session.id, url: session.url });
+    logStep("Checkout session created successfully", { 
+      sessionId: session.id, 
+      url: session.url,
+      urlLength: session.url?.length 
+    });
+
+    // Validate the URL before returning
+    if (!session.url) {
+      throw new Error("Stripe checkout session created but no URL returned");
+    }
 
     return new Response(JSON.stringify({ url: session.url }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
