@@ -70,9 +70,17 @@ export const createTask = async (taskData: CreateTaskData, userId: string) => {
 };
 
 export const updateTask = async (updates: Partial<Task> & { id: string }) => {
+  // Convert the updates to match Supabase's expected types
+  const updateData: any = { ...updates };
+  
+  // Handle recurrence_pattern type conversion
+  if (updateData.recurrence_pattern !== undefined) {
+    updateData.recurrence_pattern = updateData.recurrence_pattern as any;
+  }
+
   const { data, error } = await supabase
     .from('tasks')
-    .update(updates)
+    .update(updateData)
     .eq('id', updates.id)
     .select()
     .single();
