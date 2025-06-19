@@ -47,8 +47,8 @@ export const useSubscriptionSync = () => {
 
       console.log('Subscription sync result:', data);
       
-      // Cast the data to the expected type
-      const syncResult = data as SyncStripeSubscriptionResponse;
+      // Cast the data to the expected type with proper type safety
+      const syncResult = data as unknown as SyncStripeSubscriptionResponse;
       
       if (syncResult?.success) {
         toast({
