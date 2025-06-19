@@ -1,12 +1,13 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useTasks, Task } from '@/hooks/useTasks';
-import { MoreHorizontal, CheckCircle, Play, Pause, Trash2, Bell, Calendar, AlertTriangle, Clock } from 'lucide-react';
+import { MoreHorizontal, CheckCircle, Play, Pause, Trash2, Bell, Calendar, AlertTriangle, Clock, Repeat } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import RecurringTaskModal from './RecurringTaskModal';
 
 interface TaskListProps {
   tasks: Task[];
@@ -16,6 +17,7 @@ interface TaskListProps {
 const TaskList: React.FC<TaskListProps> = ({ tasks, onTaskSelect }) => {
   const { updateTask, deleteTask } = useTasks();
   const { toast } = useToast();
+  const [recurringTaskModal, setRecurringTaskModal] = useState<Task | null>(null);
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -98,6 +100,12 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onTaskSelect }) => {
 
   const handleStatusChange = async (task: Task, newStatus: string) => {
     try {
+      // If it's a recurring task and we're trying to complete it, show the modal
+      if (task.is_recurring && newStatus === 'completed') {
+        setRecurringTaskModal(task);
+        return;
+      }
+
       updateTask({
         id: task.id,
         status: newStatus as Task['status'],
@@ -138,6 +146,27 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onTaskSelect }) => {
     });
   };
 
+  const getRecurrenceDescription = (task: Task) => {
+    if (!task.is_recurring || !task.recurrence_pattern) return null;
+    
+    const pattern = task.recurrence_pattern;
+    
+    switch (pattern.type) {
+      case 'daily':
+        return `Every ${pattern.interval || 1} day${(pattern.interval || 1) > 1 ? 's' : ''}`;
+      case 'weekly':
+        return `Every ${pattern.interval || 1} week${(pattern.interval || 1) > 1 ? 's' : ''}`;
+      case 'bi_weekly':
+        return 'Every 2 weeks';
+      case 'monthly':
+        return `Every ${pattern.interval || 1} month${(pattern.interval || 1) > 1 ? 's' : ''}`;
+      case 'custom':
+        return `Every ${pattern.customDays} days`;
+      default:
+        return 'Recurring';
+    }
+  };
+
   if (tasks.length === 0) {
     return (
       <div className="text-center py-8 text-muted-foreground">
@@ -147,109 +176,139 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, onTaskSelect }) => {
   }
 
   return (
-    <div className="space-y-3">
-      {tasks.map((task) => {
-        const mainTitle = getMainTitle(task.title);
-        const summary = getTaskSummary(task);
-        
-        return (
-          <Card key={task.id} className={`transition-all duration-200 hover:shadow-md ${getStatusColor(task.status)}`}>
-            <CardContent className="p-4">
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-2">
-                    <h3 className="font-semibold truncate">{mainTitle}</h3>
-                    <Badge variant={getPriorityColor(task.priority)} className="shrink-0">
-                      {getPriorityIcon(task.priority)}
-                      {task.priority}
-                    </Badge>
-                    <Badge variant="outline" className="capitalize shrink-0">
-                      {task.status.replace('_', ' ')}
-                    </Badge>
-                  </div>
-                  
-                  {summary && (
-                    <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
-                      {summary}
-                    </p>
-                  )}
-                  
-                  <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                    <span className="capitalize">{task.task_type}</span>
-                    {task.due_date && (
-                      <>
-                        <span>•</span>
-                        <div className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
-                          <span>Due {formatDate(task.due_date)}</span>
-                        </div>
-                      </>
+    <>
+      <div className="space-y-3">
+        {tasks.map((task) => {
+          const mainTitle = getMainTitle(task.title);
+          const summary = getTaskSummary(task);
+          const recurrenceDesc = getRecurrenceDescription(task);
+          
+          return (
+            <Card key={task.id} className={`transition-all duration-200 hover:shadow-md ${getStatusColor(task.status)}`}>
+              <CardContent className="p-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-2">
+                      <h3 className="font-semibold truncate">{mainTitle}</h3>
+                      {task.is_recurring && (
+                        <Badge variant="outline" className="shrink-0 flex items-center gap-1">
+                          <Repeat className="h-3 w-3" />
+                          Recurring
+                        </Badge>
+                      )}
+                      <Badge variant={getPriorityColor(task.priority)} className="shrink-0">
+                        {getPriorityIcon(task.priority)}
+                        {task.priority}
+                      </Badge>
+                      <Badge variant="outline" className="capitalize shrink-0">
+                        {task.status.replace('_', ' ')}
+                      </Badge>
+                    </div>
+                    
+                    {summary && (
+                      <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
+                        {summary}
+                      </p>
                     )}
-                    <span>•</span>
-                    <span>Created {formatDate(task.created_at)}</span>
+                    
+                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                      <span className="capitalize">{task.task_type}</span>
+                      {task.due_date && (
+                        <>
+                          <span>•</span>
+                          <div className="flex items-center gap-1">
+                            <Calendar className="h-3 w-3" />
+                            <span>Due {formatDate(task.due_date)}</span>
+                          </div>
+                        </>
+                      )}
+                      {recurrenceDesc && (
+                        <>
+                          <span>•</span>
+                          <div className="flex items-center gap-1">
+                            <Repeat className="h-3 w-3" />
+                            <span>{recurrenceDesc}</span>
+                          </div>
+                        </>
+                      )}
+                      <span>•</span>
+                      <span>Created {formatDate(task.created_at)}</span>
+                      {task.is_recurring && (task.completion_count || 0) > 0 && (
+                        <>
+                          <span>•</span>
+                          <span>Completed {task.completion_count} times</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onTaskSelect(task.id)}
+                      className="hidden sm:flex"
+                    >
+                      <Bell className="h-3 w-3 mr-1" />
+                      Remind
+                    </Button>
+                    
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-48">
+                        <DropdownMenuItem onClick={() => onTaskSelect(task.id)}>
+                          <Bell className="mr-2 h-4 w-4" />
+                          Set Reminder
+                        </DropdownMenuItem>
+                        
+                        {task.status !== 'in_progress' && (
+                          <DropdownMenuItem onClick={() => handleStatusChange(task, 'in_progress')}>
+                            <Play className="mr-2 h-4 w-4" />
+                            Start Task
+                          </DropdownMenuItem>
+                        )}
+                        
+                        {task.status === 'in_progress' && (
+                          <DropdownMenuItem onClick={() => handleStatusChange(task, 'pending')}>
+                            <Pause className="mr-2 h-4 w-4" />
+                            Pause Task
+                          </DropdownMenuItem>
+                        )}
+                        
+                        {task.status !== 'completed' && (
+                          <DropdownMenuItem onClick={() => handleStatusChange(task, 'completed')}>
+                            <CheckCircle className="mr-2 h-4 w-4" />
+                            {task.is_recurring ? 'Complete Occurrence' : 'Mark Complete'}
+                          </DropdownMenuItem>
+                        )}
+                        
+                        <DropdownMenuItem 
+                          onClick={() => handleDeleteTask(task.id)}
+                          className="text-red-600"
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Delete Task
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 </div>
-                
-                <div className="flex items-center gap-2 shrink-0">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => onTaskSelect(task.id)}
-                    className="hidden sm:flex"
-                  >
-                    <Bell className="h-3 w-3 mr-1" />
-                    Remind
-                  </Button>
-                  
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-48">
-                      <DropdownMenuItem onClick={() => onTaskSelect(task.id)}>
-                        <Bell className="mr-2 h-4 w-4" />
-                        Set Reminder
-                      </DropdownMenuItem>
-                      
-                      {task.status !== 'in_progress' && (
-                        <DropdownMenuItem onClick={() => handleStatusChange(task, 'in_progress')}>
-                          <Play className="mr-2 h-4 w-4" />
-                          Start Task
-                        </DropdownMenuItem>
-                      )}
-                      
-                      {task.status === 'in_progress' && (
-                        <DropdownMenuItem onClick={() => handleStatusChange(task, 'pending')}>
-                          <Pause className="mr-2 h-4 w-4" />
-                          Pause Task
-                        </DropdownMenuItem>
-                      )}
-                      
-                      {task.status !== 'completed' && (
-                        <DropdownMenuItem onClick={() => handleStatusChange(task, 'completed')}>
-                          <CheckCircle className="mr-2 h-4 w-4" />
-                          Mark Complete
-                        </DropdownMenuItem>
-                      )}
-                      
-                      <DropdownMenuItem 
-                        onClick={() => handleDeleteTask(task.id)}
-                        className="text-red-600"
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Delete Task
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        );
-      })}
-    </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+
+      <RecurringTaskModal
+        task={recurringTaskModal}
+        isOpen={!!recurringTaskModal}
+        onClose={() => setRecurringTaskModal(null)}
+      />
+    </>
   );
 };
 

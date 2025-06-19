@@ -1194,6 +1194,7 @@ export type Database = {
       }
       tasks: {
         Row: {
+          completion_count: number | null
           conversation_id: string | null
           created_at: string
           description: string | null
@@ -1203,10 +1204,16 @@ export type Database = {
           estimated_time: string | null
           frequency: string | null
           id: string
+          is_recurring: boolean | null
           list_id: string | null
+          occurrence_date: string | null
+          parent_task_id: string | null
           priority: string
+          recurrence_pattern: Json | null
           required_tools: string[] | null
           resources: Json | null
+          series_id: string | null
+          skip_count: number | null
           status: string
           steps: Json | null
           task_type: string
@@ -1217,6 +1224,7 @@ export type Database = {
           warnings: string[] | null
         }
         Insert: {
+          completion_count?: number | null
           conversation_id?: string | null
           created_at?: string
           description?: string | null
@@ -1226,10 +1234,16 @@ export type Database = {
           estimated_time?: string | null
           frequency?: string | null
           id?: string
+          is_recurring?: boolean | null
           list_id?: string | null
+          occurrence_date?: string | null
+          parent_task_id?: string | null
           priority?: string
+          recurrence_pattern?: Json | null
           required_tools?: string[] | null
           resources?: Json | null
+          series_id?: string | null
+          skip_count?: number | null
           status?: string
           steps?: Json | null
           task_type?: string
@@ -1240,6 +1254,7 @@ export type Database = {
           warnings?: string[] | null
         }
         Update: {
+          completion_count?: number | null
           conversation_id?: string | null
           created_at?: string
           description?: string | null
@@ -1249,10 +1264,16 @@ export type Database = {
           estimated_time?: string | null
           frequency?: string | null
           id?: string
+          is_recurring?: boolean | null
           list_id?: string | null
+          occurrence_date?: string | null
+          parent_task_id?: string | null
           priority?: string
+          recurrence_pattern?: Json | null
           required_tools?: string[] | null
           resources?: Json | null
+          series_id?: string | null
+          skip_count?: number | null
           status?: string
           steps?: Json | null
           task_type?: string
@@ -1275,6 +1296,13 @@ export type Database = {
             columns: ["list_id"]
             isOneToOne: false
             referencedRelation: "task_lists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_parent_task_id_fkey"
+            columns: ["parent_task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
             referencedColumns: ["id"]
           },
         ]
@@ -1573,9 +1601,21 @@ export type Database = {
         }
         Returns: undefined
       }
+      complete_recurring_task: {
+        Args: {
+          task_id: string
+          completion_date?: string
+          skip_occurrence?: boolean
+        }
+        Returns: Json
+      }
       ensure_user_profile: {
         Args: { user_id: string }
         Returns: undefined
+      }
+      generate_next_task_occurrence: {
+        Args: { task_id: string; completion_date?: string }
+        Returns: string
       }
       generate_tank_maintenance_schedule: {
         Args: {

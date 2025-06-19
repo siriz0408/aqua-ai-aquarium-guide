@@ -1,8 +1,18 @@
+
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+
+export interface RecurrencePattern {
+  type: 'daily' | 'weekly' | 'bi_weekly' | 'monthly' | 'custom' | 'weekly_days';
+  interval?: number;
+  customDays?: number;
+  daysOfWeek?: number[];
+  endDate?: string;
+  maxOccurrences?: number;
+}
 
 export interface Task {
   id: string;
@@ -16,6 +26,13 @@ export interface Task {
   due_date?: string;
   list_id?: string;
   conversation_id?: string;
+  is_recurring?: boolean;
+  recurrence_pattern?: RecurrencePattern;
+  parent_task_id?: string;
+  occurrence_date?: string;
+  series_id?: string;
+  completion_count?: number;
+  skip_count?: number;
   created_at: string;
   updated_at: string;
 }
@@ -38,6 +55,8 @@ interface CreateTaskData {
   priority: 'low' | 'medium' | 'high' | 'urgent';
   conversation_id?: string;
   due_date?: string;
+  is_recurring?: boolean;
+  recurrence_pattern?: RecurrencePattern;
 }
 
 export const useTasks = () => {
@@ -87,26 +106,40 @@ export const useTasks = () => {
     enabled: !!user,
   });
 
-  // Create task mutation - Updated to handle due dates
+  // Create task mutation - Updated to handle recurring tasks
   const createTaskMutation = useMutation({
     mutationFn: async (taskData: CreateTaskData) => {
       if (!user) throw new Error('User not authenticated');
 
+      const insertData: any = {
+        title: taskData.title,
+        description: taskData.description,
+        task_type: taskData.task_type,
+        priority: taskData.priority,
+        conversation_id: taskData.conversation_id,
+        due_date: taskData.due_date,
+        user_id: user.id,
+        is_recurring: taskData.is_recurring || false,
+        recurrence_pattern: taskData.recurrence_pattern || null,
+      };
+
+      // If it's a recurring task, set series_id to its own id after creation
       const { data, error } = await supabase
         .from('tasks')
-        .insert({
-          title: taskData.title,
-          description: taskData.description,
-          task_type: taskData.task_type,
-          priority: taskData.priority,
-          conversation_id: taskData.conversation_id,
-          due_date: taskData.due_date,
-          user_id: user.id,
-        })
+        .insert(insertData)
         .select()
         .single();
 
       if (error) throw error;
+
+      // If it's recurring, update the series_id to point to itself
+      if (taskData.is_recurring && data) {
+        await supabase
+          .from('tasks')
+          .update({ series_id: data.id })
+          .eq('id', data.id);
+      }
+
       return data;
     },
     onSuccess: (data) => {
@@ -118,6 +151,7 @@ export const useTasks = () => {
         title: data.title,
         type: data.task_type,
         priority: data.priority,
+        isRecurring: data.is_recurring,
         hasConversation: !!data.conversation_id,
         hasDueDate: !!data.due_date,
         timestamp: new Date().toISOString()
@@ -128,6 +162,45 @@ export const useTasks = () => {
       toast({
         title: "Error",
         description: "Failed to create task. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Complete recurring task mutation
+  const completeRecurringTaskMutation = useMutation({
+    mutationFn: async ({ taskId, skipOccurrence = false }: { taskId: string; skipOccurrence?: boolean }) => {
+      const { data, error } = await supabase.rpc('complete_recurring_task', {
+        task_id: taskId,
+        completion_date: new Date().toISOString().split('T')[0],
+        skip_occurrence: skipOccurrence
+      });
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      
+      if (variables.skipOccurrence) {
+        toast({
+          title: "Task skipped",
+          description: "Task occurrence has been skipped and next occurrence created.",
+        });
+      } else {
+        toast({
+          title: "Task completed",
+          description: data.next_task_id 
+            ? "Task completed and next occurrence created."
+            : "Task completed successfully.",
+        });
+      }
+    },
+    onError: (error) => {
+      console.error('Error completing recurring task:', error);
+      toast({
+        title: "Error",
+        description: "Failed to complete recurring task.",
         variant: "destructive",
       });
     },
@@ -194,8 +267,10 @@ export const useTasks = () => {
     createTask: createTaskMutation.mutate,
     updateTask: updateTaskMutation.mutate,
     deleteTask: deleteTaskMutation.mutate,
+    completeRecurringTask: completeRecurringTaskMutation.mutate,
     isCreating: createTaskMutation.isPending,
     isUpdating: updateTaskMutation.isPending,
     isDeleting: deleteTaskMutation.isPending,
+    isCompletingRecurring: completeRecurringTaskMutation.isPending,
   };
 };
