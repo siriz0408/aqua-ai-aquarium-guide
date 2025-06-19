@@ -75,14 +75,27 @@ serve(async (req) => {
       currentConversationId = newConversation.id
     }
 
-    // Save user message
+    // Parse message to extract tank context and user question
+    let userMessage = message
+    let tankContext = ''
+    
+    // Check if message contains tank context
+    if (message.includes('Tank Context:')) {
+      const parts = message.split('\n\nUser Question: ')
+      if (parts.length === 2) {
+        tankContext = parts[0].replace('Tank Context: ', '')
+        userMessage = parts[1]
+      }
+    }
+
+    // Save user message (without tank context prefix)
     const { error: messageError } = await supabase
       .from('messages')
       .insert({
         conversation_id: currentConversationId,
         user_id: user.id,
         role: 'user',
-        content: message
+        content: userMessage
       })
 
     if (messageError) {
@@ -103,7 +116,7 @@ serve(async (req) => {
     }
 
     // Prepare the user message content
-    let userMessageContent: any[] = [{ type: 'text', text: message }]
+    let userMessageContent: any[] = [{ type: 'text', text: userMessage }]
     
     // Add images if attachments are provided
     if (attachments && attachments.length > 0) {
@@ -136,8 +149,15 @@ serve(async (req) => {
       }
     }
 
-    // Enhanced system prompt with improved formatting guidelines
-    const systemPrompt = `You are AquaBot 🐠, an expert marine aquarium assistant with access to real-time web data and comprehensive tank analysis capabilities. You help users with all aspects of marine aquarium keeping with enthusiasm and expertise.
+    // Enhanced system prompt with tank context integration
+    let systemPrompt = `You are AquaBot 🐠, an expert marine aquarium assistant with access to real-time web data and comprehensive tank analysis capabilities. You help users with all aspects of marine aquarium keeping with enthusiasm and expertise.`
+
+    // Add tank context to system prompt if provided
+    if (tankContext) {
+      systemPrompt += `\n\n**CURRENT TANK CONTEXT:**\n${tankContext}\n\nUse this tank information to provide personalized, specific advice. Reference the user's tank parameters, livestock, and maintenance history when relevant. Make your recommendations specific to their setup.`
+    }
+
+    systemPrompt += `
 
 **CRITICAL FORMATTING RULES:**
 - NEVER use ### headers or section dividers in your responses
@@ -222,7 +242,7 @@ Remember: NO ### headers, use tables for parameters, checkboxes for tasks! 🌊`
       })
     }
 
-    console.log('Sending to OpenAI with enhanced model gpt-4o')
+    console.log('Sending to OpenAI with enhanced model gpt-4o and tank context')
 
     // Call OpenAI API with the current model
     const openAIResponse = await fetch('https://api.openai.com/v1/chat/completions', {

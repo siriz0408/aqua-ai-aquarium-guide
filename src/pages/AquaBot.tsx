@@ -1,15 +1,18 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import { Layout } from '@/components/Layout';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
-import { Loader2, MessageSquare, X, Globe, Menu, Zap } from 'lucide-react';
+import { Loader2, MessageSquare, X, Globe, Menu, Zap, Database } from 'lucide-react';
 import { useChat } from '@/hooks/useChat';
 import { useWebSearch } from '@/hooks/useWebSearch';
+import { useTankContext } from '@/hooks/useTankContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { ConversationList } from '@/components/chat/ConversationList';
 import { MessageBubble } from '@/components/chat/MessageBubble';
 import { ChatInput } from '@/components/chat/ChatInput';
 import { QuickPrompts } from '@/components/chat/QuickPrompts';
+import TankContextPanel from '@/components/chat/TankContextPanel';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -51,6 +54,14 @@ const AquaBot = () => {
   } = useChat();
 
   const { searchWeb, isSearching } = useWebSearch();
+  const { 
+    showTankContext, 
+    setShowTankContext, 
+    contextString, 
+    selectedTankContext,
+    tanks 
+  } = useTankContext();
+  
   const [showSidebar, setShowSidebar] = useState(false);
   const [webSearchEnabled, setWebSearchEnabled] = useState(false);
   const isMobile = useIsMobile();
@@ -82,13 +93,18 @@ const AquaBot = () => {
     // No restrictions - always allow message sending
     let finalMessage = message;
     
+    // Add tank context to message if enabled
+    if (showTankContext && contextString) {
+      finalMessage = `Tank Context: ${contextString}\n\nUser Question: ${message}`;
+    }
+    
     // If web search is enabled, search for relevant information first
     if (webSearchEnabled && message.trim()) {
       const searchQuery = `marine aquarium ${message}`;
       const searchResult = await searchWeb(searchQuery);
       
       if (searchResult.success) {
-        finalMessage = `${message}\n\n[Web Search Results]:\n${searchResult.content}`;
+        finalMessage = `${finalMessage}\n\n[Web Search Results]:\n${searchResult.content}`;
       }
     }
     
@@ -183,6 +199,11 @@ const AquaBot = () => {
             
             <h2 className="font-semibold flex-1 text-center text-sm sm:text-base truncate">
               AquaBot Assistant
+              {showTankContext && selectedTankContext && (
+                <Badge variant="outline" className="ml-2 text-xs">
+                  {selectedTankContext.name}
+                </Badge>
+              )}
             </h2>
             
             <div className="flex items-center gap-1 sm:gap-2">
@@ -191,6 +212,19 @@ const AquaBot = () => {
                 <Zap className="h-3 w-3" />
                 <span className="text-xs">Pro</span>
               </Badge>
+              
+              {/* Tank Context Toggle */}
+              {tanks.length > 0 && (
+                <Button
+                  variant={showTankContext ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setShowTankContext(!showTankContext)}
+                  className="flex items-center gap-1 sm:gap-2 h-8 sm:h-9 px-2 sm:px-3"
+                >
+                  <Database className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline text-xs sm:text-sm">Tank Data</span>
+                </Button>
+              )}
               
               <Button
                 variant={webSearchEnabled ? "default" : "outline"}
@@ -211,6 +245,9 @@ const AquaBot = () => {
 
           {/* Messages Area - Mobile optimized */}
           <ScrollArea className="flex-1 p-2 sm:p-4">
+            {/* Tank Context Panel */}
+            {showTankContext && <TankContextPanel />}
+            
             {currentConversationId ? (
               <>
                 {messagesLoading ? (
@@ -262,7 +299,10 @@ const AquaBot = () => {
                     <div>
                       <h2 className="text-lg sm:text-xl font-semibold mb-2">Welcome to AquaBot!</h2>
                       <p className="text-muted-foreground text-sm sm:text-base px-4">
-                        I'm your marine aquarium assistant with access to real-time web data. 
+                        I'm your marine aquarium assistant with access to real-time web data
+                        {showTankContext && selectedTankContext && 
+                          ` and your ${selectedTankContext.name} tank data`
+                        }. 
                         Ask me anything about water chemistry, fish care, equipment, or troubleshooting!
                       </p>
                       <p className="text-xs text-blue-600 mt-2">
