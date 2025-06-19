@@ -61,7 +61,7 @@ export const useNotificationPreferences = () => {
         throw error;
       }
 
-      return data as NotificationPreferences | null;
+      return data ? (data as unknown as NotificationPreferences) : null;
     },
     enabled: !!user,
   });

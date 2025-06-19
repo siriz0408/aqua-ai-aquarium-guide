@@ -854,6 +854,63 @@ export type Database = {
           },
         ]
       }
+      notification_preferences: {
+        Row: {
+          ai_insights_enabled: boolean
+          created_at: string
+          critical_alerts_enabled: boolean
+          due_tasks_enabled: boolean
+          enabled: boolean
+          escalation_intervals: number[]
+          group_notifications: boolean
+          id: string
+          overdue_tasks_enabled: boolean
+          quiet_hours_end: string | null
+          quiet_hours_start: string | null
+          snooze_duration_hours: number
+          task_priority_threshold: string
+          time_of_day: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ai_insights_enabled?: boolean
+          created_at?: string
+          critical_alerts_enabled?: boolean
+          due_tasks_enabled?: boolean
+          enabled?: boolean
+          escalation_intervals?: number[]
+          group_notifications?: boolean
+          id?: string
+          overdue_tasks_enabled?: boolean
+          quiet_hours_end?: string | null
+          quiet_hours_start?: string | null
+          snooze_duration_hours?: number
+          task_priority_threshold?: string
+          time_of_day?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ai_insights_enabled?: boolean
+          created_at?: string
+          critical_alerts_enabled?: boolean
+          due_tasks_enabled?: boolean
+          enabled?: boolean
+          escalation_intervals?: number[]
+          group_notifications?: boolean
+          id?: string
+          overdue_tasks_enabled?: boolean
+          quiet_hours_end?: string | null
+          quiet_hours_start?: string | null
+          snooze_duration_hours?: number
+          task_priority_threshold?: string
+          time_of_day?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           admin_permissions: Json | null

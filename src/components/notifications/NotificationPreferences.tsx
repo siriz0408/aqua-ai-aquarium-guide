@@ -15,15 +15,15 @@ const NotificationPreferences: React.FC = () => {
   const { preferences, updatePreferences, isUpdating } = useNotificationPreferences();
   const { permission, requestPermission, isSupported } = useNotificationPermission();
 
-  const handleToggle = (key: keyof typeof preferences, value: boolean) => {
+  const handleToggle = (key: string, value: boolean) => {
     updatePreferences({ [key]: value });
   };
 
-  const handleSelectChange = (key: keyof typeof preferences, value: string) => {
+  const handleSelectChange = (key: string, value: string | number) => {
     updatePreferences({ [key]: value });
   };
 
-  const handleTimeChange = (key: keyof typeof preferences, value: string) => {
+  const handleTimeChange = (key: string, value: string) => {
     updatePreferences({ [key]: value });
   };
 
