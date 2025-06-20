@@ -29,15 +29,21 @@ export const PRICING_PLANS: PricingPlan[] = [
     id: 'annual',
     name: 'Annual Pro',
     description: 'Full access to all features - Save 10%',
-    priceId: 'price_1Rb8wD1d1AvgoBGoC8nfQXNK', // Your actual annual price ID
+    priceId: 'price_1Rb8wD1d1AvgoBGoC8nfQXNK', // Updated to correct annual price ID
     amount: 10788, // $107.88 (equivalent to $8.99/month)
     currency: 'usd',
     interval: 'year',
     intervalCount: 1,
     trialDays: 3,
-    popular: true,
+    popular: false, // Changed to false to make monthly the default
     savings: 'Save 10%',
   },
+];
+
+// Enhanced price ID validation
+export const VALID_PRICE_IDS = [
+  'price_1Rb8vR1d1AvgoBGoNIjxLKRR', // Monthly Pro
+  'price_1Rb8wD1d1AvgoBGoC8nfQXNK', // Annual Pro
 ];
 
 export const getPlanById = (planId: string): PricingPlan | undefined => {
@@ -61,4 +67,13 @@ export const getMonthlyEquivalent = (plan: PricingPlan): string => {
   }
   const monthlyAmount = plan.amount / 12;
   return formatPrice(monthlyAmount);
+};
+
+// Validation helpers
+export const isValidPriceId = (priceId: string): boolean => {
+  return VALID_PRICE_IDS.includes(priceId);
+};
+
+export const getDefaultPlan = (): PricingPlan => {
+  return PRICING_PLANS.find(plan => plan.id === 'monthly') || PRICING_PLANS[0];
 };

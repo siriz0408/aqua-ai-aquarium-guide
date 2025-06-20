@@ -19,6 +19,12 @@ const VALID_PRICE_IDS = [
   "price_1Rb8wD1d1AvgoBGoC8nfQXNK", // Annual Pro ($107.88/year - 10% discount)
 ];
 
+// Price ID to plan mapping for better UX
+const PRICE_ID_DETAILS = {
+  "price_1Rb8vR1d1AvgoBGoNIjxLKRR": { name: "Monthly Pro", amount: 999, interval: "month" },
+  "price_1Rb8wD1d1AvgoBGoC8nfQXNK": { name: "Annual Pro", amount: 10788, interval: "year" },
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -81,18 +87,28 @@ serve(async (req) => {
       throw new Error("Price ID is required");
     }
 
-    // Validate price ID
+    // Enhanced price ID validation with better error messages
     if (!VALID_PRICE_IDS.includes(priceId)) {
-      logStep("ERROR: Invalid price ID", { priceId, validPriceIds: VALID_PRICE_IDS });
-      throw new Error(`Invalid price ID: ${priceId}. Please use a valid price ID.`);
+      logStep("ERROR: Invalid price ID", { 
+        priceId, 
+        validPriceIds: VALID_PRICE_IDS,
+        availablePlans: Object.keys(PRICE_ID_DETAILS)
+      });
+      throw new Error(`Invalid price ID: ${priceId}. Valid options are: ${VALID_PRICE_IDS.join(', ')}`);
     }
 
-    logStep("Request body received", { priceId, trialPeriodDays });
+    const planDetails = PRICE_ID_DETAILS[priceId as keyof typeof PRICE_ID_DETAILS];
+    logStep("Request body received", { 
+      priceId, 
+      trialPeriodDays, 
+      planName: planDetails?.name,
+      planAmount: planDetails?.amount
+    });
 
     // Initialize Stripe with better error handling
     const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
     
-    // Validate price exists in Stripe
+    // Validate price exists in Stripe and is active
     try {
       const price = await stripe.prices.retrieve(priceId);
       logStep("Price verified in Stripe", { 
@@ -100,18 +116,28 @@ serve(async (req) => {
         active: price.active, 
         amount: price.unit_amount,
         interval: price.recurring?.interval,
-        intervalCount: price.recurring?.interval_count
+        intervalCount: price.recurring?.interval_count,
+        productId: price.product
       });
       
       if (!price.active) {
-        throw new Error("The selected price is not active in Stripe");
+        throw new Error(`The selected price (${planDetails?.name}) is not active in Stripe. Please contact support.`);
+      }
+
+      // Verify price amount matches our configuration
+      if (price.unit_amount !== planDetails?.amount) {
+        logStep("WARNING: Price amount mismatch", {
+          stripeAmount: price.unit_amount,
+          configAmount: planDetails?.amount,
+          priceId
+        });
       }
     } catch (priceError: any) {
       logStep("ERROR: Price validation failed", { error: priceError.message, code: priceError.code });
       if (priceError.code === 'resource_missing') {
-        throw new Error(`Price ID '${priceId}' does not exist in your Stripe account. Please verify the price ID in your Stripe Dashboard.`);
+        throw new Error(`Price ID '${priceId}' (${planDetails?.name}) does not exist in your Stripe account. Please verify the price ID in your Stripe Dashboard.`);
       }
-      throw new Error(`Price validation failed: ${priceError.message}`);
+      throw new Error(`Price validation failed for ${planDetails?.name}: ${priceError.message}`);
     }
     
     // Check if customer exists or create new one
@@ -133,7 +159,7 @@ serve(async (req) => {
     const origin = req.headers.get("origin") || "http://localhost:3000";
     logStep("Origin detected", { origin });
     
-    // Create checkout session with proper trial configuration
+    // Create checkout session with enhanced configuration
     const sessionConfig: any = {
       customer: customerId,
       line_items: [
@@ -144,13 +170,19 @@ serve(async (req) => {
       ],
       mode: "subscription",
       success_url: `${origin}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}/`,
+      cancel_url: `${origin}/pricing`,
       metadata: {
         user_id: user.id,
         price_id: priceId,
+        plan_name: planDetails?.name,
+        trial_requested: trialPeriodDays ? 'true' : 'false',
       },
       allow_promotion_codes: true,
       billing_address_collection: "auto",
+      customer_update: {
+        address: "auto",
+        name: "auto",
+      },
     };
 
     // Add subscription data with trial period if specified
@@ -161,9 +193,13 @@ serve(async (req) => {
           user_id: user.id,
           trial_days: trialPeriodDays.toString(),
           price_id: priceId,
+          plan_name: planDetails?.name,
         }
       };
-      logStep("Adding trial period to subscription", { trialPeriodDays });
+      logStep("Adding trial period to subscription", { 
+        trialPeriodDays, 
+        planName: planDetails?.name 
+      });
     }
 
     logStep("Creating checkout session with config", { 
@@ -171,7 +207,9 @@ serve(async (req) => {
       successUrl: sessionConfig.success_url,
       cancelUrl: sessionConfig.cancel_url,
       trialDays: trialPeriodDays,
-      priceId: priceId
+      priceId: priceId,
+      planName: planDetails?.name,
+      customerId: customerId
     });
 
     const session = await stripe.checkout.sessions.create(sessionConfig);
@@ -179,7 +217,9 @@ serve(async (req) => {
     logStep("Checkout session created successfully", { 
       sessionId: session.id, 
       url: session.url,
-      urlLength: session.url?.length 
+      urlLength: session.url?.length,
+      planName: planDetails?.name,
+      trialDays: trialPeriodDays
     });
 
     // Validate the URL before returning
@@ -187,7 +227,11 @@ serve(async (req) => {
       throw new Error("Stripe checkout session created but no URL returned");
     }
 
-    return new Response(JSON.stringify({ url: session.url }), {
+    return new Response(JSON.stringify({ 
+      url: session.url,
+      sessionId: session.id,
+      planName: planDetails?.name
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
@@ -198,7 +242,8 @@ serve(async (req) => {
     // Return user-friendly error messages
     return new Response(JSON.stringify({ 
       error: errorMessage,
-      details: "Check the Edge Function logs in Supabase Dashboard for more information."
+      details: "Check the Edge Function logs in Supabase Dashboard for more information.",
+      timestamp: new Date().toISOString()
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 400,
