@@ -2,14 +2,13 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { useSubscriptionAccess } from '@/hooks/useSubscriptionAccess';
+import { useProSubscriptionAccess } from '@/hooks/useProSubscriptionAccess';
 import { Loader2 } from 'lucide-react';
-import { SubscriptionPrompt } from '@/components/subscription/SubscriptionPrompt';
-import { ExpiredTrialPaywall } from '@/components/subscription/ExpiredTrialPaywall';
+import { ProSubscriptionPrompt } from '@/components/subscription/ProSubscriptionPrompt';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  requiresSubscription?: boolean; // For routes that need subscription access
+  requiresSubscription?: boolean;
 }
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ 
@@ -19,14 +18,12 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const {
-    accessData,
-    shouldShowPaywall,
-    shouldShowSubscriptionPrompt,
+    status,
     isLoading: subscriptionLoading,
-    hasActiveSubscription,
-    isTrialActive,
-    isAdmin
-  } = useSubscriptionAccess();
+    hasAccess,
+    isAdmin,
+    isPaidSubscriber
+  } = useProSubscriptionAccess();
 
   useEffect(() => {
     if (!loading && !user) {
@@ -51,23 +48,11 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return null;
   }
 
-  // For routes that require subscription (most routes in 100% paywall)
+  // For routes that require subscription (100% paywall)
   if (requiresSubscription) {
-    // Show subscription prompt for users who can start trial
-    if (shouldShowSubscriptionPrompt()) {
-      return <SubscriptionPrompt isFullScreen />;
-    }
-
-    // Show paywall for expired trials or users who can't start trials
-    if (shouldShowPaywall()) {
-      return <ExpiredTrialPaywall isFullScreen />;
-    }
-
-    // Check if user has access (admin, active subscription, or active trial)
-    const hasAccess = isAdmin || hasActiveSubscription || isTrialActive;
-    
+    // Check if user has access (admin or paid subscriber ONLY)
     if (!hasAccess) {
-      return <SubscriptionPrompt isFullScreen />;
+      return <ProSubscriptionPrompt isFullScreen />;
     }
   }
 

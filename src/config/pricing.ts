@@ -13,53 +13,51 @@ export interface PricingPlan {
   savings?: string;
 }
 
+// 100% PAYWALL: AquaBotAI Pro Plan Only
 export const PRICING_PLANS: PricingPlan[] = [
   {
-    id: 'monthly',
-    name: 'Monthly Pro',
-    description: 'Full access to all features',
+    id: 'monthly_pro',
+    name: 'AquaBotAI Pro',
+    description: 'Full access to AI-powered aquarium management',
     priceId: 'price_1Rb8vR1d1AvgoBGoNIjxLKRR', // Monthly Pro ($9.99/month)
     amount: 999, // $9.99
     currency: 'usd',
     interval: 'month',
     intervalCount: 1,
-    trialDays: 3,
-    popular: true, // Monthly is now the popular choice
+    popular: true,
   },
   {
-    id: 'annual',
-    name: 'Annual Pro',
-    description: 'Full access to all features - Save 10%',
-    priceId: 'price_1Rb8wD1d1AvgoBGoC8nfQXNK', // Annual Pro ($107.88/year)
-    amount: 10788, // $107.88 (equivalent to $8.99/month)
+    id: 'annual_pro',
+    name: 'AquaBotAI Pro (Annual)',
+    description: 'Full access to AI-powered aquarium management - Save 17%',
+    priceId: 'price_1Rb8wD1d1AvgoBGoC8nfQXNK', // Annual Pro ($99/year)
+    amount: 9900, // $99.00 (save $20/year)
     currency: 'usd',
     interval: 'year',
     intervalCount: 1,
-    trialDays: 3,
-    popular: false,
-    savings: 'Save 10%',
+    savings: 'Save 17%',
   },
 ];
 
-// Enhanced price ID validation with detailed error messages
+// Enhanced price ID validation
 export const VALID_PRICE_IDS = [
   'price_1Rb8vR1d1AvgoBGoNIjxLKRR', // Monthly Pro
   'price_1Rb8wD1d1AvgoBGoC8nfQXNK', // Annual Pro
 ];
 
-// Price ID to plan mapping for better error messages and validation
+// Price ID to plan mapping
 export const PRICE_ID_DETAILS = {
   'price_1Rb8vR1d1AvgoBGoNIjxLKRR': { 
-    name: 'Monthly Pro', 
+    name: 'AquaBotAI Pro (Monthly)', 
     amount: 999, 
     interval: 'month',
-    description: '$9.99/month with 3-day trial'
+    description: '$9.99/month - AI-powered aquarium management'
   },
   'price_1Rb8wD1d1AvgoBGoC8nfQXNK': { 
-    name: 'Annual Pro', 
-    amount: 10788, 
+    name: 'AquaBotAI Pro (Annual)', 
+    amount: 9900, 
     interval: 'year',
-    description: '$107.88/year (save 10%) with 3-day trial'
+    description: '$99/year (save 17%) - AI-powered aquarium management'
   },
 } as const;
 
@@ -86,7 +84,6 @@ export const getMonthlyEquivalent = (plan: PricingPlan): string => {
   return formatPrice(monthlyAmount);
 };
 
-// Enhanced validation helpers
 export const isValidPriceId = (priceId: string): boolean => {
   return VALID_PRICE_IDS.includes(priceId);
 };
@@ -115,11 +112,10 @@ export const getDefaultPlan = (): PricingPlan => {
   return PRICING_PLANS.find(plan => plan.popular) || PRICING_PLANS[0];
 };
 
-// Enhanced trial configuration
-export const TRIAL_CONFIG = {
-  defaultTrialDays: 3,
-  maxTrialDays: 14,
-  supportedTrialTypes: ['stripe', 'database'] as const,
+// 100% Paywall Configuration
+export const PAYWALL_CONFIG = {
+  enforceStrict: true,
+  allowTrials: false,
+  freeFeatures: [], // No free features
+  requiresSubscription: true,
 } as const;
-
-export type TrialType = typeof TRIAL_CONFIG.supportedTrialTypes[number];

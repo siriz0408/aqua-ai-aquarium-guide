@@ -10,7 +10,7 @@ const corsHeaders = {
 
 const logStep = (step: string, details?: any) => {
   const detailsStr = details ? ` - ${JSON.stringify(details)}` : '';
-  console.log(`[CHECK-SUBSCRIPTION] ${step}${detailsStr}`);
+  console.log(`[CHECK-SUBSCRIPTION-PRO] ${step}${detailsStr}`);
 };
 
 serve(async (req) => {
@@ -19,7 +19,7 @@ serve(async (req) => {
   }
 
   try {
-    logStep("Function started");
+    logStep("100% Paywall Function started");
 
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeKey) {
@@ -92,9 +92,9 @@ serve(async (req) => {
     // Initialize Stripe
     const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
 
-    // Admin always has access
+    // Admin always has access (100% paywall exception)
     if (profile.is_admin) {
-      logStep("Admin user detected");
+      logStep("Admin user detected - granting access");
       return new Response(JSON.stringify({
         subscribed: true,
         subscription_tier: 'unlimited',
@@ -107,9 +107,8 @@ serve(async (req) => {
       });
     }
 
-    // Check for active Stripe subscription
+    // Check for active Stripe subscription (ONLY way for non-admins to get access)
     let hasActiveSubscription = false;
-    let subscriptionTier = 'free';
     let subscriptionEnd = null;
 
     if (profile.stripe_customer_id) {
@@ -122,63 +121,41 @@ serve(async (req) => {
 
         if (subscriptions.data.length > 0) {
           hasActiveSubscription = true;
-          subscriptionTier = 'pro';
           const subscription = subscriptions.data[0];
           subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
           logStep("Active Stripe subscription found", { 
             subscriptionId: subscription.id,
             endDate: subscriptionEnd 
           });
+        } else {
+          logStep("No active Stripe subscription found");
         }
       } catch (stripeError) {
         logStep("WARNING: Stripe API error", { error: stripeError });
         // Continue with database-only check
       }
+    } else {
+      logStep("No Stripe customer ID found");
     }
 
-    // Check database trial status
-    const now = new Date();
-    let isTrialActive = false;
-    let trialHoursRemaining = 0;
-
-    if (profile.subscription_status === 'trial' && profile.trial_end_date) {
-      const trialEnd = new Date(profile.trial_end_date);
-      trialHoursRemaining = Math.max(0, (trialEnd.getTime() - now.getTime()) / (1000 * 60 * 60));
-      isTrialActive = trialHoursRemaining > 0;
-      
-      if (!isTrialActive && profile.subscription_status === 'trial') {
-        // Update expired trial
-        await supabaseClient
-          .from('profiles')
-          .update({ 
-            subscription_status: 'expired',
-            updated_at: now.toISOString()
-          })
-          .eq('id', user.id);
-        
-        logStep("Trial expired, status updated");
-      }
-    }
-
-    // Determine final access status
-    const hasAccess = hasActiveSubscription || isTrialActive;
-    const accessType = hasActiveSubscription ? 'paid' : 
-                      isTrialActive ? 'trial' : 
-                      profile.has_used_trial ? 'trial_expired' : 'free';
+    // 100% PAYWALL: Only paid subscribers (with active Stripe subscription) get access
+    const hasAccess = hasActiveSubscription;
+    const accessType = hasActiveSubscription ? 'paid' : 'no_access';
+    const subscriptionTier = hasActiveSubscription ? 'pro' : 'free';
 
     const result = {
       subscribed: hasActiveSubscription,
-      subscription_tier: hasActiveSubscription ? 'pro' : (isTrialActive ? 'trial' : 'free'),
+      subscription_tier: subscriptionTier,
       subscription_status: accessType,
       subscription_end: subscriptionEnd,
       has_access: hasAccess,
       access_type: accessType,
-      trial_hours_remaining: trialHoursRemaining,
-      can_start_trial: !profile.has_used_trial,
-      trial_type: profile.trial_type
+      trial_hours_remaining: 0, // No trials in 100% paywall
+      can_start_trial: false,   // No trials allowed
+      trial_type: null
     };
 
-    logStep("Subscription check complete", result);
+    logStep("100% Paywall check complete", result);
 
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -187,7 +164,7 @@ serve(async (req) => {
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    logStep("ERROR in check-subscription", { message: errorMessage });
+    logStep("ERROR in check-subscription-pro", { message: errorMessage });
     
     return new Response(JSON.stringify({ 
       error: errorMessage,

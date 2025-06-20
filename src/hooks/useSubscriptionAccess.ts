@@ -1,5 +1,5 @@
 
-import { useSimpleSubscriptionCheck } from './useSimpleSubscriptionCheck';
+import { useProSubscriptionAccess } from './useProSubscriptionAccess';
 import { useAuth } from '@/contexts/AuthContext';
 
 export const useSubscriptionAccess = () => {
@@ -11,76 +11,58 @@ export const useSubscriptionAccess = () => {
     refresh,
     hasAccess,
     isAdmin,
-    isPaid,
-    isTrial,
-    canStartTrial,
-    trialHoursRemaining 
-  } = useSimpleSubscriptionCheck();
+    isPaidSubscriber,
+    subscriptionTier,
+    subscriptionStatus
+  } = useProSubscriptionAccess();
 
-  console.log('useSubscriptionAccess - Access Data:', status);
+  console.log('useSubscriptionAccess - 100% Paywall Status:', status);
 
-  const canAccessFeature = (featureType: 'basic' | 'premium' = 'basic') => {
+  // 100% PAYWALL: Only admins and paid subscribers have access
+  const canAccessFeature = () => {
     if (isLoading || !status) return false;
-    
-    // Admin always has access
-    if (isAdmin) return true;
-    
-    // All premium features require subscription access
-    return hasAccess;
+    return hasAccess; // Only true for admins or paid subscribers
   };
 
-  const requiresUpgrade = (featureType: 'basic' | 'premium' = 'premium') => {
+  const requiresUpgrade = () => {
     if (!status) return true;
     if (isAdmin) return false;
-    return !hasAccess;
+    return !isPaidSubscriber; // Anyone who isn't a paid subscriber needs to upgrade
   };
 
   const shouldShowPaywall = () => {
     if (isLoading || !status) return false;
     if (isAdmin) return false;
-    
-    // Show paywall if trial is expired or user is free with no trial option
-    return status.access_type === 'trial_expired' || 
-           (status.access_type === 'free' && !canStartTrial);
+    return !isPaidSubscriber; // Show paywall to anyone who isn't a paid subscriber
   };
 
   const shouldShowSubscriptionPrompt = () => {
     if (isLoading || !status) return false;
     if (isAdmin) return false;
-    
-    // Show subscription prompt if user is free and can start trial OR has no access
-    return status.access_type === 'free' || !hasAccess;
+    return !isPaidSubscriber; // Show subscription prompt to non-subscribers
   };
 
-  const shouldShowTrialBanner = () => {
-    if (isLoading || !status) return false;
-    if (isAdmin) return false;
-    
-    // Show trial banner for active trials, expired trials, or free users who can start trial
-    return status.access_type === 'trial' || 
-           status.access_type === 'trial_expired' ||
-           (status.access_type === 'free' && canStartTrial);
-  };
+  // No trial banner needed in 100% paywall
+  const shouldShowTrialBanner = () => false;
 
   return {
     profile: user,
     subscriptionInfo: {
-      tier: status?.subscription_tier || 'free',
-      status: status?.access_type || 'free',
+      tier: subscriptionTier,
+      status: subscriptionStatus,
       hasAccess: hasAccess,
       isAdmin: isAdmin,
-      isTrial: isTrial,
-      trialHoursRemaining: trialHoursRemaining,
+      isTrial: false, // No trials in 100% paywall
+      trialHoursRemaining: 0,
       displayTier: isAdmin ? 'Admin' : 
-                   isTrial ? 'Trial' :
-                   isPaid ? 'Pro' : 'Free'
+                   isPaidSubscriber ? 'Pro' : 'Free'
     },
     trialStatus: {
-      isTrialActive: isTrial,
-      hoursRemaining: trialHoursRemaining,
-      isTrialExpired: status?.access_type === 'trial_expired',
-      canStartTrial: canStartTrial,
-      trialType: status?.trial_type
+      isTrialActive: false,
+      hoursRemaining: 0,
+      isTrialExpired: false,
+      canStartTrial: false, // No trials allowed
+      trialType: null
     },
     accessData: status,
     isLoading,
@@ -91,12 +73,12 @@ export const useSubscriptionAccess = () => {
     shouldShowPaywall,
     shouldShowSubscriptionPrompt,
     shouldShowTrialBanner,
-    hasActiveSubscription: isPaid,
-    isTrialActive: isTrial,
-    isTrialExpired: status?.access_type === 'trial_expired',
+    hasActiveSubscription: isPaidSubscriber,
+    isTrialActive: false, // No trials
+    isTrialExpired: false,
     isAdmin: isAdmin,
-    canStartTrial: canStartTrial,
-    hasUsedTrial: !canStartTrial && !isAdmin,
+    canStartTrial: false, // No trials allowed
+    hasUsedTrial: false, // Not relevant
     refreshAccess: refresh,
   };
 };

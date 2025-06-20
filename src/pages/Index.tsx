@@ -4,22 +4,20 @@ import { Layout } from '@/components/Layout';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
-import { SubscriptionPrompt } from '@/components/subscription/SubscriptionPrompt';
-import { ExpiredTrialPaywall } from '@/components/subscription/ExpiredTrialPaywall';
-import { useSubscriptionAccess } from '@/hooks/useSubscriptionAccess';
+import { ProSubscriptionPrompt } from '@/components/subscription/ProSubscriptionPrompt';
+import { useProSubscriptionAccess } from '@/hooks/useProSubscriptionAccess';
 
 const Index = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const {
-    accessData,
-    shouldShowPaywall,
-    shouldShowSubscriptionPrompt,
+    status,
     isLoading,
     isAdmin,
-    hasActiveSubscription,
-    isTrialActive
-  } = useSubscriptionAccess();
+    isPaidSubscriber,
+    hasAccess,
+    subscriptionTier
+  } = useProSubscriptionAccess();
 
   // Show loading state
   if (isLoading) {
@@ -43,37 +41,16 @@ const Index = () => {
     return null;
   }
 
-  // Show subscription prompt for users who can start trial
-  if (shouldShowSubscriptionPrompt()) {
-    return (
-      <Layout title="AquaAI - Start Your Journey">
-        <SubscriptionPrompt 
-          isFullScreen 
-        />
-      </Layout>
-    );
-  }
-
-  // Show paywall for expired trials or users who can't start trials
-  if (shouldShowPaywall()) {
-    return (
-      <Layout title="AquaAI - Subscribe to Continue">
-        <ExpiredTrialPaywall isFullScreen />
-      </Layout>
-    );
-  }
-
-  // Only admins, active subscribers, or trial users reach here
-  const hasAccess = isAdmin || hasActiveSubscription || isTrialActive;
-  
+  // 100% PAYWALL: Show subscription prompt if no access
   if (!hasAccess) {
     return (
-      <Layout title="AquaAI - Access Required">
-        <SubscriptionPrompt isFullScreen />
+      <Layout title="AquaAI - Subscription Required">
+        <ProSubscriptionPrompt isFullScreen />
       </Layout>
     );
   }
 
+  // Only admins and paid subscribers reach here
   return (
     <Layout title="AquaAI - Intelligent Aquarium Management">
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-gray-900 dark:to-blue-900">
@@ -88,7 +65,7 @@ const Index = () => {
               </h1>
             </div>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Welcome to your premium aquarium management experience. Track parameters, get AI advice, 
+              Welcome to your professional aquarium management experience. Track parameters, get AI advice, 
               and keep your aquatic friends thriving.
             </p>
             
@@ -96,13 +73,11 @@ const Index = () => {
             <div className="mt-6 flex justify-center">
               <div className={`px-4 py-2 rounded-full text-sm font-medium ${
                 isAdmin ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-200' :
-                hasActiveSubscription ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200' :
-                isTrialActive ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-200' :
+                isPaidSubscriber ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200' :
                 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-200'
               }`}>
                 {isAdmin ? '👑 Admin Access' :
-                 hasActiveSubscription ? '✨ Pro Subscriber' :
-                 isTrialActive ? `🚀 Trial Active (${Math.floor(accessData?.trial_hours_remaining || 0)}h remaining)` :
+                 isPaidSubscriber ? '✨ Pro Subscriber' :
                  '🔒 Access Required'}
               </div>
             </div>
@@ -150,12 +125,12 @@ const Index = () => {
             </div>
           </div>
 
-          {/* Premium Features */}
+          {/* Pro Features Showcase */}
           <div className="bg-white dark:bg-gray-800 rounded-lg p-8 shadow-lg">
             <div className="text-center mb-8">
-              <h2 className="text-3xl font-bold mb-4">Premium Features Available</h2>
+              <h2 className="text-3xl font-bold mb-4">Professional Features</h2>
               <p className="text-muted-foreground">
-                Unlock the full potential of your aquarium management experience.
+                You now have access to all AquaAI Pro features for professional aquarium management.
               </p>
             </div>
             
