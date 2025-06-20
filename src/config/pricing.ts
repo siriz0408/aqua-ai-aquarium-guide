@@ -1,4 +1,3 @@
-
 export interface PricingPlan {
   id: string;
   name: string;
@@ -20,7 +19,7 @@ export const PRICING_PLANS: PricingPlan[] = [
     name: 'AquaBotAI Pro',
     description: 'Full access to AI-powered aquarium management',
     priceId: 'price_1Rb8vR1d1AvgoBGoNIjxLKRR', // Monthly Pro ($4.99/month)
-    amount: 499, // $4.99
+    amount: 499, // $4.99 - CORRECTED to match Stripe
     currency: 'usd',
     interval: 'month',
     intervalCount: 1,
@@ -31,7 +30,7 @@ export const PRICING_PLANS: PricingPlan[] = [
     name: 'AquaBotAI Pro (Annual)',
     description: 'Full access to AI-powered aquarium management - Save 17%',
     priceId: 'price_1Rb8wD1d1AvgoBGoC8nfQXNK', // Annual Pro ($49/year)
-    amount: 4900, // $49.00 (save $10/year)
+    amount: 4900, // $49.00 - CORRECTED to match Stripe
     currency: 'usd',
     interval: 'year',
     intervalCount: 1,

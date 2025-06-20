@@ -13,15 +13,15 @@ const logStep = (step: string, details?: any) => {
   console.log(`[CREATE-CHECKOUT] ${step}${detailsStr}`);
 };
 
-// Valid price IDs with detailed mapping
+// Valid price IDs with correct amounts
 const VALID_PRICE_IDS = [
-  "price_1Rb8vR1d1AvgoBGoNIjxLKRR", // Monthly Pro ($9.99/month)
-  "price_1Rb8wD1d1AvgoBGoC8nfQXNK", // Annual Pro ($107.88/year - 10% discount)
+  "price_1Rb8vR1d1AvgoBGoNIjxLKRR", // Monthly Pro ($4.99/month)
+  "price_1Rb8wD1d1AvgoBGoC8nfQXNK", // Annual Pro ($49.00/year)
 ] as const;
 
 const PRICE_ID_DETAILS = {
-  "price_1Rb8vR1d1AvgoBGoNIjxLKRR": { name: "Monthly Pro", amount: 999, interval: "month" },
-  "price_1Rb8wD1d1AvgoBGoC8nfQXNK": { name: "Annual Pro", amount: 10788, interval: "year" },
+  "price_1Rb8vR1d1AvgoBGoNIjxLKRR": { name: "Monthly Pro", amount: 499, interval: "month" },
+  "price_1Rb8wD1d1AvgoBGoC8nfQXNK": { name: "Annual Pro", amount: 4900, interval: "year" },
 } as const;
 
 type ValidPriceId = (typeof VALID_PRICE_IDS)[number];
@@ -89,7 +89,7 @@ serve(async (req) => {
       throw new Error("Invalid JSON in request body");
     }
 
-    const { priceId, trialPeriodDays } = requestBody;
+    const { priceId } = requestBody;
     
     if (!priceId) {
       logStep("ERROR: No price ID provided");
@@ -109,7 +109,6 @@ serve(async (req) => {
     const planDetails = PRICE_ID_DETAILS[priceId as ValidPriceId];
     logStep("Request validated", { 
       priceId, 
-      trialPeriodDays, 
       planName: planDetails?.name,
       planAmount: planDetails?.amount
     });
@@ -131,15 +130,6 @@ serve(async (req) => {
       
       if (!price.active) {
         throw new Error(`The selected price (${planDetails?.name}) is not active in Stripe. Please contact support.`);
-      }
-
-      // Verify price amount matches our configuration
-      if (price.unit_amount !== planDetails?.amount) {
-        logStep("WARNING: Price amount mismatch", {
-          stripeAmount: price.unit_amount,
-          configAmount: planDetails?.amount,
-          priceId
-        });
       }
     } catch (priceError: any) {
       logStep("ERROR: Price validation failed", { error: priceError.message, code: priceError.code });
@@ -168,10 +158,7 @@ serve(async (req) => {
     const origin = req.headers.get("origin") || "http://localhost:3000";
     logStep("Origin detected", { origin });
     
-    // Validate trial period
-    const trialDays = trialPeriodDays && trialPeriodDays > 0 ? Math.min(trialPeriodDays, 14) : 3;
-    
-    // Create checkout session with enhanced configuration
+    // Create checkout session - REMOVED trial_settings to fix the error
     const sessionConfig: Stripe.Checkout.SessionCreateParams = {
       customer: customerId,
       line_items: [
@@ -187,8 +174,7 @@ serve(async (req) => {
         user_id: user.id,
         price_id: priceId,
         plan_name: planDetails?.name || 'Unknown Plan',
-        trial_requested: trialDays > 0 ? 'true' : 'false',
-        trial_days: trialDays.toString(),
+        created_via: 'aquabot_checkout',
       },
       allow_promotion_codes: true,
       billing_address_collection: "auto",
@@ -197,29 +183,21 @@ serve(async (req) => {
         name: "auto",
       },
       subscription_data: {
-        trial_period_days: trialDays,
         metadata: {
           user_id: user.id,
-          trial_days: trialDays.toString(),
           price_id: priceId,
           plan_name: planDetails?.name || 'Unknown Plan',
           created_via: 'aquabot_checkout',
         }
       },
-      // Enhanced trial settings
-      payment_method_collection: 'if_required',
-      trial_settings: {
-        end_behavior: {
-          missing_payment_method: 'cancel',
-        },
-      },
+      // No trial for 100% paywall - payment required immediately
+      payment_method_collection: 'always',
     };
 
     logStep("Creating checkout session with config", { 
       mode: sessionConfig.mode,
       successUrl: sessionConfig.success_url,
       cancelUrl: sessionConfig.cancel_url,
-      trialDays: trialDays,
       priceId: priceId,
       planName: planDetails?.name,
       customerId: customerId
@@ -231,8 +209,7 @@ serve(async (req) => {
       sessionId: session.id, 
       url: session.url,
       urlLength: session.url?.length,
-      planName: planDetails?.name,
-      trialDays: trialDays
+      planName: planDetails?.name
     });
 
     // Validate the URL before returning
@@ -244,7 +221,6 @@ serve(async (req) => {
       url: session.url,
       sessionId: session.id,
       planName: planDetails?.name,
-      trialDays: trialDays,
       success: true
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
