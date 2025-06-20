@@ -13,25 +13,28 @@ export const useCredits = () => {
   const { data: trialStatus, isLoading: trialLoading } = useTrialStatus(profile);
   const { getSubscriptionInfo } = useSubscriptionInfo(profile, trialStatus);
 
+  const subscriptionInfo = getSubscriptionInfo();
+
   const canUseFeature = async (feature: string = 'chat') => {
-    // Remove all paywall restrictions - all users can access all features
-    return true;
+    // Check if user has access based on subscription status
+    return subscriptionInfo.hasAccess;
   };
 
   const needsUpgrade = () => {
-    // No one needs to upgrade - all features are free
-    return false;
+    // Returns true if user needs to upgrade (no access)
+    return !subscriptionInfo.hasAccess;
   };
 
   const forceRefreshAccess = async () => {
-    // Always return true since there are no access restrictions
-    return true;
+    // Refresh subscription status
+    return subscriptionInfo.hasAccess;
   };
 
   return {
     profile,
     profileLoading: profileLoading || trialLoading,
     trialStatus,
+    subscriptionInfo,
     canUseFeature,
     needsUpgrade,
     getSubscriptionInfo,

@@ -1,3 +1,4 @@
+
 export interface PricingPlan {
   id: string;
   name: string;
@@ -18,7 +19,7 @@ export const PRICING_PLANS: PricingPlan[] = [
     name: 'Monthly Pro',
     description: 'Full access to all features',
     priceId: 'price_1Rb8vR1d1AvgoBGoNIjxLKRR',
-    amount: 499, // $4.99
+    amount: 999, // $9.99
     currency: 'usd',
     interval: 'month',
     intervalCount: 1,
@@ -28,8 +29,8 @@ export const PRICING_PLANS: PricingPlan[] = [
     id: 'annual',
     name: 'Annual Pro',
     description: 'Full access to all features - Save 10%',
-    priceId: 'REPLACE_WITH_YOUR_STRIPE_ANNUAL_PRICE_ID', // ⚠️ Replace this with your actual Stripe annual price ID
-    amount: 5388, // $53.88 (equivalent to $4.49/month)
+    priceId: 'price_1Rb8wD1d1AvgoBGoC8nfQXNK', // Your actual annual price ID
+    amount: 10788, // $107.88 (equivalent to $8.99/month)
     currency: 'usd',
     interval: 'year',
     intervalCount: 1,

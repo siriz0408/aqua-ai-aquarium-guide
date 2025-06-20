@@ -15,8 +15,8 @@ const logStep = (step: string, details?: any) => {
 
 // Valid price IDs for the application
 const VALID_PRICE_IDS = [
-  "price_1Rb8vR1d1AvgoBGoNIjxLKRR", // Monthly Pro
-  "REPLACE_WITH_YOUR_STRIPE_ANNUAL_PRICE_ID", // ⚠️ Replace this with your actual Stripe annual price ID
+  "price_1Rb8vR1d1AvgoBGoNIjxLKRR", // Monthly Pro ($9.99/month)
+  "price_1Rb8wD1d1AvgoBGoC8nfQXNK", // Annual Pro ($107.88/year - 10% discount)
 ];
 
 serve(async (req) => {
