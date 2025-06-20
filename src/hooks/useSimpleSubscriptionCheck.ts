@@ -12,6 +12,7 @@ interface SubscriptionStatus {
   trial_hours_remaining?: number;
   can_start_trial?: boolean;
   trial_type?: string;
+  subscription_end_date?: string;
 }
 
 export const useSimpleSubscriptionCheck = () => {
