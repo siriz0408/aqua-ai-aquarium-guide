@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -8,7 +9,6 @@ import { Badge } from '@/components/ui/badge';
 import { RefreshCw, Crown, CreditCard } from 'lucide-react';
 import { Layout } from '@/components/Layout';
 import { useToast } from '@/hooks/use-toast';
-import { format } from 'date-fns';
 
 const Account = () => {
   const { user } = useAuth();
@@ -57,7 +57,6 @@ const Account = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${await user.getIdToken()}`,
         },
       });
 
@@ -104,20 +103,20 @@ const Account = () => {
               <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
                 <div>
                   <p className="font-medium text-blue-900">
-                    {isAdmin ? 'Admin Access' : isPaidSubscriber ? 'Pro Subscriber' : 'Free User'}
+                    {isAdmin ? 'Admin Access' : hasActiveSubscription ? 'Pro Subscriber' : 'Free User'}
                   </p>
                   <p className="text-sm text-blue-700">
                     {isAdmin ? 'Full admin privileges' : 
-                     isPaidSubscriber ? 'Full access to all features' : 'Upgrade to access premium features'}
+                     hasActiveSubscription ? 'Full access to all features' : 'Upgrade to access premium features'}
                   </p>
-                  {isPaidSubscriber && status.subscription_end && (
+                  {hasActiveSubscription && status.subscriptionEndDate && (
                     <p className="text-xs text-blue-600 mt-1">
-                      Expires: {new Date(status.subscription_end).toLocaleDateString()}
+                      Expires: {new Date(status.subscriptionEndDate).toLocaleDateString()}
                     </p>
                   )}
                 </div>
-                <Badge variant={hasAccessFeature() ? "default" : "secondary"}>
-                  {hasAccessFeature() ? "Active" : "Inactive"}
+                <Badge variant={canAccessFeature() ? "default" : "secondary"}>
+                  {canAccessFeature() ? "Active" : "Inactive"}
                 </Badge>
               </div>
               
@@ -141,7 +140,7 @@ const Account = () => {
                   )}
                 </Button>
                 
-                {isPaidSubscriber && (
+                {hasActiveSubscription && (
                   <Button
                     onClick={handleManageSubscription}
                     variant="outline"
@@ -152,7 +151,7 @@ const Account = () => {
                   </Button>
                 )}
                 
-                {!hasAccessFeature() && (
+                {!canAccessFeature() && (
                   <Button
                     onClick={() => navigate('/pricing')}
                     className="bg-blue-600 hover:bg-blue-700"
@@ -180,11 +179,8 @@ const Account = () => {
               <div className="space-y-2">
                 <p><strong>User ID:</strong> {user.id}</p>
                 <p><strong>Email:</strong> {user.email}</p>
-                {profile && (
-                  <>
-                    <p><strong>Full Name:</strong> {profile.full_name}</p>
-                    {/* Display other profile information here */}
-                  </>
+                {user.user_metadata?.full_name && (
+                  <p><strong>Full Name:</strong> {user.user_metadata.full_name}</p>
                 )}
               </div>
             </CardContent>
