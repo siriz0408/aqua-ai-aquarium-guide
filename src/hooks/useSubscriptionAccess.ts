@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 
 export const useSubscriptionAccess = () => {
   const { user } = useAuth();
-  const { data: accessData, isLoading, error } = useUserSubscriptionAccess();
+  const { data: accessData, isLoading, error, refetch } = useUserSubscriptionAccess();
 
   console.log('useSubscriptionAccess - Access Data:', accessData);
 
@@ -14,7 +14,7 @@ export const useSubscriptionAccess = () => {
     // Admin always has access
     if (accessData.access_type === 'admin') return true;
     
-    // All features require subscription access (trial, paid, or admin)
+    // All premium features require subscription access (trial, paid, or admin)
     return accessData.has_access;
   };
 
@@ -51,6 +51,10 @@ export const useSubscriptionAccess = () => {
            (accessData.access_type === 'free' && accessData.can_start_trial);
   };
 
+  // Enhanced error handling
+  const hasAccessError = !!error;
+  const accessError = error instanceof Error ? error.message : null;
+
   return {
     profile: user,
     subscriptionInfo: {
@@ -67,11 +71,14 @@ export const useSubscriptionAccess = () => {
     trialStatus: {
       isTrialActive: accessData?.access_type === 'trial',
       hoursRemaining: accessData?.trial_hours_remaining || 0,
-      isTrialExpired: accessData?.access_type === 'trial_expired'
+      isTrialExpired: accessData?.access_type === 'trial_expired',
+      canStartTrial: accessData?.can_start_trial || false,
+      trialType: accessData?.trial_type
     },
     accessData,
     isLoading,
-    hasError: !!error,
+    hasError: hasAccessError,
+    accessError,
     canAccessFeature,
     requiresUpgrade,
     shouldShowPaywall,
@@ -82,6 +89,8 @@ export const useSubscriptionAccess = () => {
     isTrialExpired: accessData?.access_type === 'trial_expired',
     isAdmin: accessData?.access_type === 'admin',
     canStartTrial: accessData?.can_start_trial || false,
-    hasUsedTrial: !accessData?.can_start_trial && accessData?.access_type !== 'admin'
+    hasUsedTrial: !accessData?.can_start_trial && accessData?.access_type !== 'admin',
+    // Enhanced functionality
+    refreshAccess: refetch,
   };
 };

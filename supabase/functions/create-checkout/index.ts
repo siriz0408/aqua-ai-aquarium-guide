@@ -13,17 +13,18 @@ const logStep = (step: string, details?: any) => {
   console.log(`[CREATE-CHECKOUT] ${step}${detailsStr}`);
 };
 
-// Valid price IDs for the application
+// Valid price IDs with detailed mapping
 const VALID_PRICE_IDS = [
   "price_1Rb8vR1d1AvgoBGoNIjxLKRR", // Monthly Pro ($9.99/month)
   "price_1Rb8wD1d1AvgoBGoC8nfQXNK", // Annual Pro ($107.88/year - 10% discount)
-];
+] as const;
 
-// Price ID to plan mapping for better UX
 const PRICE_ID_DETAILS = {
   "price_1Rb8vR1d1AvgoBGoNIjxLKRR": { name: "Monthly Pro", amount: 999, interval: "month" },
   "price_1Rb8wD1d1AvgoBGoC8nfQXNK": { name: "Annual Pro", amount: 10788, interval: "year" },
-};
+} as const;
+
+type ValidPriceId = (typeof VALID_PRICE_IDS)[number];
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -40,10 +41,9 @@ serve(async (req) => {
       throw new Error("STRIPE_SECRET_KEY is not configured. Please set it in Supabase Dashboard.");
     }
     
-    // Validate Stripe key format
     if (!stripeKey.startsWith('sk_')) {
       logStep("ERROR: Invalid STRIPE_SECRET_KEY format", { keyPrefix: stripeKey.substring(0, 7) });
-      throw new Error("Invalid STRIPE_SECRET_KEY format. It should start with 'sk_' (secret key), not 'pk_' (publishable key). Please use your secret key from the Stripe Dashboard.");
+      throw new Error("Invalid STRIPE_SECRET_KEY format. It should start with 'sk_' (secret key), not 'pk_' (publishable key).");
     }
     
     logStep("Stripe key verified", { keyPrefix: stripeKey.substring(0, 7) });
@@ -80,15 +80,24 @@ serve(async (req) => {
     }
     logStep("User authenticated", { userId: user.id, email: user.email });
 
-    // Get request body
-    const { priceId, trialPeriodDays } = await req.json();
+    // Parse and validate request body
+    let requestBody;
+    try {
+      requestBody = await req.json();
+    } catch (error) {
+      logStep("ERROR: Invalid JSON in request body");
+      throw new Error("Invalid JSON in request body");
+    }
+
+    const { priceId, trialPeriodDays } = requestBody;
+    
     if (!priceId) {
       logStep("ERROR: No price ID provided");
       throw new Error("Price ID is required");
     }
 
-    // Enhanced price ID validation with better error messages
-    if (!VALID_PRICE_IDS.includes(priceId)) {
+    // Enhanced price ID validation
+    if (!VALID_PRICE_IDS.includes(priceId as ValidPriceId)) {
       logStep("ERROR: Invalid price ID", { 
         priceId, 
         validPriceIds: VALID_PRICE_IDS,
@@ -97,15 +106,15 @@ serve(async (req) => {
       throw new Error(`Invalid price ID: ${priceId}. Valid options are: ${VALID_PRICE_IDS.join(', ')}`);
     }
 
-    const planDetails = PRICE_ID_DETAILS[priceId as keyof typeof PRICE_ID_DETAILS];
-    logStep("Request body received", { 
+    const planDetails = PRICE_ID_DETAILS[priceId as ValidPriceId];
+    logStep("Request validated", { 
       priceId, 
       trialPeriodDays, 
       planName: planDetails?.name,
       planAmount: planDetails?.amount
     });
 
-    // Initialize Stripe with better error handling
+    // Initialize Stripe with error handling
     const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
     
     // Validate price exists in Stripe and is active
@@ -159,8 +168,11 @@ serve(async (req) => {
     const origin = req.headers.get("origin") || "http://localhost:3000";
     logStep("Origin detected", { origin });
     
+    // Validate trial period
+    const trialDays = trialPeriodDays && trialPeriodDays > 0 ? Math.min(trialPeriodDays, 14) : 3;
+    
     // Create checkout session with enhanced configuration
-    const sessionConfig: any = {
+    const sessionConfig: Stripe.Checkout.SessionCreateParams = {
       customer: customerId,
       line_items: [
         {
@@ -170,12 +182,13 @@ serve(async (req) => {
       ],
       mode: "subscription",
       success_url: `${origin}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}/pricing`,
+      cancel_url: `${origin}/pricing?cancelled=true`,
       metadata: {
         user_id: user.id,
         price_id: priceId,
-        plan_name: planDetails?.name,
-        trial_requested: trialPeriodDays ? 'true' : 'false',
+        plan_name: planDetails?.name || 'Unknown Plan',
+        trial_requested: trialDays > 0 ? 'true' : 'false',
+        trial_days: trialDays.toString(),
       },
       allow_promotion_codes: true,
       billing_address_collection: "auto",
@@ -183,30 +196,30 @@ serve(async (req) => {
         address: "auto",
         name: "auto",
       },
-    };
-
-    // Add subscription data with trial period if specified
-    if (trialPeriodDays && trialPeriodDays > 0) {
-      sessionConfig.subscription_data = {
-        trial_period_days: trialPeriodDays,
+      subscription_data: {
+        trial_period_days: trialDays,
         metadata: {
           user_id: user.id,
-          trial_days: trialPeriodDays.toString(),
+          trial_days: trialDays.toString(),
           price_id: priceId,
-          plan_name: planDetails?.name,
+          plan_name: planDetails?.name || 'Unknown Plan',
+          created_via: 'aquabot_checkout',
         }
-      };
-      logStep("Adding trial period to subscription", { 
-        trialPeriodDays, 
-        planName: planDetails?.name 
-      });
-    }
+      },
+      // Enhanced trial settings
+      payment_method_collection: 'if_required',
+      trial_settings: {
+        end_behavior: {
+          missing_payment_method: 'cancel',
+        },
+      },
+    };
 
     logStep("Creating checkout session with config", { 
       mode: sessionConfig.mode,
       successUrl: sessionConfig.success_url,
       cancelUrl: sessionConfig.cancel_url,
-      trialDays: trialPeriodDays,
+      trialDays: trialDays,
       priceId: priceId,
       planName: planDetails?.name,
       customerId: customerId
@@ -219,7 +232,7 @@ serve(async (req) => {
       url: session.url,
       urlLength: session.url?.length,
       planName: planDetails?.name,
-      trialDays: trialPeriodDays
+      trialDays: trialDays
     });
 
     // Validate the URL before returning
@@ -230,7 +243,9 @@ serve(async (req) => {
     return new Response(JSON.stringify({ 
       url: session.url,
       sessionId: session.id,
-      planName: planDetails?.name
+      planName: planDetails?.name,
+      trialDays: trialDays,
+      success: true
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
@@ -239,11 +254,13 @@ serve(async (req) => {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logStep("ERROR in create-checkout", { message: errorMessage });
     
-    // Return user-friendly error messages
+    // Return detailed error information for debugging
     return new Response(JSON.stringify({ 
       error: errorMessage,
+      success: false,
       details: "Check the Edge Function logs in Supabase Dashboard for more information.",
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      validPriceIds: VALID_PRICE_IDS,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 400,

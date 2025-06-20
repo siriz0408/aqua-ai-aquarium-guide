@@ -1,19 +1,20 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { RefreshCw, CheckCircle, Clock } from 'lucide-react';
+import { RefreshCw, CheckCircle, Clock, AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscriptionStatus } from '@/hooks/useSubscriptionStatus';
 import { PlanSelector } from './PlanSelector';
-import { PRICING_PLANS, type PricingPlan, formatPrice, getDefaultPlan } from '@/config/pricing';
+import { PRICING_PLANS, type PricingPlan, formatPrice, getDefaultPlan, validatePriceId } from '@/config/pricing';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 export const PricingSection: React.FC = () => {
   const { toast } = useToast();
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const [lastError, setLastError] = useState<string | null>(null);
   const { checkSubscriptionStatus, isLoading: isCheckingStatus } = useSubscriptionStatus();
   const [selectedPlan, setSelectedPlan] = useState<PricingPlan>(getDefaultPlan());
 
@@ -27,13 +28,22 @@ export const PricingSection: React.FC = () => {
       return;
     }
 
+    // Clear any previous errors
+    setLastError(null);
     setIsLoading(true);
+
     try {
       console.log('Starting checkout process', { 
         planId: selectedPlan.id,
         priceId: selectedPlan.priceId,
         trialDays: selectedPlan.trialDays
       });
+
+      // Validate price ID before sending to server
+      const validation = validatePriceId(selectedPlan.priceId);
+      if (!validation.valid) {
+        throw new Error(validation.error || 'Invalid plan configuration');
+      }
 
       const { data, error } = await supabase.functions.invoke('create-checkout', {
         body: { 
@@ -44,28 +54,33 @@ export const PricingSection: React.FC = () => {
 
       if (error) {
         console.error('Checkout creation error:', error);
+        setLastError(error.message || 'Failed to create checkout session');
         throw error;
       }
 
       console.log('Checkout session created:', data);
 
-      if (data?.url) {
+      if (data?.success && data?.url) {
         // Show success message before redirect
         toast({
           title: "Redirecting to Checkout",
-          description: `Starting your ${selectedPlan.trialDays}-day free trial for ${selectedPlan.name}`,
+          description: `Starting your ${selectedPlan.trialDays || 3}-day free trial for ${selectedPlan.name}`,
         });
         
-        // Small delay to show the toast
+        // Small delay to show the toast, then redirect
         setTimeout(() => {
           window.open(data.url, '_blank');
         }, 1000);
       } else {
-        throw new Error('No checkout URL received');
+        const errorMsg = data?.error || 'No checkout URL received';
+        setLastError(errorMsg);
+        throw new Error(errorMsg);
       }
     } catch (error) {
       console.error('Error creating checkout session:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      setLastError(errorMessage);
+      
       toast({
         title: "Checkout Failed",
         description: `Failed to start checkout: ${errorMessage}`,
@@ -101,10 +116,29 @@ export const PricingSection: React.FC = () => {
           )}
         </div>
 
+        {/* Error Display */}
+        {lastError && (
+          <div className="mb-6">
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                <strong>Checkout Error:</strong> {lastError}
+                <br />
+                <span className="text-sm mt-2 block">
+                  Please try again or contact support if the issue persists.
+                </span>
+              </AlertDescription>
+            </Alert>
+          </div>
+        )}
+
         <div className="max-w-4xl mx-auto">
           <PlanSelector
             selectedPlan={selectedPlan}
-            onPlanSelect={setSelectedPlan}
+            onPlanSelect={(plan) => {
+              setSelectedPlan(plan);
+              setLastError(null); // Clear errors when plan changes
+            }}
             showFeatures={true}
           />
           
@@ -160,6 +194,11 @@ export const PricingSection: React.FC = () => {
                 After trial: {formatPrice(selectedPlan.amount)}/{selectedPlan.interval} • 
                 {selectedPlan.interval === 'year' && ' Save 10% vs monthly'}
               </p>
+              {selectedPlan.priceId && (
+                <p className="text-xs text-gray-500 font-mono">
+                  Plan ID: {selectedPlan.priceId}
+                </p>
+              )}
             </div>
           </div>
         </div>
