@@ -50,6 +50,7 @@ export const ProSubscriptionPrompt: React.FC<ProSubscriptionPromptProps> = ({
       }
 
       if (data?.url) {
+        // Redirect to Stripe Checkout
         window.location.href = data.url;
       } else {
         throw new Error('No checkout URL received');
@@ -76,6 +77,15 @@ export const ProSubscriptionPrompt: React.FC<ProSubscriptionPromptProps> = ({
     'Expert Recommendations',
     'Priority Support'
   ];
+
+  // Get display price based on selected plan
+  const getDisplayPrice = () => {
+    if (selectedPlan.interval === 'month') {
+      return '$4.99';
+    } else {
+      return '$49.00';
+    }
+  };
 
   const content = (
     <Card className="border-blue-200 bg-gradient-to-br from-blue-50 to-cyan-50 dark:border-blue-800 dark:bg-gradient-to-br dark:from-blue-900/20 dark:to-cyan-900/20 max-w-4xl mx-auto">
@@ -121,7 +131,7 @@ export const ProSubscriptionPrompt: React.FC<ProSubscriptionPromptProps> = ({
             disabled={isLoading}
             className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white text-lg py-6 max-w-md mx-auto"
           >
-            {isLoading ? "Processing..." : `Subscribe to ${selectedPlan.name} - ${formatPrice(selectedPlan.amount)}/${selectedPlan.interval}`}
+            {isLoading ? "Processing..." : `Subscribe for ${getDisplayPrice()}/${selectedPlan.interval}`}
           </Button>
           
           <p className="text-sm text-blue-600 dark:text-blue-400">
