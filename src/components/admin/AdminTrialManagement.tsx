@@ -10,6 +10,20 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 
+interface AdminTrialResponse {
+  success: boolean;
+  error?: string;
+  extension_days?: number;
+  new_trial_end?: string;
+}
+
+interface TrialStartResponse {
+  success: boolean;
+  error?: string;
+  trial_length_days?: number;
+  trial_end_date?: string;
+}
+
 export const AdminTrialManagement: React.FC = () => {
   const [targetUserId, setTargetUserId] = useState('');
   const [extensionDays, setExtensionDays] = useState('3');
@@ -45,16 +59,19 @@ export const AdminTrialManagement: React.FC = () => {
         return;
       }
 
-      if (data.success) {
+      // Type cast the response properly
+      const result = data as unknown as AdminTrialResponse;
+
+      if (result?.success) {
         toast({
           title: "Trial Extended! ✅",
-          description: `User trial extended by ${data.extension_days} days. New end date: ${new Date(data.new_trial_end).toLocaleDateString()}`,
+          description: `User trial extended by ${result.extension_days} days. New end date: ${result.new_trial_end ? new Date(result.new_trial_end).toLocaleDateString() : 'Unknown'}`,
         });
         setTargetUserId('');
       } else {
         toast({
           title: "Extension Failed",
-          description: data.error || "Unknown error occurred",
+          description: result?.error || "Unknown error occurred",
           variant: "destructive",
         });
       }
@@ -98,16 +115,19 @@ export const AdminTrialManagement: React.FC = () => {
         return;
       }
 
-      if (data.success) {
+      // Type cast the response properly
+      const result = data as unknown as TrialStartResponse;
+
+      if (result?.success) {
         toast({
           title: "Trial Created! ✅",
-          description: `${data.trial_length_days}-day database trial created. Ends: ${new Date(data.trial_end_date).toLocaleDateString()}`,
+          description: `${result.trial_length_days}-day database trial created. Ends: ${result.trial_end_date ? new Date(result.trial_end_date).toLocaleDateString() : 'Unknown'}`,
         });
         setTargetUserId('');
       } else {
         toast({
           title: "Trial Creation Failed",
-          description: data.error || "Unknown error occurred",
+          description: result?.error || "Unknown error occurred",
           variant: "destructive",
         });
       }

@@ -37,9 +37,15 @@ export const useUserSubscriptionAccess = () => {
 
       console.log('Subscription access data:', accessData);
 
+      // Ensure access_type is properly typed
+      const validAccessTypes = ['admin', 'paid', 'trial', 'trial_expired', 'free', 'no_user'] as const;
+      const accessType = validAccessTypes.includes(accessData.access_type as any) 
+        ? accessData.access_type as SubscriptionAccess['access_type']
+        : 'free' as const;
+
       return {
         has_access: accessData.has_access,
-        access_type: accessData.access_type,
+        access_type: accessType,
         subscription_tier: accessData.subscription_tier,
         trial_hours_remaining: accessData.trial_hours_remaining || 0,
         trial_type: accessData.trial_type,

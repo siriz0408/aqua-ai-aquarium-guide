@@ -13,7 +13,7 @@ import { useNavigate } from 'react-router-dom';
 
 const Account = () => {
   const { user, signOut } = useAuth();
-  const { profile, subscriptionInfo, trialStatus, isLoading } = useSubscriptionAccess();
+  const { subscriptionInfo, trialStatus, accessData, isLoading } = useSubscriptionAccess();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [isLoadingPortal, setIsLoadingPortal] = useState(false);
@@ -76,10 +76,10 @@ const Account = () => {
                   <label className="text-sm font-medium text-gray-600">Email</label>
                   <p className="text-lg">{user.email}</p>
                 </div>
-                {profile?.full_name && (
+                {user.user_metadata?.full_name && (
                   <div>
                     <label className="text-sm font-medium text-gray-600">Full Name</label>
-                    <p className="text-lg">{profile.full_name}</p>
+                    <p className="text-lg">{user.user_metadata.full_name}</p>
                   </div>
                 )}
                 <div>
@@ -134,11 +134,11 @@ const Account = () => {
                       </div>
                     )}
 
-                    {profile?.subscription_end_date && subscriptionInfo.hasAccess && (
+                    {accessData?.subscription_end_date && subscriptionInfo.hasAccess && (
                       <div className="flex items-center justify-between">
                         <span className="font-medium">Next Billing Date:</span>
                         <span className="text-gray-600">
-                          {new Date(profile.subscription_end_date).toLocaleDateString()}
+                          {new Date(accessData.subscription_end_date).toLocaleDateString()}
                         </span>
                       </div>
                     )}

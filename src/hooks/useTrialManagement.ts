@@ -4,6 +4,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 
+interface TrialStartResponse {
+  success: boolean;
+  error?: string;
+  trial_length_days?: number;
+  trial_end_date?: string;
+}
+
 export const useTrialManagement = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
@@ -36,19 +43,22 @@ export const useTrialManagement = () => {
 
       console.log('Database trial start result:', data);
 
-      if (data.success) {
+      // Type cast the response properly
+      const result = data as unknown as TrialStartResponse;
+
+      if (result?.success) {
         toast({
           title: "Trial Started! 🎉",
           description: `Your ${trialLengthDays}-day free trial has begun. Enjoy full access to all features!`,
         });
-        return { success: true, data };
+        return { success: true, data: result };
       } else {
         toast({
           title: "Trial Not Available",
-          description: data.error || "Unable to start trial",
+          description: result?.error || "Unable to start trial",
           variant: "destructive",
         });
-        return { success: false, error: data.error };
+        return { success: false, error: result?.error || "Unknown error" };
       }
     } catch (error) {
       console.error('Trial start exception:', error);
