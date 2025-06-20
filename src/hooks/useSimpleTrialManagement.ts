@@ -59,8 +59,8 @@ export const useSimpleTrialManagement = () => {
 
       console.log('Database trial start result:', data);
 
-      // Type assertion for the response
-      const result = data as DatabaseTrialResponse;
+      // Safe type conversion with proper checking
+      const result = typeof data === 'object' && data !== null ? data as unknown as DatabaseTrialResponse : null;
 
       if (result?.success) {
         toast({
@@ -132,8 +132,8 @@ export const useSimpleTrialManagement = () => {
         return { success: false, error: errorMsg };
       }
 
-      // Type assertion for the response
-      const result = data as StripeCheckoutResponse;
+      // Safe type conversion with proper checking
+      const result = typeof data === 'object' && data !== null ? data as unknown as StripeCheckoutResponse : null;
 
       if (result?.success && result?.url) {
         console.log('Redirecting to Stripe checkout for trial:', result.url);
