@@ -81,26 +81,29 @@ export const useProSubscriptionAccess = () => {
       
       setStatus(accessStatus);
       
-      // If user should have access but doesn't, try to refresh once more
+      // If user should have access but doesn't, try to get detailed profile info
       if (!accessStatus.hasAccess && user.email) {
-        console.log('Access denied, attempting debug check for:', user.email);
+        console.log('Access denied, checking profile directly for:', user.email);
         
-        const { data: debugData } = await supabase.rpc('debug_user_subscription', {
-          user_email: user.email
-        });
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('subscription_status, subscription_tier, is_admin, subscription_end_date, stripe_subscription_id, stripe_customer_id')
+          .eq('email', user.email)
+          .single();
         
-        console.log('Debug subscription data:', debugData);
-        
-        if (debugData?.user_profile?.subscription_status === 'active' && 
-            debugData?.user_profile?.subscription_tier === 'pro') {
-          console.log('Debug shows active subscription, updating status');
-          setStatus({
-            hasAccess: true,
-            accessType: 'paid',
-            subscriptionTier: 'pro',
-            subscriptionStatus: 'active',
-            subscriptionEndDate: debugData.user_profile.subscription_end_date
-          });
+        if (!profileError && profileData) {
+          console.log('Direct profile lookup:', profileData);
+          
+          if (profileData.subscription_status === 'active' && profileData.subscription_tier === 'pro') {
+            console.log('Profile shows active subscription, updating status');
+            setStatus({
+              hasAccess: true,
+              accessType: 'paid',
+              subscriptionTier: 'pro',
+              subscriptionStatus: 'active',
+              subscriptionEndDate: profileData.subscription_end_date
+            });
+          }
         }
       }
       

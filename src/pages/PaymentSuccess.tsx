@@ -32,20 +32,22 @@ const PaymentSuccess = () => {
       // First refresh the subscription access
       await refresh();
       
-      // Get debug information about the user's subscription
-      const { data: debugData, error: debugError } = await supabase.rpc('debug_user_subscription', {
-        user_email: user.email
-      });
+      // Get profile information directly from database
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('subscription_status, subscription_tier, stripe_subscription_id, stripe_customer_id, subscription_end_date')
+        .eq('email', user.email)
+        .single();
       
-      if (debugError) {
-        console.error('Debug error:', debugError);
+      if (profileError) {
+        console.error('Profile lookup error:', profileError);
       } else {
-        setDebugInfo(debugData);
-        console.log('Subscription debug info:', debugData);
+        setDebugInfo(profileData);
+        console.log('Subscription profile info:', profileData);
         
         // Check if subscription is now active
-        if (debugData?.user_profile?.subscription_status === 'active' && 
-            debugData?.user_profile?.subscription_tier === 'pro') {
+        if (profileData?.subscription_status === 'active' && 
+            profileData?.subscription_tier === 'pro') {
           toast({
             title: "Subscription Activated!",
             description: "Your AquaAI Pro subscription is now active.",
@@ -91,8 +93,8 @@ const PaymentSuccess = () => {
     await checkSubscriptionStatus();
   };
 
-  const isSubscriptionActive = debugInfo?.user_profile?.subscription_status === 'active' && 
-                               debugInfo?.user_profile?.subscription_tier === 'pro';
+  const isSubscriptionActive = debugInfo?.subscription_status === 'active' && 
+                               debugInfo?.subscription_tier === 'pro';
 
   return (
     <Layout title="Payment Successful - AquaAI">
