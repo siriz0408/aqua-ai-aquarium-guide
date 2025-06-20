@@ -5,6 +5,20 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { PRICING_PLANS } from '@/config/pricing';
 
+interface DatabaseTrialResponse {
+  success: boolean;
+  error?: string;
+  trial_end_date?: string;
+  trial_type?: string;
+  message?: string;
+}
+
+interface StripeCheckoutResponse {
+  success: boolean;
+  url?: string;
+  error?: string;
+}
+
 export const useSimpleTrialManagement = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [lastError, setLastError] = useState<string | null>(null);
@@ -45,14 +59,17 @@ export const useSimpleTrialManagement = () => {
 
       console.log('Database trial start result:', data);
 
-      if (data?.success) {
+      // Type assertion for the response
+      const result = data as DatabaseTrialResponse;
+
+      if (result?.success) {
         toast({
           title: "Trial Started! 🎉",
           description: `Your ${trialLengthDays}-day free trial has begun. Enjoy full access to all features!`,
         });
-        return { success: true, data };
+        return { success: true, data: result };
       } else {
-        const errorMsg = data?.error || "Unable to start trial";
+        const errorMsg = result?.error || "Unable to start trial";
         setLastError(errorMsg);
         toast({
           title: "Trial Not Available",
@@ -115,8 +132,11 @@ export const useSimpleTrialManagement = () => {
         return { success: false, error: errorMsg };
       }
 
-      if (data?.success && data?.url) {
-        console.log('Redirecting to Stripe checkout for trial:', data.url);
+      // Type assertion for the response
+      const result = data as StripeCheckoutResponse;
+
+      if (result?.success && result?.url) {
+        console.log('Redirecting to Stripe checkout for trial:', result.url);
         
         toast({
           title: "Redirecting to Checkout",
@@ -124,10 +144,10 @@ export const useSimpleTrialManagement = () => {
         });
 
         // Open in new tab
-        window.open(data.url, '_blank');
-        return { success: true, data };
+        window.open(result.url, '_blank');
+        return { success: true, data: result };
       } else {
-        const errorMsg = data?.error || 'No checkout URL received from Stripe';
+        const errorMsg = result?.error || 'No checkout URL received from Stripe';
         setLastError(errorMsg);
         throw new Error(errorMsg);
       }

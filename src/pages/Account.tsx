@@ -134,11 +134,11 @@ const Account = () => {
                       </div>
                     )}
 
-                    {accessData?.subscription_end_date && subscriptionInfo.hasAccess && (
+                    {accessData?.subscription_end && subscriptionInfo.hasAccess && (
                       <div className="flex items-center justify-between">
                         <span className="font-medium">Next Billing Date:</span>
                         <span className="text-gray-600">
-                          {new Date(accessData.subscription_end_date).toLocaleDateString()}
+                          {new Date(accessData.subscription_end).toLocaleDateString()}
                         </span>
                       </div>
                     )}
