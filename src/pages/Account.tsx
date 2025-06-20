@@ -1,50 +1,86 @@
-
-import React, { useState } from 'react';
-import { Layout } from '@/components/Layout';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscriptionAccess } from '@/hooks/useSubscriptionAccess';
-import { supabase } from '@/integrations/supabase/client';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { RefreshCw, Crown, CreditCard } from 'lucide-react';
+import { Layout } from '@/components/Layout';
 import { useToast } from '@/hooks/use-toast';
-import { User, CreditCard, Calendar, Crown, Settings } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { format } from 'date-fns';
 
 const Account = () => {
-  const { user, signOut } = useAuth();
-  const { subscriptionInfo, trialStatus, accessData, isLoading } = useSubscriptionAccess();
-  const { toast } = useToast();
+  const { user } = useAuth();
   const navigate = useNavigate();
-  const [isLoadingPortal, setIsLoadingPortal] = useState(false);
+  const { toast } = useToast();
+  const { 
+    profile,
+    subscriptionInfo,
+    accessData: status,
+    isLoading,
+    hasError,
+    accessError,
+    canAccessFeature,
+    requiresUpgrade,
+    shouldShowPaywall,
+    shouldShowSubscriptionPrompt,
+    shouldShowTrialBanner,
+    hasActiveSubscription,
+    isTrialActive,
+    isTrialExpired,
+    isAdmin,
+    canStartTrial,
+    hasUsedTrial,
+    refreshAccess: refresh,
+  } = useSubscriptionAccess();
+
+  useEffect(() => {
+    if (!user) {
+      navigate('/auth');
+    }
+  }, [user, navigate]);
 
   const handleManageSubscription = async () => {
-    if (!user) return;
-
-    setIsLoadingPortal(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('customer-portal');
-
-      if (error) throw error;
-
-      if (data?.url) {
-        window.open(data.url, '_blank');
-      }
-    } catch (error) {
-      console.error('Error opening customer portal:', error);
+    if (!user) {
       toast({
-        title: "Error",
-        description: "Failed to open subscription management. Please try again.",
+        title: "Authentication Required",
+        description: "Please sign in to manage your subscription.",
         variant: "destructive",
       });
-    } finally {
-      setIsLoadingPortal(false);
+      return;
     }
-  };
 
-  const handleSignOut = async () => {
-    await signOut();
-    navigate('/');
+    try {
+      // Call your Supabase function to generate the Stripe portal link
+      const response = await fetch('/api/create-portal-link', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${await user.getIdToken()}`,
+        },
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.url) {
+        // Redirect the user to the Stripe customer portal
+        window.location.href = data.url;
+      } else {
+        toast({
+          title: "Error",
+          description: data.error || "Failed to generate portal link. Please try again.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error creating portal link:", error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   if (!user) {
@@ -53,143 +89,106 @@ const Account = () => {
 
   return (
     <Layout title="Account - AquaAI">
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-gray-900 dark:to-blue-900">
-        <div className="container mx-auto px-4 py-8 max-w-4xl">
-          <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold mb-4">Account Settings</h1>
-            <p className="text-xl text-muted-foreground">
-              Manage your subscription and account preferences
-            </p>
-          </div>
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold mb-6">Account Settings</h1>
 
-          <div className="grid gap-6">
-            {/* Profile Information */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <User className="h-5 w-5" />
-                  Profile Information
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
+        {status && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Crown className="h-5 w-5 text-blue-600" />
+                Subscription Status
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
                 <div>
-                  <label className="text-sm font-medium text-gray-600">Email</label>
-                  <p className="text-lg">{user.email}</p>
+                  <p className="font-medium text-blue-900">
+                    {isAdmin ? 'Admin Access' : isPaidSubscriber ? 'Pro Subscriber' : 'Free User'}
+                  </p>
+                  <p className="text-sm text-blue-700">
+                    {isAdmin ? 'Full admin privileges' : 
+                     isPaidSubscriber ? 'Full access to all features' : 'Upgrade to access premium features'}
+                  </p>
+                  {isPaidSubscriber && status.subscription_end && (
+                    <p className="text-xs text-blue-600 mt-1">
+                      Expires: {new Date(status.subscription_end).toLocaleDateString()}
+                    </p>
+                  )}
                 </div>
-                {user.user_metadata?.full_name && (
-                  <div>
-                    <label className="text-sm font-medium text-gray-600">Full Name</label>
-                    <p className="text-lg">{user.user_metadata.full_name}</p>
-                  </div>
+                <Badge variant={hasAccessFeature() ? "default" : "secondary"}>
+                  {hasAccessFeature() ? "Active" : "Inactive"}
+                </Badge>
+              </div>
+              
+              <div className="flex gap-2">
+                <Button
+                  onClick={refresh}
+                  disabled={isLoading}
+                  variant="outline"
+                  size="sm"
+                >
+                  {isLoading ? (
+                    <>
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                      Checking...
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                      Refresh Status
+                    </>
+                  )}
+                </Button>
+                
+                {isPaidSubscriber && (
+                  <Button
+                    onClick={handleManageSubscription}
+                    variant="outline"
+                    size="sm"
+                  >
+                    <CreditCard className="h-4 w-4 mr-2" />
+                    Manage Subscription
+                  </Button>
                 )}
-                <div>
-                  <label className="text-sm font-medium text-gray-600">Account Status</label>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Badge variant={subscriptionInfo.isAdmin ? "default" : "secondary"}>
-                      {subscriptionInfo.displayTier}
-                    </Badge>
-                    {subscriptionInfo.isAdmin && (
-                      <Crown className="h-4 w-4 text-yellow-500" />
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                
+                {!hasAccessFeature() && (
+                  <Button
+                    onClick={() => navigate('/pricing')}
+                    className="bg-blue-600 hover:bg-blue-700"
+                    size="sm"
+                  >
+                    <Crown className="h-4 w-4 mr-2" />
+                    Upgrade to Pro
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
-            {/* Subscription Status */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <CreditCard className="h-5 w-5" />
-                  Subscription Status
-                </CardTitle>
-                <CardDescription>
-                  Manage your subscription and billing information
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {isLoading ? (
-                  <div className="animate-pulse">
-                    <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
-                    <div className="h-4 bg-gray-200 rounded w-1/3"></div>
-                  </div>
-                ) : (
+        {hasError && (
+          <div className="mt-4 text-red-500">
+            Error: {accessError || 'Failed to load subscription status.'}
+          </div>
+        )}
+
+        <div className="mt-8">
+          <h2 className="text-2xl font-semibold mb-4">User Profile</h2>
+          <Card>
+            <CardContent>
+              <div className="space-y-2">
+                <p><strong>User ID:</strong> {user.id}</p>
+                <p><strong>Email:</strong> {user.email}</p>
+                {profile && (
                   <>
-                    <div className="flex items-center justify-between">
-                      <span className="font-medium">Current Plan:</span>
-                      <Badge 
-                        variant={subscriptionInfo.hasAccess ? "default" : "outline"}
-                        className="ml-2"
-                      >
-                        {subscriptionInfo.displayTier}
-                      </Badge>
-                    </div>
-
-                    {subscriptionInfo.isTrial && (
-                      <div className="flex items-center justify-between">
-                        <span className="font-medium">Trial Time Remaining:</span>
-                        <span className="text-orange-600 font-medium">
-                          {Math.floor(subscriptionInfo.trialHoursRemaining)} hours
-                        </span>
-                      </div>
-                    )}
-
-                    {accessData?.subscription_end_date && subscriptionInfo.hasAccess && (
-                      <div className="flex items-center justify-between">
-                        <span className="font-medium">Next Billing Date:</span>
-                        <span className="text-gray-600">
-                          {new Date(accessData.subscription_end_date).toLocaleDateString()}
-                        </span>
-                      </div>
-                    )}
-
-                    <div className="flex gap-3 pt-4">
-                      {subscriptionInfo.hasAccess && !subscriptionInfo.isAdmin && (
-                        <Button
-                          onClick={handleManageSubscription}
-                          disabled={isLoadingPortal}
-                          variant="outline"
-                          className="flex items-center gap-2"
-                        >
-                          <Settings className="h-4 w-4" />
-                          {isLoadingPortal ? "Loading..." : "Manage Subscription"}
-                        </Button>
-                      )}
-
-                      {!subscriptionInfo.hasAccess && !subscriptionInfo.isAdmin && (
-                        <Button
-                          onClick={() => navigate('/pricing')}
-                          className="flex items-center gap-2"
-                        >
-                          <Crown className="h-4 w-4" />
-                          Upgrade to Pro
-                        </Button>
-                      )}
-                    </div>
+                    <p><strong>Full Name:</strong> {profile.full_name}</p>
+                    {/* Display other profile information here */}
                   </>
                 )}
-              </CardContent>
-            </Card>
-
-            {/* Account Actions */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Account Actions</CardTitle>
-                <CardDescription>
-                  Manage your account settings and preferences
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button
-                  onClick={handleSignOut}
-                  variant="outline"
-                  className="w-full"
-                >
-                  Sign Out
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </Layout>

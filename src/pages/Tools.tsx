@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Layout } from '@/components/Layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,7 +18,7 @@ interface FeatureCardProps {
 const FeatureCard: React.FC<FeatureCardProps> = ({ title, description, icon, isPremium, href }) => {
   const navigate = useNavigate();
   const { canAccessFeature } = useSubscriptionAccess();
-  const canAccess = !isPremium || canAccessFeature('premium');
+  const canAccess = canAccessFeature();
 
   return (
     <Card className={`relative transition-all hover:shadow-lg ${!canAccess ? 'opacity-75' : ''}`}>

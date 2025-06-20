@@ -19,8 +19,8 @@ export const PRICING_PLANS: PricingPlan[] = [
     id: 'monthly_pro',
     name: 'AquaBotAI Pro',
     description: 'Full access to AI-powered aquarium management',
-    priceId: 'price_1Rb8vR1d1AvgoBGoNIjxLKRR', // Monthly Pro ($9.99/month)
-    amount: 999, // $9.99
+    priceId: 'price_1Rb8vR1d1AvgoBGoNIjxLKRR', // Monthly Pro ($4.99/month)
+    amount: 499, // $4.99
     currency: 'usd',
     interval: 'month',
     intervalCount: 1,
@@ -30,8 +30,8 @@ export const PRICING_PLANS: PricingPlan[] = [
     id: 'annual_pro',
     name: 'AquaBotAI Pro (Annual)',
     description: 'Full access to AI-powered aquarium management - Save 17%',
-    priceId: 'price_1Rb8wD1d1AvgoBGoC8nfQXNK', // Annual Pro ($99/year)
-    amount: 9900, // $99.00 (save $20/year)
+    priceId: 'price_1Rb8wD1d1AvgoBGoC8nfQXNK', // Annual Pro ($49/year)
+    amount: 4900, // $49.00 (save $10/year)
     currency: 'usd',
     interval: 'year',
     intervalCount: 1,
@@ -49,15 +49,15 @@ export const VALID_PRICE_IDS = [
 export const PRICE_ID_DETAILS = {
   'price_1Rb8vR1d1AvgoBGoNIjxLKRR': { 
     name: 'AquaBotAI Pro (Monthly)', 
-    amount: 999, 
+    amount: 499, 
     interval: 'month',
-    description: '$9.99/month - AI-powered aquarium management'
+    description: '$4.99/month - AI-powered aquarium management'
   },
   'price_1Rb8wD1d1AvgoBGoC8nfQXNK': { 
     name: 'AquaBotAI Pro (Annual)', 
-    amount: 9900, 
+    amount: 4900, 
     interval: 'year',
-    description: '$99/year (save 17%) - AI-powered aquarium management'
+    description: '$49/year (save 17%) - AI-powered aquarium management'
   },
 } as const;
 
