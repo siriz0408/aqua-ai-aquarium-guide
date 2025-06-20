@@ -1675,6 +1675,20 @@ export type Database = {
         Args: { user_id: string }
         Returns: boolean
       }
+      check_comprehensive_subscription_access: {
+        Args: { user_id: string }
+        Returns: {
+          has_access: boolean
+          access_type: string
+          subscription_tier: string
+          subscription_status: string
+          trial_hours_remaining: number
+          trial_type: string
+          can_start_trial: boolean
+          subscription_end_date: string
+          is_admin: boolean
+        }[]
+      }
       check_is_admin: {
         Args: Record<PropertyKey, never>
         Returns: boolean
@@ -1773,6 +1787,14 @@ export type Database = {
         Args: { user_email: string; role?: string }
         Returns: boolean
       }
+      start_comprehensive_trial: {
+        Args: {
+          user_id: string
+          trial_length_days?: number
+          trial_type?: string
+        }
+        Returns: Json
+      }
       start_user_trial: {
         Args: { user_id: string }
         Returns: Json
@@ -1792,6 +1814,17 @@ export type Database = {
           stripe_subscription_id?: string
           subscription_status?: string
           price_id?: string
+        }
+        Returns: Json
+      }
+      sync_stripe_subscription_comprehensive: {
+        Args: {
+          customer_email: string
+          stripe_customer_id: string
+          stripe_subscription_id?: string
+          subscription_status?: string
+          price_id?: string
+          current_period_end?: string
         }
         Returns: Json
       }

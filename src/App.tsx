@@ -59,19 +59,24 @@ const App = () => (
               <BrowserRouter>
                 <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-cyan-50 dark:from-slate-900 dark:via-blue-900 dark:to-cyan-900">
                   <Routes>
+                    {/* Public routes */}
                     <Route path="/auth" element={<Auth />} />
                     <Route path="/payment-success" element={<PaymentSuccess />} />
                     <Route path="/payment-cancelled" element={<PaymentCancelled />} />
+                    
+                    {/* Routes that don't require subscription (pricing and account management) */}
                     <Route path="/pricing" element={
-                      <ProtectedRoute>
+                      <ProtectedRoute requiresSubscription={false}>
                         <Pricing />
                       </ProtectedRoute>
                     } />
                     <Route path="/account" element={
-                      <ProtectedRoute>
+                      <ProtectedRoute requiresSubscription={false}>
                         <Account />
                       </ProtectedRoute>
                     } />
+                    
+                    {/* All other routes require subscription (100% paywall) */}
                     <Route path="/" element={
                       <ProtectedRoute>
                         <Index />
@@ -154,8 +159,10 @@ const App = () => (
                         </Suspense>
                       </ProtectedRoute>
                     } />
+                    
+                    {/* Admin routes */}
                     <Route path="/admin" element={
-                      <ProtectedRoute>
+                      <ProtectedRoute requiresSubscription={false}>
                         <AdminProtectedRoute>
                           <Suspense fallback={<LoadingFallback />}>
                             <Admin />
@@ -163,6 +170,7 @@ const App = () => (
                         </AdminProtectedRoute>
                       </ProtectedRoute>
                     } />
+                    
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </div>
