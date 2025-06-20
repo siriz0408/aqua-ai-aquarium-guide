@@ -1,93 +1,94 @@
 
 import React, { useEffect, useState } from 'react';
-import { useSearchParams, useNavigate, Link } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Layout } from '@/components/Layout';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, ArrowRight, Home } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { CheckCircle, Loader2 } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { useProSubscriptionAccess } from '@/hooks/useProSubscriptionAccess';
 
-const PaymentSuccess: React.FC = () => {
-  const [searchParams] = useSearchParams();
+const PaymentSuccess = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(true);
+  const [searchParams] = useSearchParams();
+  const { user } = useAuth();
+  const { refresh } = useProSubscriptionAccess();
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  
   const sessionId = searchParams.get('session_id');
 
   useEffect(() => {
-    if (sessionId) {
-      // Show success message
-      toast({
-        title: "Payment Successful!",
-        description: "Your subscription has been activated. Welcome to AquaAI Pro!",
-      });
-    }
-    setIsLoading(false);
-  }, [sessionId, toast]);
+    // Refresh subscription status after successful payment
+    const refreshSubscription = async () => {
+      if (user) {
+        setIsRefreshing(true);
+        try {
+          await refresh();
+        } catch (error) {
+          console.error('Failed to refresh subscription:', error);
+        } finally {
+          setIsRefreshing(false);
+        }
+      }
+    };
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-cyan-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p>Processing your payment...</p>
-        </div>
-      </div>
-    );
-  }
+    refreshSubscription();
+  }, [user, refresh]);
+
+  const handleGoToDashboard = () => {
+    navigate('/');
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-cyan-50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
-            <CheckCircle className="w-8 h-8 text-green-600" />
-          </div>
-          <CardTitle className="text-2xl font-bold text-green-800">
-            Payment Successful!
-          </CardTitle>
-          <CardDescription>
-            Your subscription has been activated successfully
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="text-center space-y-2">
-            <p className="text-sm text-gray-600">
-              Welcome to AquaAI Pro! You now have access to all premium features.
-            </p>
-            {sessionId && (
-              <p className="text-xs text-gray-500">
-                Session ID: {sessionId}
+    <Layout title="Payment Successful - AquaAI">
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 dark:from-gray-900 dark:to-green-900 flex items-center justify-center p-4">
+        <Card className="max-w-md w-full">
+          <CardHeader className="text-center">
+            <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-green-100 dark:bg-green-900/20 flex items-center justify-center">
+              <CheckCircle className="h-8 w-8 text-green-600" />
+            </div>
+            <CardTitle className="text-2xl text-green-800 dark:text-green-200">
+              Payment Successful!
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6 text-center">
+            <div>
+              <p className="text-gray-600 dark:text-gray-300 mb-2">
+                Welcome to AquaAI Pro! Your subscription is now active.
               </p>
-            )}
-          </div>
-          
-          <div className="space-y-3">
-            <Button 
-              onClick={() => navigate('/')} 
-              className="w-full"
-            >
-              <Home className="w-4 h-4 mr-2" />
-              Go to Dashboard
-            </Button>
-            
-            <Button 
-              variant="outline" 
-              onClick={() => navigate('/aquabot')} 
-              className="w-full"
-            >
-              <ArrowRight className="w-4 h-4 mr-2" />
-              Try AquaBot Now
-            </Button>
-          </div>
+              {sessionId && (
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  Session ID: {sessionId}
+                </p>
+              )}
+            </div>
 
-          <div className="text-center">
-            <p className="text-xs text-gray-500">
-              Need help? <Link to="/support" className="text-blue-600 hover:underline">Contact Support</Link>
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+            {isRefreshing && (
+              <div className="flex items-center justify-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Activating your subscription...
+              </div>
+            )}
+
+            <div className="space-y-3">
+              <Button onClick={handleGoToDashboard} className="w-full">
+                Go to Dashboard
+              </Button>
+              
+              <div className="text-sm text-gray-600 dark:text-gray-300">
+                <p>🎉 You now have access to:</p>
+                <ul className="mt-2 space-y-1">
+                  <li>• AI-Powered AquaBot Assistant</li>
+                  <li>• Advanced Setup Planner</li>
+                  <li>• Unlimited Tank Management</li>
+                  <li>• Parameter Analysis & Tracking</li>
+                </ul>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </Layout>
   );
 };
 

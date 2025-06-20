@@ -158,7 +158,7 @@ serve(async (req) => {
     const origin = req.headers.get("origin") || "http://localhost:3000";
     logStep("Origin detected", { origin });
     
-    // Create checkout session - REMOVED trial_settings to fix the error
+    // Create checkout session with proper URLs
     const sessionConfig: Stripe.Checkout.SessionCreateParams = {
       customer: customerId,
       line_items: [
@@ -169,7 +169,7 @@ serve(async (req) => {
       ],
       mode: "subscription",
       success_url: `${origin}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}/pricing?cancelled=true`,
+      cancel_url: `${origin}/`, // Redirect to home page on cancel
       metadata: {
         user_id: user.id,
         price_id: priceId,
@@ -190,7 +190,6 @@ serve(async (req) => {
           created_via: 'aquabot_checkout',
         }
       },
-      // No trial for 100% paywall - payment required immediately
       payment_method_collection: 'always',
     };
 
