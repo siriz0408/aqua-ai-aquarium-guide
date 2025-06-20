@@ -1,4 +1,3 @@
-
 export interface PricingPlan {
   id: string;
   name: string;
@@ -29,7 +28,7 @@ export const PRICING_PLANS: PricingPlan[] = [
     id: 'annual',
     name: 'Annual Pro',
     description: 'Full access to all features - Save 10%',
-    priceId: 'price_ANNUAL_PRO_PLACEHOLDER', // User needs to create this in Stripe
+    priceId: 'REPLACE_WITH_YOUR_STRIPE_ANNUAL_PRICE_ID', // ⚠️ Replace this with your actual Stripe annual price ID
     amount: 5388, // $53.88 (equivalent to $4.49/month)
     currency: 'usd',
     interval: 'year',
