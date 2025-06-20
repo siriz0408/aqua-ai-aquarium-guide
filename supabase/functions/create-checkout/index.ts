@@ -13,6 +13,12 @@ const logStep = (step: string, details?: any) => {
   console.log(`[CREATE-CHECKOUT] ${step}${detailsStr}`);
 };
 
+// Valid price IDs for the application
+const VALID_PRICE_IDS = [
+  "price_1Rb8vR1d1AvgoBGoNIjxLKRR", // Monthly Pro
+  "price_ANNUAL_PRO_PLACEHOLDER", // Annual Pro - needs to be created in Stripe
+];
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -74,6 +80,13 @@ serve(async (req) => {
       logStep("ERROR: No price ID provided");
       throw new Error("Price ID is required");
     }
+
+    // Validate price ID
+    if (!VALID_PRICE_IDS.includes(priceId)) {
+      logStep("ERROR: Invalid price ID", { priceId, validPriceIds: VALID_PRICE_IDS });
+      throw new Error(`Invalid price ID: ${priceId}. Please use a valid price ID.`);
+    }
+
     logStep("Request body received", { priceId, trialPeriodDays });
 
     // Initialize Stripe with better error handling
@@ -82,7 +95,13 @@ serve(async (req) => {
     // Validate price exists in Stripe
     try {
       const price = await stripe.prices.retrieve(priceId);
-      logStep("Price verified in Stripe", { priceId: price.id, active: price.active, amount: price.unit_amount });
+      logStep("Price verified in Stripe", { 
+        priceId: price.id, 
+        active: price.active, 
+        amount: price.unit_amount,
+        interval: price.recurring?.interval,
+        intervalCount: price.recurring?.interval_count
+      });
       
       if (!price.active) {
         throw new Error("The selected price is not active in Stripe");
@@ -128,6 +147,7 @@ serve(async (req) => {
       cancel_url: `${origin}/`,
       metadata: {
         user_id: user.id,
+        price_id: priceId,
       },
       allow_promotion_codes: true,
       billing_address_collection: "auto",
@@ -139,7 +159,8 @@ serve(async (req) => {
         trial_period_days: trialPeriodDays,
         metadata: {
           user_id: user.id,
-          trial_days: trialPeriodDays.toString()
+          trial_days: trialPeriodDays.toString(),
+          price_id: priceId,
         }
       };
       logStep("Adding trial period to subscription", { trialPeriodDays });
@@ -149,7 +170,8 @@ serve(async (req) => {
       mode: sessionConfig.mode,
       successUrl: sessionConfig.success_url,
       cancelUrl: sessionConfig.cancel_url,
-      trialDays: trialPeriodDays 
+      trialDays: trialPeriodDays,
+      priceId: priceId
     });
 
     const session = await stripe.checkout.sessions.create(sessionConfig);
