@@ -989,20 +989,26 @@ export type Database = {
           created_by_admin_id: string | null
           email: string | null
           full_name: string | null
+          has_used_trial: boolean | null
           id: string
           is_admin: boolean | null
           last_active: string | null
           last_admin_login: string | null
+          last_trial_start: string | null
           stripe_customer_id: string | null
           stripe_price_id: string | null
           stripe_subscription_id: string | null
           subscription_end_date: string | null
+          subscription_metadata: Json | null
           subscription_start_date: string | null
           subscription_status: string | null
           subscription_tier: string | null
+          total_trial_count: number | null
           trial_end_date: string | null
           trial_start_date: string | null
           trial_started_at: string | null
+          trial_stripe_subscription_id: string | null
+          trial_type: string | null
           updated_at: string
         }
         Insert: {
@@ -1013,20 +1019,26 @@ export type Database = {
           created_by_admin_id?: string | null
           email?: string | null
           full_name?: string | null
+          has_used_trial?: boolean | null
           id: string
           is_admin?: boolean | null
           last_active?: string | null
           last_admin_login?: string | null
+          last_trial_start?: string | null
           stripe_customer_id?: string | null
           stripe_price_id?: string | null
           stripe_subscription_id?: string | null
           subscription_end_date?: string | null
+          subscription_metadata?: Json | null
           subscription_start_date?: string | null
           subscription_status?: string | null
           subscription_tier?: string | null
+          total_trial_count?: number | null
           trial_end_date?: string | null
           trial_start_date?: string | null
           trial_started_at?: string | null
+          trial_stripe_subscription_id?: string | null
+          trial_type?: string | null
           updated_at?: string
         }
         Update: {
@@ -1037,20 +1049,26 @@ export type Database = {
           created_by_admin_id?: string | null
           email?: string | null
           full_name?: string | null
+          has_used_trial?: boolean | null
           id?: string
           is_admin?: boolean | null
           last_active?: string | null
           last_admin_login?: string | null
+          last_trial_start?: string | null
           stripe_customer_id?: string | null
           stripe_price_id?: string | null
           stripe_subscription_id?: string | null
           subscription_end_date?: string | null
+          subscription_metadata?: Json | null
           subscription_start_date?: string | null
           subscription_status?: string | null
           subscription_tier?: string | null
+          total_trial_count?: number | null
           trial_end_date?: string | null
           trial_start_date?: string | null
           trial_started_at?: string | null
+          trial_stripe_subscription_id?: string | null
+          trial_type?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -1102,6 +1120,50 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      subscription_events: {
+        Row: {
+          created_at: string | null
+          event_data: Json | null
+          event_type: string
+          id: string
+          processed_at: string | null
+          stripe_customer_id: string | null
+          stripe_event_id: string | null
+          stripe_subscription_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          event_data?: Json | null
+          event_type: string
+          id?: string
+          processed_at?: string | null
+          stripe_customer_id?: string | null
+          stripe_event_id?: string | null
+          stripe_subscription_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          event_data?: Json | null
+          event_type?: string
+          id?: string
+          processed_at?: string | null
+          stripe_customer_id?: string | null
+          stripe_event_id?: string | null
+          stripe_subscription_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_events_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       support_ticket_responses: {
         Row: {
@@ -1553,6 +1615,14 @@ export type Database = {
         Args: { requesting_admin_id: string; target_user_id: string }
         Returns: boolean
       }
+      admin_extend_user_trial: {
+        Args: {
+          admin_user_id: string
+          target_user_id: string
+          extension_days?: number
+        }
+        Returns: Json
+      }
       admin_get_all_profiles: {
         Args: { requesting_admin_id: string }
         Returns: {
@@ -1620,6 +1690,18 @@ export type Database = {
       check_user_admin_status: {
         Args: { user_id: string }
         Returns: boolean
+      }
+      check_user_subscription_access: {
+        Args: { user_id: string }
+        Returns: {
+          has_access: boolean
+          access_type: string
+          subscription_tier: string
+          trial_hours_remaining: number
+          trial_type: string
+          can_start_trial: boolean
+          subscription_end_date: string
+        }[]
       }
       check_user_trial_status: {
         Args: { user_id: string }
@@ -1695,6 +1777,14 @@ export type Database = {
         Args: { user_id: string }
         Returns: Json
       }
+      start_user_trial_safe: {
+        Args: {
+          user_id: string
+          trial_length_days?: number
+          trial_type?: string
+        }
+        Returns: Json
+      }
       sync_stripe_subscription: {
         Args: {
           customer_email: string
@@ -1702,6 +1792,17 @@ export type Database = {
           stripe_subscription_id?: string
           subscription_status?: string
           price_id?: string
+        }
+        Returns: Json
+      }
+      sync_stripe_subscription_enhanced: {
+        Args: {
+          customer_email: string
+          stripe_customer_id: string
+          stripe_subscription_id?: string
+          subscription_status?: string
+          price_id?: string
+          current_period_end?: string
         }
         Returns: Json
       }

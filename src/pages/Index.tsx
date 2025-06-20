@@ -1,29 +1,26 @@
-
 import React from 'react';
 import { Layout } from '@/components/Layout';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { DropletIcon, FishIcon, Thermometer, Zap, MessageSquare, Calculator } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { SubscriptionBanner } from '@/components/subscription/SubscriptionBanner';
+import { TrialStatusBanner } from '@/components/subscription/TrialStatusBanner';
 import { ExpiredTrialPaywall } from '@/components/subscription/ExpiredTrialPaywall';
-import { SubscriptionPrompt } from '@/components/subscription/SubscriptionPrompt';
+import { EnhancedSubscriptionPrompt } from '@/components/subscription/EnhancedSubscriptionPrompt';
 import { useSubscriptionAccess } from '@/hooks/useSubscriptionAccess';
-import { useToast } from '@/hooks/use-toast';
 
 const Index = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { toast } = useToast();
   const {
-    profile,
-    subscriptionInfo,
-    trialStatus,
+    accessData,
     shouldShowPaywall,
     shouldShowSubscriptionPrompt,
+    shouldShowTrialBanner,
     isLoading,
-    isAdmin
+    isAdmin,
+    canStartTrial,
+    hasUsedTrial
   } = useSubscriptionAccess();
 
   // Show loading state
@@ -52,12 +49,16 @@ const Index = () => {
   if (shouldShowSubscriptionPrompt()) {
     return (
       <Layout title="AquaAI - Start Your Journey">
-        <SubscriptionPrompt isFullScreen />
+        <EnhancedSubscriptionPrompt 
+          isFullScreen 
+          canStartTrial={canStartTrial}
+          hasUsedTrial={hasUsedTrial}
+        />
       </Layout>
     );
   }
 
-  // Show paywall for expired trials
+  // Show paywall for expired trials or users who can't start trials
   if (shouldShowPaywall()) {
     return (
       <Layout title="AquaAI - Trial Expired">
@@ -101,13 +102,13 @@ const Index = () => {
     <Layout title="AquaAI - Intelligent Aquarium Management">
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-gray-900 dark:to-blue-900">
         <div className="container mx-auto px-4 py-8">
-          {/* Show subscription banner for authenticated users */}
-          {user && profile && (
-            <SubscriptionBanner
-              subscriptionStatus={profile.subscription_status}
-              subscriptionTier={profile.subscription_tier}
-              trialHoursRemaining={trialStatus?.hoursRemaining || 0}
-              isTrialExpired={trialStatus?.isTrialExpired || false}
+          {/* Show trial status banner */}
+          {shouldShowTrialBanner() && accessData && (
+            <TrialStatusBanner
+              accessType={accessData.access_type as 'trial' | 'trial_expired' | 'free'}
+              hoursRemaining={accessData.trial_hours_remaining}
+              trialType={accessData.trial_type}
+              canStartTrial={accessData.can_start_trial}
             />
           )}
 
