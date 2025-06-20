@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -17,7 +17,7 @@ export const useProSubscriptionAccess = () => {
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
 
-  const checkAccess = async () => {
+  const checkAccess = useCallback(async () => {
     if (!user) {
       setStatus({
         hasAccess: false,
@@ -35,14 +35,40 @@ export const useProSubscriptionAccess = () => {
       
       console.log('Checking Pro subscription access for user:', user.id);
       
+      // Use the enhanced check-subscription function
       const { data, error } = await supabase.functions.invoke('check-subscription');
       
       if (error) {
         console.error('Subscription check error:', error);
-        throw error;
+        
+        // Fallback: try to get user data directly from profiles table
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('subscription_status, subscription_tier, is_admin, subscription_end_date')
+          .eq('id', user.id)
+          .single();
+          
+        if (profileError) {
+          throw profileError;
+        }
+        
+        console.log('Fallback profile data:', profileData);
+        
+        const accessStatus: ProSubscriptionStatus = {
+          hasAccess: profileData.is_admin || 
+                    (profileData.subscription_status === 'active' && profileData.subscription_tier === 'pro'),
+          accessType: profileData.is_admin ? 'admin' : 
+                     (profileData.subscription_status === 'active' && profileData.subscription_tier === 'pro') ? 'paid' : 'no_access',
+          subscriptionTier: profileData.subscription_tier || 'free',
+          subscriptionStatus: profileData.subscription_status || 'free',
+          subscriptionEndDate: profileData.subscription_end_date
+        };
+        
+        setStatus(accessStatus);
+        return;
       }
       
-      console.log('Pro subscription check result:', data);
+      console.log('Enhanced Pro subscription check result:', data);
       
       const accessStatus: ProSubscriptionStatus = {
         hasAccess: data.has_access || false,
@@ -54,9 +80,35 @@ export const useProSubscriptionAccess = () => {
       };
       
       setStatus(accessStatus);
+      
+      // If user should have access but doesn't, try to refresh once more
+      if (!accessStatus.hasAccess && user.email) {
+        console.log('Access denied, attempting debug check for:', user.email);
+        
+        const { data: debugData } = await supabase.rpc('debug_user_subscription', {
+          user_email: user.email
+        });
+        
+        console.log('Debug subscription data:', debugData);
+        
+        if (debugData?.user_profile?.subscription_status === 'active' && 
+            debugData?.user_profile?.subscription_tier === 'pro') {
+          console.log('Debug shows active subscription, updating status');
+          setStatus({
+            hasAccess: true,
+            accessType: 'paid',
+            subscriptionTier: 'pro',
+            subscriptionStatus: 'active',
+            subscriptionEndDate: debugData.user_profile.subscription_end_date
+          });
+        }
+      }
+      
     } catch (err) {
       console.error('Failed to check Pro subscription:', err);
       setError(err instanceof Error ? err.message : 'Unknown error');
+      
+      // Set fallback status
       setStatus({
         hasAccess: false,
         accessType: 'no_access',
@@ -66,11 +118,11 @@ export const useProSubscriptionAccess = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [user?.id, user?.email]);
 
   useEffect(() => {
     checkAccess();
-  }, [user?.id]);
+  }, [checkAccess]);
 
   return {
     status,
