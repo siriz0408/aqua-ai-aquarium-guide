@@ -2,11 +2,9 @@
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Crown, Star } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSimpleTrialManagement } from '@/hooks/useSimpleTrialManagement';
 import { PlanSelector } from './PlanSelector';
 import { PRICING_PLANS, type PricingPlan, formatPrice } from '@/config/pricing';
 
@@ -17,68 +15,18 @@ interface SubscriptionPromptProps {
 export const SubscriptionPrompt: React.FC<SubscriptionPromptProps> = ({ 
   isFullScreen = false 
 }) => {
-  const { toast } = useToast();
   const { user } = useAuth();
-  const [loading, setLoading] = React.useState(false);
+  const { startStripeTrial, isLoading } = useSimpleTrialManagement();
   const [selectedPlan, setSelectedPlan] = React.useState<PricingPlan>(
     PRICING_PLANS.find(p => p.popular) || PRICING_PLANS[0]
   );
 
   const handleStartTrial = async () => {
     if (!user?.id) {
-      toast({
-        title: "Authentication Required",
-        description: "Please sign in first.",
-        variant: "destructive",
-      });
       return;
     }
 
-    setLoading(true);
-    try {
-      console.log('Starting Stripe checkout with trial...');
-      console.log('User ID:', user.id);
-      console.log('Selected Plan:', selectedPlan);
-
-      // Create the Stripe checkout session with trial period
-      const { data, error } = await supabase.functions.invoke('create-checkout', {
-        body: { 
-          priceId: selectedPlan.priceId,
-          trialPeriodDays: selectedPlan.trialDays || 3
-        }
-      });
-
-      console.log('Checkout response:', { data, error });
-
-      if (error) {
-        console.error('Supabase function error:', error);
-        toast({
-          title: "Error",
-          description: "Failed to start trial process. Please try again.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      if (data?.url) {
-        console.log('Redirecting to Stripe checkout:', data.url);
-        
-        // Use window.location.href for more reliable redirect
-        window.location.href = data.url;
-      } else {
-        console.error('No checkout URL received:', data);
-        throw new Error('No checkout URL received from Stripe');
-      }
-    } catch (error) {
-      console.error('Error creating checkout session:', error);
-      toast({
-        title: "Error",
-        description: "An unexpected error occurred. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
+    await startStripeTrial(selectedPlan.id);
   };
 
   const content = (
@@ -114,10 +62,10 @@ export const SubscriptionPrompt: React.FC<SubscriptionPromptProps> = ({
         
         <Button 
           onClick={handleStartTrial}
-          disabled={loading}
+          disabled={isLoading}
           className="w-full bg-blue-600 hover:bg-blue-700 text-white text-lg py-6"
         >
-          {loading ? "Starting Trial..." : `Start 3-Day Free Trial - ${selectedPlan.name}`}
+          {isLoading ? "Starting Trial..." : `Start 3-Day Free Trial - ${selectedPlan.name}`}
         </Button>
         
         <p className="text-xs text-blue-600 dark:text-blue-400 text-center">

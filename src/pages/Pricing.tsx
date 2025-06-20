@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Layout } from '@/components/Layout';
-import { PricingSection } from '@/components/subscription/PricingSection';
+import {PricingSection } from '@/components/subscription/PricingSection';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
@@ -36,7 +36,7 @@ const Pricing = () => {
           
           <div className="text-center mt-12">
             <p className="text-sm text-muted-foreground">
-              All plans include a 7-day free trial. Cancel anytime. No hidden fees.
+              All plans include a 3-day free trial. Cancel anytime. No hidden fees.
             </p>
           </div>
         </div>

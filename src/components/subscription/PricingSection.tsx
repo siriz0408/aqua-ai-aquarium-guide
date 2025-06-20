@@ -2,20 +2,19 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { RefreshCw, CheckCircle, Clock, AlertCircle } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { useSubscriptionStatus } from '@/hooks/useSubscriptionStatus';
+import { useSimpleSubscriptionCheck } from '@/hooks/useSimpleSubscriptionCheck';
+import { useSimpleTrialManagement } from '@/hooks/useSimpleTrialManagement';
 import { PlanSelector } from './PlanSelector';
-import { PRICING_PLANS, type PricingPlan, formatPrice, getDefaultPlan, validatePriceId } from '@/config/pricing';
+import { PRICING_PLANS, type PricingPlan, formatPrice, getDefaultPlan } from '@/config/pricing';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 export const PricingSection: React.FC = () => {
   const { toast } = useToast();
   const { user } = useAuth();
-  const [isLoading, setIsLoading] = useState(false);
-  const [lastError, setLastError] = useState<string | null>(null);
-  const { checkSubscriptionStatus, isLoading: isCheckingStatus } = useSubscriptionStatus();
+  const { refresh: refreshSubscription, isLoading: isCheckingStatus } = useSimpleSubscriptionCheck();
+  const { startStripeTrial, isLoading, lastError } = useSimpleTrialManagement();
   const [selectedPlan, setSelectedPlan] = useState<PricingPlan>(getDefaultPlan());
 
   const handleSubscriptionUpgrade = async () => {
@@ -28,66 +27,13 @@ export const PricingSection: React.FC = () => {
       return;
     }
 
-    // Clear any previous errors
-    setLastError(null);
-    setIsLoading(true);
-
-    try {
-      console.log('Starting checkout process', { 
-        planId: selectedPlan.id,
-        priceId: selectedPlan.priceId,
-        trialDays: selectedPlan.trialDays
-      });
-
-      // Validate price ID before sending to server
-      const validation = validatePriceId(selectedPlan.priceId);
-      if (!validation.valid) {
-        throw new Error(validation.error || 'Invalid plan configuration');
-      }
-
-      const { data, error } = await supabase.functions.invoke('create-checkout', {
-        body: { 
-          priceId: selectedPlan.priceId,
-          trialPeriodDays: selectedPlan.trialDays || 3
-        }
-      });
-
-      if (error) {
-        console.error('Checkout creation error:', error);
-        setLastError(error.message || 'Failed to create checkout session');
-        throw error;
-      }
-
-      console.log('Checkout session created:', data);
-
-      if (data?.success && data?.url) {
-        // Show success message before redirect
-        toast({
-          title: "Redirecting to Checkout",
-          description: `Starting your ${selectedPlan.trialDays || 3}-day free trial for ${selectedPlan.name}`,
-        });
-        
-        // Small delay to show the toast, then redirect
-        setTimeout(() => {
-          window.open(data.url, '_blank');
-        }, 1000);
-      } else {
-        const errorMsg = data?.error || 'No checkout URL received';
-        setLastError(errorMsg);
-        throw new Error(errorMsg);
-      }
-    } catch (error) {
-      console.error('Error creating checkout session:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      setLastError(errorMessage);
-      
-      toast({
-        title: "Checkout Failed",
-        description: `Failed to start checkout: ${errorMessage}`,
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
+    const result = await startStripeTrial(selectedPlan.id);
+    
+    if (result.success) {
+      // Refresh subscription status after successful trial start
+      setTimeout(() => {
+        refreshSubscription();
+      }, 2000);
     }
   };
 
@@ -105,7 +51,7 @@ export const PricingSection: React.FC = () => {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={checkSubscriptionStatus}
+                onClick={refreshSubscription}
                 disabled={isCheckingStatus}
                 className="gap-2"
               >
@@ -137,7 +83,6 @@ export const PricingSection: React.FC = () => {
             selectedPlan={selectedPlan}
             onPlanSelect={(plan) => {
               setSelectedPlan(plan);
-              setLastError(null); // Clear errors when plan changes
             }}
             showFeatures={true}
           />
