@@ -33,9 +33,9 @@ export const useProSubscriptionAccess = () => {
       setIsLoading(true);
       setError(null);
       
-      console.log('Checking Pro subscription access for user:', user.id);
+      console.log('Checking 100% paywall access for user:', user.id);
       
-      // Use the enhanced check-subscription function
+      // Use the updated check-subscription function
       const { data, error } = await supabase.functions.invoke('check-subscription');
       
       if (error) {
@@ -54,6 +54,7 @@ export const useProSubscriptionAccess = () => {
         
         console.log('Fallback profile data:', profileData);
         
+        // 100% PAYWALL: Only admins or active paid subscribers get access
         const accessStatus: ProSubscriptionStatus = {
           hasAccess: profileData.is_admin || 
                     (profileData.subscription_status === 'active' && profileData.subscription_tier === 'pro'),
@@ -68,8 +69,9 @@ export const useProSubscriptionAccess = () => {
         return;
       }
       
-      console.log('Enhanced Pro subscription check result:', data);
+      console.log('100% paywall check result:', data);
       
+      // 100% PAYWALL: Only paid subscribers or admins get access
       const accessStatus: ProSubscriptionStatus = {
         hasAccess: data.has_access || false,
         accessType: data.access_type === 'admin' ? 'admin' : 
@@ -81,37 +83,11 @@ export const useProSubscriptionAccess = () => {
       
       setStatus(accessStatus);
       
-      // If user should have access but doesn't, try to get detailed profile info
-      if (!accessStatus.hasAccess && user.email) {
-        console.log('Access denied, checking profile directly for:', user.email);
-        
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('subscription_status, subscription_tier, is_admin, subscription_end_date, stripe_subscription_id, stripe_customer_id')
-          .eq('email', user.email)
-          .single();
-        
-        if (!profileError && profileData) {
-          console.log('Direct profile lookup:', profileData);
-          
-          if (profileData.subscription_status === 'active' && profileData.subscription_tier === 'pro') {
-            console.log('Profile shows active subscription, updating status');
-            setStatus({
-              hasAccess: true,
-              accessType: 'paid',
-              subscriptionTier: 'pro',
-              subscriptionStatus: 'active',
-              subscriptionEndDate: profileData.subscription_end_date
-            });
-          }
-        }
-      }
-      
     } catch (err) {
-      console.error('Failed to check Pro subscription:', err);
+      console.error('Failed to check subscription:', err);
       setError(err instanceof Error ? err.message : 'Unknown error');
       
-      // Set fallback status
+      // Set fallback status - NO ACCESS by default
       setStatus({
         hasAccess: false,
         accessType: 'no_access',
@@ -121,7 +97,7 @@ export const useProSubscriptionAccess = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [user?.id, user?.email]);
+  }, [user?.id]);
 
   useEffect(() => {
     checkAccess();
