@@ -20,7 +20,16 @@ interface SidebarProps {
   onItemClick?: () => void;
 }
 
-const navigation = [
+interface NavigationItem {
+  name: string;
+  href: string;
+  icon: React.ComponentType<{ className?: string }>;
+  requiresAuth: boolean;
+  requiresPro?: boolean;
+  adminOnly?: boolean;
+}
+
+const navigation: NavigationItem[] = [
   { name: 'Dashboard', href: '/', icon: Home, requiresAuth: true },
   { name: 'Aquariums', href: '/aquariums', icon: Fish, requiresAuth: true, requiresPro: false },
   { name: 'Water Testing', href: '/water-testing', icon: Waves, requiresAuth: true, requiresPro: true },
@@ -31,7 +40,7 @@ const navigation = [
   { name: 'Support', href: '/support', icon: HelpCircle, requiresAuth: true },
 ];
 
-const adminNavigation = [
+const adminNavigation: NavigationItem[] = [
   { name: 'Admin Panel', href: '/admin', icon: Shield, requiresAuth: true, adminOnly: true },
 ];
 

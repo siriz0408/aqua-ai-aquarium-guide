@@ -4,23 +4,16 @@ import { Layout } from '@/components/Layout';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { useEffect } from 'react';
-import { ProSubscriptionPrompt } from '@/components/subscription/ProSubscriptionPrompt';
-import { useProSubscriptionAccess } from '@/hooks/useProSubscriptionAccess';
+import { useSubscriptionAccess } from '@/hooks/useSubscriptionAccess';
+import { ExpiredTrialPaywall } from '@/components/subscription/ExpiredTrialPaywall';
 
 const Index = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const {
-    status,
-    isLoading,
-    isAdmin,
-    isPaidSubscriber,
-    hasAccess,
-    subscriptionTier
-  } = useProSubscriptionAccess();
+  const { hasAccess, isAdmin, isActive, loading } = useSubscriptionAccess();
 
   // Show loading state
-  if (isLoading) {
+  if (loading) {
     return (
       <Layout title="AquaAI - Loading...">
         <div className="min-h-screen flex items-center justify-center">
@@ -44,9 +37,9 @@ const Index = () => {
   // 100% PAYWALL: Show subscription prompt if no access
   if (!hasAccess) {
     return (
-      <Layout title="AquaAI - Subscription Required">
-        <ProSubscriptionPrompt isFullScreen />
-      </Layout>
+      <div className="min-h-screen">
+        <ExpiredTrialPaywall />
+      </div>
     );
   }
 
@@ -73,11 +66,11 @@ const Index = () => {
             <div className="mt-6 flex justify-center">
               <div className={`px-4 py-2 rounded-full text-sm font-medium ${
                 isAdmin ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-200' :
-                isPaidSubscriber ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200' :
+                isActive ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200' :
                 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-200'
               }`}>
                 {isAdmin ? '👑 Admin Access' :
-                 isPaidSubscriber ? '✨ Pro Subscriber' :
+                 isActive ? '✨ Pro Subscriber' :
                  '🔒 Access Required'}
               </div>
             </div>
@@ -87,7 +80,7 @@ const Index = () => {
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
             <div 
               className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg hover:shadow-xl transition-shadow cursor-pointer"
-              onClick={() => navigate('/tanks')}
+              onClick={() => navigate('/aquariums')}
             >
               <div className="h-12 w-12 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center mb-4">
                 <span className="text-2xl">🏠</span>

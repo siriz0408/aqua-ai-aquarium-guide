@@ -60,7 +60,7 @@ export const useSubscriptionAccess = () => {
         isActive,
         isAdmin,
         tier: tier as 'free' | 'pro',
-        status: profile?.subscription_status || 'inactive',
+        status: isActive ? 'active' : 'inactive',
         loading: false
       });
     } catch (error) {

@@ -25,17 +25,26 @@ export const ExpiredTrialPaywall: React.FC = () => {
 
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('create-checkout', {
-        body: { 
-          priceId: 'price_1QKjQKP7WqSJWlZCmXQq5Hzi', // Pro monthly price
-          mode: 'subscription'
-        }
+      // Call your n8n webhook or edge function to create Stripe checkout
+      const response = await fetch('/api/create-checkout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
+        },
+        body: JSON.stringify({ 
+          userId: user.id,
+          email: user.email,
+          priceId: 'price_1QKjQKP7WqSJWlZCmXQq5Hzi' // Your Stripe price ID
+        })
       });
 
-      if (error) throw error;
+      const data = await response.json();
 
-      if (data?.url) {
+      if (data.url) {
         window.location.href = data.url;
+      } else {
+        throw new Error(data.error || 'Failed to create checkout session');
       }
     } catch (error) {
       console.error('Checkout error:', error);
