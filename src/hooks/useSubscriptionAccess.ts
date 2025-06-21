@@ -1,84 +1,80 @@
 
-import { useProSubscriptionAccess } from './useProSubscriptionAccess';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+
+interface SubscriptionStatus {
+  hasAccess: boolean;
+  isActive: boolean;
+  isAdmin: boolean;
+  tier: 'free' | 'pro';
+  status: 'inactive' | 'active';
+  loading: boolean;
+}
 
 export const useSubscriptionAccess = () => {
   const { user } = useAuth();
-  const { 
-    status, 
-    isLoading, 
-    error, 
-    refresh,
-    hasAccess,
-    isAdmin,
-    isPaidSubscriber,
-    subscriptionTier,
-    subscriptionStatus
-  } = useProSubscriptionAccess();
+  const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatus>({
+    hasAccess: false,
+    isActive: false,
+    isAdmin: false,
+    tier: 'free',
+    status: 'inactive',
+    loading: true
+  });
 
-  console.log('useSubscriptionAccess - 100% Paywall Status:', status);
+  const checkAccess = async () => {
+    if (!user) {
+      setSubscriptionStatus({
+        hasAccess: false,
+        isActive: false,
+        isAdmin: false,
+        tier: 'free',
+        status: 'inactive',
+        loading: false
+      });
+      return;
+    }
 
-  // 100% PAYWALL: Only admins and paid subscribers have access
-  const canAccessFeature = () => {
-    if (isLoading || !status) return false;
-    return hasAccess; // Only true for admins or paid subscribers
+    try {
+      setSubscriptionStatus(prev => ({ ...prev, loading: true }));
+
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('subscription_status, subscription_tier, is_admin')
+        .eq('id', user.id)
+        .single();
+
+      if (error) {
+        console.error('Error fetching subscription status:', error);
+        return;
+      }
+
+      const isAdmin = profile?.is_admin || false;
+      const isActive = profile?.subscription_status === 'active';
+      const tier = profile?.subscription_tier || 'free';
+      const hasAccess = isAdmin || isActive;
+
+      setSubscriptionStatus({
+        hasAccess,
+        isActive,
+        isAdmin,
+        tier: tier as 'free' | 'pro',
+        status: profile?.subscription_status || 'inactive',
+        loading: false
+      });
+    } catch (error) {
+      console.error('Error checking subscription access:', error);
+      setSubscriptionStatus(prev => ({ ...prev, loading: false }));
+    }
   };
 
-  const requiresUpgrade = () => {
-    if (!status) return true;
-    if (isAdmin) return false;
-    return !isPaidSubscriber; // Anyone who isn't a paid subscriber needs to upgrade
-  };
-
-  const shouldShowPaywall = () => {
-    if (isLoading || !status) return false;
-    if (isAdmin) return false;
-    return !isPaidSubscriber; // Show paywall to anyone who isn't a paid subscriber
-  };
-
-  const shouldShowSubscriptionPrompt = () => {
-    if (isLoading || !status) return false;
-    if (isAdmin) return false;
-    return !isPaidSubscriber; // Show subscription prompt to non-subscribers
-  };
-
-  // No trial banner needed in 100% paywall
-  const shouldShowTrialBanner = () => false;
+  useEffect(() => {
+    checkAccess();
+  }, [user]);
 
   return {
-    profile: user,
-    subscriptionInfo: {
-      tier: subscriptionTier,
-      status: subscriptionStatus,
-      hasAccess: hasAccess,
-      isAdmin: isAdmin,
-      isTrial: false, // No trials in 100% paywall
-      trialHoursRemaining: 0,
-      displayTier: isAdmin ? 'Admin' : 
-                   isPaidSubscriber ? 'Pro' : 'Free'
-    },
-    trialStatus: {
-      isTrialActive: false,
-      hoursRemaining: 0,
-      isTrialExpired: false,
-      canStartTrial: false, // No trials allowed
-      trialType: null
-    },
-    accessData: status,
-    isLoading,
-    hasError: !!error,
-    accessError: error,
-    canAccessFeature,
-    requiresUpgrade,
-    shouldShowPaywall,
-    shouldShowSubscriptionPrompt,
-    shouldShowTrialBanner,
-    hasActiveSubscription: isPaidSubscriber,
-    isTrialActive: false, // No trials
-    isTrialExpired: false,
-    isAdmin: isAdmin,
-    canStartTrial: false, // No trials allowed
-    hasUsedTrial: false, // Not relevant
-    refreshAccess: refresh,
+    ...subscriptionStatus,
+    refresh: checkAccess
   };
 };
