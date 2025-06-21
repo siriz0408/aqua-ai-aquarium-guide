@@ -30,7 +30,16 @@ export const getUserSubscriptionData = async (): Promise<UserSubscriptionData | 
     return null;
   }
 
-  return profile;
+  // Ensure proper typing
+  return {
+    id: profile.id,
+    email: profile.email || '',
+    subscription_status: (profile.subscription_status === 'active' ? 'active' : 'inactive') as 'inactive' | 'active',
+    subscription_tier: (profile.subscription_tier || 'free') as 'free' | 'pro',
+    stripe_customer_id: profile.stripe_customer_id || undefined,
+    stripe_subscription_id: profile.stripe_subscription_id || undefined,
+    is_admin: profile.is_admin || false,
+  };
 };
 
 /**

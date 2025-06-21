@@ -1,120 +1,50 @@
+
 export interface PricingPlan {
   id: string;
   name: string;
-  description: string;
   priceId: string;
-  amount: number; // in cents
-  currency: string;
+  price: number;
   interval: 'month' | 'year';
-  intervalCount: number;
   trialDays?: number;
-  popular?: boolean;
-  savings?: string;
+  features: string[];
 }
 
-// 100% PAYWALL: AquaBotAI Pro Plan Only
 export const PRICING_PLANS: PricingPlan[] = [
   {
-    id: 'monthly_pro',
-    name: 'AquaBotAI Pro',
-    description: 'Full access to AI-powered aquarium management',
-    priceId: 'price_1Rb8vR1d1AvgoBGoNIjxLKRR', // Monthly Pro ($4.99/month)
-    amount: 499, // $4.99 - CORRECTED to match Stripe
-    currency: 'usd',
+    id: 'monthly',
+    name: 'AquaAI Pro Monthly',
+    priceId: 'price_1Rb8vR1d1AvgoBGoNIjxLKRR',
+    price: 9.99,
     interval: 'month',
-    intervalCount: 1,
-    popular: true,
+    features: [
+      'Unlimited AI-Powered AquaBot Assistant',
+      'Advanced Setup Planner & Recommendations',
+      'Unlimited Tank Management',
+      'Parameter Analysis & Tracking',
+      'Species Compatibility Checker',
+      'Maintenance Scheduling & Reminders',
+      'Priority Support'
+    ]
   },
   {
-    id: 'annual_pro',
-    name: 'AquaBotAI Pro (Annual)',
-    description: 'Full access to AI-powered aquarium management - Save 17%',
-    priceId: 'price_1Rb8wD1d1AvgoBGoC8nfQXNK', // Annual Pro ($49/year)
-    amount: 4900, // $49.00 - CORRECTED to match Stripe
-    currency: 'usd',
+    id: 'annual',
+    name: 'AquaAI Pro Annual',
+    priceId: 'price_1Rb8wD1d1AvgoBGoC8nfQXNK',
+    price: 79.99,
     interval: 'year',
-    intervalCount: 1,
-    savings: 'Save 17%',
-  },
+    features: [
+      'All Monthly Features',
+      '2 months free (save 33%)',
+      'Priority Feature Requests',
+      'Exclusive Beta Access'
+    ]
+  }
 ];
 
-// Enhanced price ID validation
-export const VALID_PRICE_IDS = [
-  'price_1Rb8vR1d1AvgoBGoNIjxLKRR', // Monthly Pro
-  'price_1Rb8wD1d1AvgoBGoC8nfQXNK', // Annual Pro
-];
-
-// Price ID to plan mapping
-export const PRICE_ID_DETAILS = {
-  'price_1Rb8vR1d1AvgoBGoNIjxLKRR': { 
-    name: 'AquaBotAI Pro (Monthly)', 
-    amount: 499, 
-    interval: 'month',
-    description: '$4.99/month - AI-powered aquarium management'
-  },
-  'price_1Rb8wD1d1AvgoBGoC8nfQXNK': { 
-    name: 'AquaBotAI Pro (Annual)', 
-    amount: 4900, 
-    interval: 'year',
-    description: '$49/year (save 17%) - AI-powered aquarium management'
-  },
-} as const;
-
-export const getPlanById = (planId: string): PricingPlan | undefined => {
-  return PRICING_PLANS.find(plan => plan.id === planId);
+export const validatePriceId = (priceId: string) => {
+  const validPriceIds = PRICING_PLANS.map(plan => plan.priceId);
+  return {
+    valid: validPriceIds.includes(priceId),
+    error: validPriceIds.includes(priceId) ? null : `Invalid price ID. Valid options: ${validPriceIds.join(', ')}`
+  };
 };
-
-export const getPlanByPriceId = (priceId: string): PricingPlan | undefined => {
-  return PRICING_PLANS.find(plan => plan.priceId === priceId);
-};
-
-export const formatPrice = (amount: number, currency: string = 'usd'): string => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: currency.toUpperCase(),
-  }).format(amount / 100);
-};
-
-export const getMonthlyEquivalent = (plan: PricingPlan): string => {
-  if (plan.interval === 'month') {
-    return formatPrice(plan.amount);
-  }
-  const monthlyAmount = plan.amount / 12;
-  return formatPrice(monthlyAmount);
-};
-
-export const isValidPriceId = (priceId: string): boolean => {
-  return VALID_PRICE_IDS.includes(priceId);
-};
-
-export const getPriceIdDetails = (priceId: string) => {
-  return PRICE_ID_DETAILS[priceId as keyof typeof PRICE_ID_DETAILS];
-};
-
-export const validatePriceId = (priceId: string): { valid: boolean; error?: string; details?: any } => {
-  if (!priceId) {
-    return { valid: false, error: 'Price ID is required' };
-  }
-  
-  if (!isValidPriceId(priceId)) {
-    return { 
-      valid: false, 
-      error: `Invalid price ID: ${priceId}. Valid options are: ${VALID_PRICE_IDS.join(', ')}`,
-      details: { validPriceIds: VALID_PRICE_IDS, availableDetails: Object.keys(PRICE_ID_DETAILS) }
-    };
-  }
-  
-  return { valid: true, details: getPriceIdDetails(priceId) };
-};
-
-export const getDefaultPlan = (): PricingPlan => {
-  return PRICING_PLANS.find(plan => plan.popular) || PRICING_PLANS[0];
-};
-
-// 100% Paywall Configuration
-export const PAYWALL_CONFIG = {
-  enforceStrict: true,
-  allowTrials: false,
-  freeFeatures: [], // No free features
-  requiresSubscription: true,
-} as const;

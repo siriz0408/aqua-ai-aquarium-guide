@@ -2,10 +2,11 @@
 import React from 'react';
 import { Sidebar } from './Sidebar';
 import { Button } from './ui/button';
-import { Menu, User } from 'lucide-react';
+import { Menu, User, ArrowLeft } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,12 +21,21 @@ interface LayoutProps {
   children: React.ReactNode;
   title?: string;
   loading?: boolean;
+  showBackButton?: boolean;
+  actions?: React.ReactNode;
 }
 
-export const Layout: React.FC<LayoutProps> = ({ children, title, loading = false }) => {
+export const Layout: React.FC<LayoutProps> = ({ 
+  children, 
+  title, 
+  loading = false, 
+  showBackButton = false,
+  actions 
+}) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { user, signOut } = useAuth();
   const { tier, isActive, isAdmin } = useSubscriptionAccess();
+  const navigate = useNavigate();
 
   if (loading) {
     return (
@@ -67,12 +77,27 @@ export const Layout: React.FC<LayoutProps> = ({ children, title, loading = false
               >
                 <Menu className="h-5 w-5" />
               </Button>
+              
+              {showBackButton && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigate(-1)}
+                  className="flex items-center gap-2"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  Back
+                </Button>
+              )}
+              
               {title && (
                 <h1 className="text-xl font-semibold text-gray-900">{title}</h1>
               )}
             </div>
 
             <div className="flex items-center gap-4">
+              {actions}
+              
               {/* Subscription badge */}
               <Badge variant={isActive ? 'default' : 'secondary'} className="hidden sm:inline-flex">
                 {isAdmin ? 'Admin' : isActive ? 'Pro' : 'Free'}

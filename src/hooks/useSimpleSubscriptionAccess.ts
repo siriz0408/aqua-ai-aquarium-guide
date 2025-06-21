@@ -3,75 +3,69 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 
-interface SubscriptionStatus {
+interface SimpleSubscriptionAccess {
   hasAccess: boolean;
   isActive: boolean;
   isAdmin: boolean;
   tier: 'free' | 'pro';
-  status: 'inactive' | 'active';
   loading: boolean;
 }
 
-export const useSubscriptionAccess = () => {
+export const useSimpleSubscriptionAccess = () => {
   const { user } = useAuth();
-  const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatus>({
+  const [access, setAccess] = useState<SimpleSubscriptionAccess>({
     hasAccess: false,
     isActive: false,
     isAdmin: false,
     tier: 'free',
-    status: 'inactive',
     loading: true
   });
 
   const checkAccess = async () => {
     if (!user) {
-      setSubscriptionStatus({
+      setAccess({
         hasAccess: false,
         isActive: false,
         isAdmin: false,
         tier: 'free',
-        status: 'inactive',
         loading: false
       });
       return;
     }
 
     try {
-      setSubscriptionStatus(prev => ({ ...prev, loading: true }));
+      setAccess(prev => ({ ...prev, loading: true }));
 
       const { data: profile, error } = await supabase
         .from('profiles')
-        .select('subscription_status, subscription_tier, is_admin')
+        .select('subscription_status, subscription_tier, is_admin, stripe_subscription_id')
         .eq('id', user.id)
         .single();
 
       if (error) {
         console.error('Error fetching subscription status:', error);
-        setSubscriptionStatus(prev => ({ ...prev, loading: false }));
+        setAccess(prev => ({ ...prev, loading: false }));
         return;
       }
 
       const isAdmin = profile?.is_admin || false;
-      const isActive = profile?.subscription_status === 'active';
+      const isActive = profile?.subscription_status === 'active' && 
+                      profile?.stripe_subscription_id && 
+                      profile?.stripe_subscription_id.length > 0;
       const tier = profile?.subscription_tier || 'free';
       const hasAccess = isAdmin || isActive;
 
-      setSubscriptionStatus({
+      setAccess({
         hasAccess,
         isActive,
         isAdmin,
         tier: tier as 'free' | 'pro',
-        status: isActive ? 'active' : 'inactive',
         loading: false
       });
     } catch (error) {
       console.error('Error checking subscription access:', error);
-      setSubscriptionStatus(prev => ({ ...prev, loading: false }));
+      setAccess(prev => ({ ...prev, loading: false }));
     }
-  };
-
-  const canAccessFeature = () => {
-    return subscriptionStatus.hasAccess;
   };
 
   useEffect(() => {
@@ -79,8 +73,7 @@ export const useSubscriptionAccess = () => {
   }, [user]);
 
   return {
-    ...subscriptionStatus,
-    refresh: checkAccess,
-    canAccessFeature
+    ...access,
+    refresh: checkAccess
   };
 };

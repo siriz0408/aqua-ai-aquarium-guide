@@ -48,8 +48,6 @@ export const useUserProfile = () => {
         full_name: profileData.full_name,
         subscription_status: (profileData.subscription_status || 'free') as 'free' | 'trial' | 'active' | 'expired',
         subscription_tier: (profileData.subscription_tier || 'free') as 'free' | 'pro',
-        trial_start_date: profileData.trial_start_date,
-        trial_end_date: profileData.trial_end_date,
         subscription_start_date: profileData.subscription_start_date,
         subscription_end_date: profileData.subscription_end_date,
         is_admin: profileData.is_admin || false,
