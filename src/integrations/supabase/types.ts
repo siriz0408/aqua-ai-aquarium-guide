@@ -1826,6 +1826,27 @@ export type Database = {
         }
         Returns: undefined
       }
+      get_expiring_subscriptions: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          user_id: string
+          email: string
+          stripe_subscription_id: string
+          subscription_end_date: string
+          days_until_expiry: number
+        }[]
+      }
+      get_subscription_metrics: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          total_users: number
+          active_subscriptions: number
+          expired_subscriptions: number
+          expiring_soon: number
+          never_subscribed: number
+          revenue_at_risk: number
+        }[]
+      }
       get_user_admin_status: {
         Args: { user_id: string }
         Returns: boolean
