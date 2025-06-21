@@ -47,6 +47,7 @@ export const useSubscriptionAccess = () => {
 
       if (error) {
         console.error('Error fetching subscription status:', error);
+        setSubscriptionStatus(prev => ({ ...prev, loading: false }));
         return;
       }
 

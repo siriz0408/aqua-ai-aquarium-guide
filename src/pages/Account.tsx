@@ -1,191 +1,176 @@
 
-import React, { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React from 'react';
+import { Layout } from '@/components/Layout';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscriptionAccess } from '@/hooks/useSubscriptionAccess';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { RefreshCw, Crown, CreditCard } from 'lucide-react';
-import { Layout } from '@/components/Layout';
-import { useToast } from '@/hooks/use-toast';
+import { User, Shield, CreditCard, Loader2 } from 'lucide-react';
 
 const Account = () => {
   const { user } = useAuth();
-  const navigate = useNavigate();
-  const { toast } = useToast();
-  const { 
-    profile,
-    subscriptionInfo,
-    accessData: status,
-    isLoading,
-    hasError,
-    accessError,
-    canAccessFeature,
-    requiresUpgrade,
-    shouldShowPaywall,
-    shouldShowSubscriptionPrompt,
-    shouldShowTrialBanner,
-    hasActiveSubscription,
-    isTrialActive,
-    isTrialExpired,
-    isAdmin,
-    canStartTrial,
-    hasUsedTrial,
-    refreshAccess: refresh,
-  } = useSubscriptionAccess();
+  const { hasAccess, isActive, isAdmin, tier, loading, refresh } = useSubscriptionAccess();
 
-  useEffect(() => {
-    if (!user) {
-      navigate('/auth');
-    }
-  }, [user, navigate]);
-
-  const handleManageSubscription = async () => {
-    if (!user) {
-      toast({
-        title: "Authentication Required",
-        description: "Please sign in to manage your subscription.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      // Call your Supabase function to generate the Stripe portal link
-      const response = await fetch('/api/create-portal-link', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      const data = await response.json();
-
-      if (response.ok && data.url) {
-        // Redirect the user to the Stripe customer portal
-        window.location.href = data.url;
-      } else {
-        toast({
-          title: "Error",
-          description: data.error || "Failed to generate portal link. Please try again.",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      console.error("Error creating portal link:", error);
-      toast({
-        title: "Error",
-        description: "An unexpected error occurred. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  if (!user) {
-    return null;
+  if (loading) {
+    return (
+      <Layout title="Account Settings">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+      </Layout>
+    );
   }
 
   return (
-    <Layout title="Account - AquaAI">
-      <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-6">Account Settings</h1>
+    <Layout title="Account Settings">
+      <div className="max-w-4xl space-y-6">
+        {/* User Profile */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <User className="h-5 w-5" />
+              Profile Information
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-gray-500">Email</label>
+                <p className="text-sm">{user?.email}</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-500">Account Type</label>
+                <div className="flex items-center gap-2">
+                  <Badge variant={isAdmin ? 'destructive' : isActive ? 'default' : 'secondary'}>
+                    {isAdmin ? 'Administrator' : isActive ? 'Pro Subscriber' : 'Free User'}
+                  </Badge>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-        {status && (
+        {/* Subscription Status */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CreditCard className="h-5 w-5" />
+              Subscription Status
+            </CardTitle>
+            <CardDescription>
+              Manage your AquaAI subscription and billing
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-gray-500">Current Plan</label>
+                <div className="flex items-center gap-2">
+                  <Badge variant={isActive ? 'default' : 'secondary'}>
+                    {tier.toUpperCase()}
+                  </Badge>
+                  {isActive && <span className="text-sm text-green-600">Active</span>}
+                </div>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-500">Access Level</label>
+                <p className="text-sm">
+                  {hasAccess ? 'Full Access' : 'Limited Access'}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <Button onClick={refresh} variant="outline">
+                Refresh Status
+              </Button>
+              {!hasAccess && (
+                <Button onClick={() => window.location.href = '/'}>
+                  Upgrade to Pro
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Admin Panel Access */}
+        {isAdmin && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Crown className="h-5 w-5 text-blue-600" />
-                Subscription Status
+                <Shield className="h-5 w-5" />
+                Administrator Access
               </CardTitle>
+              <CardDescription>
+                You have administrator privileges for this application
+              </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
-                <div>
-                  <p className="font-medium text-blue-900">
-                    {isAdmin ? 'Admin Access' : hasActiveSubscription ? 'Pro Subscriber' : 'Free User'}
-                  </p>
-                  <p className="text-sm text-blue-700">
-                    {isAdmin ? 'Full admin privileges' : 
-                     hasActiveSubscription ? 'Full access to all features' : 'Upgrade to access premium features'}
-                  </p>
-                  {hasActiveSubscription && status.subscriptionEndDate && (
-                    <p className="text-xs text-blue-600 mt-1">
-                      Expires: {new Date(status.subscriptionEndDate).toLocaleDateString()}
-                    </p>
-                  )}
-                </div>
-                <Badge variant={canAccessFeature() ? "default" : "secondary"}>
-                  {canAccessFeature() ? "Active" : "Inactive"}
-                </Badge>
-              </div>
-              
-              <div className="flex gap-2">
-                <Button
-                  onClick={refresh}
-                  disabled={isLoading}
-                  variant="outline"
-                  size="sm"
-                >
-                  {isLoading ? (
-                    <>
-                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                      Checking...
-                    </>
-                  ) : (
-                    <>
-                      <RefreshCw className="h-4 w-4 mr-2" />
-                      Refresh Status
-                    </>
-                  )}
-                </Button>
-                
-                {hasActiveSubscription && (
-                  <Button
-                    onClick={handleManageSubscription}
-                    variant="outline"
-                    size="sm"
-                  >
-                    <CreditCard className="h-4 w-4 mr-2" />
-                    Manage Subscription
-                  </Button>
-                )}
-                
-                {!canAccessFeature() && (
-                  <Button
-                    onClick={() => navigate('/pricing')}
-                    className="bg-blue-600 hover:bg-blue-700"
-                    size="sm"
-                  >
-                    <Crown className="h-4 w-4 mr-2" />
-                    Upgrade to Pro
-                  </Button>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {hasError && (
-          <div className="mt-4 text-red-500">
-            Error: {accessError || 'Failed to load subscription status.'}
-          </div>
-        )}
-
-        <div className="mt-8">
-          <h2 className="text-2xl font-semibold mb-4">User Profile</h2>
-          <Card>
             <CardContent>
-              <div className="space-y-2">
-                <p><strong>User ID:</strong> {user.id}</p>
-                <p><strong>Email:</strong> {user.email}</p>
-                {user.user_metadata?.full_name && (
-                  <p><strong>Full Name:</strong> {user.user_metadata.full_name}</p>
-                )}
-              </div>
+              <Button onClick={() => window.location.href = '/admin'}>
+                Access Admin Panel
+              </Button>
             </CardContent>
           </Card>
-        </div>
+        )}
+
+        {/* Feature Access Summary */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Feature Access</CardTitle>
+            <CardDescription>
+              Overview of features available with your current plan
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <h4 className="font-medium">Available Features</h4>
+                <ul className="text-sm space-y-1">
+                  <li className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    Basic Tank Management
+                  </li>
+                  {hasAccess && (
+                    <>
+                      <li className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                        AI-Powered AquaBot
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                        Advanced Setup Planner
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                        Premium Support
+                      </li>
+                    </>
+                  )}
+                </ul>
+              </div>
+              {!hasAccess && (
+                <div className="space-y-2">
+                  <h4 className="font-medium">Upgrade to Access</h4>
+                  <ul className="text-sm space-y-1 text-gray-500">
+                    <li className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
+                      AI-Powered AquaBot
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
+                      Advanced Setup Planner
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
+                      Premium Support
+                    </li>
+                  </ul>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </Layout>
   );
