@@ -1499,6 +1499,45 @@ export type Database = {
         }
         Relationships: []
       }
+      users: {
+        Row: {
+          created_at: string | null
+          email: string
+          id: string
+          stripe_customer_id: string | null
+          subscription_cancel_at_period_end: boolean | null
+          subscription_current_period_end: string | null
+          subscription_id: string | null
+          subscription_status: string | null
+          subscription_tier: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          id?: string
+          stripe_customer_id?: string | null
+          subscription_cancel_at_period_end?: boolean | null
+          subscription_current_period_end?: string | null
+          subscription_id?: string | null
+          subscription_status?: string | null
+          subscription_tier?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          id?: string
+          stripe_customer_id?: string | null
+          subscription_cancel_at_period_end?: boolean | null
+          subscription_current_period_end?: string | null
+          subscription_id?: string | null
+          subscription_status?: string | null
+          subscription_tier?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       water_test_logs: {
         Row: {
           alkalinity: number | null
@@ -1603,6 +1642,33 @@ export type Database = {
           subscription_id?: string | null
           user_email?: string | null
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      webhook_logs: {
+        Row: {
+          created_at: string | null
+          error_message: string | null
+          id: string
+          payload: Json | null
+          status: string | null
+          webhook_type: string
+        }
+        Insert: {
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          payload?: Json | null
+          status?: string | null
+          webhook_type: string
+        }
+        Update: {
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          payload?: Json | null
+          status?: string | null
+          webhook_type?: string
         }
         Relationships: []
       }
@@ -1779,6 +1845,15 @@ export type Database = {
         Args: { user_id: string }
         Returns: boolean
       }
+      log_subscription_event: {
+        Args: {
+          p_user_id: string
+          p_event_type: string
+          p_event_data: Json
+          p_stripe_event_id?: string
+        }
+        Returns: undefined
+      }
       process_webhook_event: {
         Args: { event_id: string; event_type: string; event_data: Json }
         Returns: Json
@@ -1876,6 +1951,18 @@ export type Database = {
               new_stripe_customer_id?: string
               new_stripe_subscription_id?: string
             }
+        Returns: undefined
+      }
+      update_user_subscription: {
+        Args: {
+          p_user_id: string
+          p_stripe_customer_id: string
+          p_subscription_id: string
+          p_subscription_status: string
+          p_subscription_tier: string
+          p_current_period_end: string
+          p_cancel_at_period_end?: boolean
+        }
         Returns: undefined
       }
     }
