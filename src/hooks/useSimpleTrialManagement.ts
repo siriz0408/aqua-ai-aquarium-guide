@@ -18,7 +18,7 @@ export const useSimpleTrialManagement = () => {
 
   const startStripeTrial = async (planId: string): Promise<TrialResult> => {
     if (!user?.id || !user?.email) {
-      const error = "Please sign in to start your trial.";
+      const error = "Please sign in to start your subscription.";
       setLastError(error);
       toast({
         title: "Authentication Required",
@@ -32,9 +32,16 @@ export const useSimpleTrialManagement = () => {
     setLastError(null);
     
     try {
-      // Get the price ID based on plan ID
+      // Get the price ID based on plan ID - using the correct price IDs from config
       const priceId = planId === 'annual' ? 'price_1Rb8wD1d1AvgoBGoC8nfQXNK' : 'price_1Rb8vR1d1AvgoBGoNIjxLKRR';
       
+      console.log('Calling create-checkout with:', {
+        userId: user.id,
+        email: user.email,
+        priceId: priceId,
+        planId: planId
+      });
+
       const { data, error } = await supabase.functions.invoke('create-checkout', {
         body: { 
           userId: user.id,
@@ -43,16 +50,21 @@ export const useSimpleTrialManagement = () => {
         }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw error;
+      }
 
       if (data?.url) {
+        console.log('Checkout URL received:', data.url);
         return { success: true, url: data.url };
       } else {
+        console.error('No checkout URL in response:', data);
         throw new Error('No checkout URL returned');
       }
     } catch (error) {
       console.error('Trial start error:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to start trial';
+      const errorMessage = error instanceof Error ? error.message : 'Failed to start checkout';
       setLastError(errorMessage);
       toast({
         title: "Error",

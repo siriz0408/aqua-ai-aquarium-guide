@@ -5,9 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Crown, Star } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { PlanSelector } from './PlanSelector';
-import { PRICING_PLANS, type PricingPlan, formatPrice } from '@/config/pricing';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { PRICING_PLANS, type PricingPlan, formatPrice, getDefaultPlan } from '@/config/pricing';
+import { useSimpleTrialManagement } from '@/hooks/useSimpleTrialManagement';
 
 interface SubscriptionPromptProps {
   isFullScreen?: boolean;
@@ -17,48 +16,26 @@ export const SubscriptionPrompt: React.FC<SubscriptionPromptProps> = ({
   isFullScreen = false 
 }) => {
   const { user } = useAuth();
-  const { toast } = useToast();
-  const [selectedPlan, setSelectedPlan] = React.useState<PricingPlan>(
-    PRICING_PLANS.find(p => p.popular) || PRICING_PLANS[0]
-  );
-  const [isLoading, setIsLoading] = React.useState(false);
+  const { startStripeTrial, isLoading, lastError } = useSimpleTrialManagement();
+  const [selectedPlan, setSelectedPlan] = React.useState<PricingPlan>(getDefaultPlan());
 
   const handleSubscribe = async () => {
     if (!user?.id || !user?.email) {
-      toast({
-        title: "Authentication Required",
-        description: "Please sign in to subscribe.",
-        variant: "destructive",
-      });
+      console.error('Missing user information:', { userId: user?.id, email: user?.email });
       return;
     }
 
-    setIsLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('create-checkout', {
-        body: { 
-          userId: user.id,
-          email: user.email,
-          priceId: selectedPlan.priceId
-        }
-      });
+    console.log('Starting checkout with:', { 
+      planId: selectedPlan.id, 
+      priceId: selectedPlan.priceId,
+      userId: user.id,
+      email: user.email 
+    });
 
-      if (error) throw error;
-
-      if (data?.url) {
-        window.location.href = data.url;
-      } else {
-        throw new Error('No checkout URL returned');
-      }
-    } catch (error) {
-      console.error('Checkout error:', error);
-      toast({
-        title: "Error",
-        description: "Failed to start checkout. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
+    const result = await startStripeTrial(selectedPlan.id);
+    
+    if (result.success && result.url) {
+      window.location.href = result.url;
     }
   };
 
@@ -83,6 +60,14 @@ export const SubscriptionPrompt: React.FC<SubscriptionPromptProps> = ({
           showFeatures={true}
         />
         
+        {lastError && (
+          <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-red-800 text-sm">
+              <strong>Error:</strong> {lastError}
+            </p>
+          </div>
+        )}
+        
         <div className="bg-blue-50 dark:bg-blue-950/50 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
           <h4 className="font-medium text-blue-800 dark:text-blue-200 mb-2">What's included:</h4>
           <ol className="text-sm text-blue-700 dark:text-blue-300 space-y-1 text-left">
@@ -98,7 +83,7 @@ export const SubscriptionPrompt: React.FC<SubscriptionPromptProps> = ({
         
         <Button 
           onClick={handleSubscribe}
-          disabled={isLoading}
+          disabled={isLoading || !user}
           className="w-full bg-blue-600 hover:bg-blue-700 text-white text-lg py-6"
         >
           {isLoading ? "Processing..." : `Subscribe Now - ${formatPrice(selectedPlan.price)}/${selectedPlan.interval}`}

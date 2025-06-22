@@ -33,6 +33,7 @@ serve(async (req) => {
 
     // Validate required fields
     if (!userId || !email) {
+      logStep("ERROR: Missing user information", { userId: !!userId, email: !!email });
       throw new Error("Missing user information");
     }
 
@@ -79,8 +80,8 @@ serve(async (req) => {
         },
       ],
       mode: "subscription",
-      success_url: `${req.headers.get("origin")}/`,
-      cancel_url: `${req.headers.get("origin")}/`,
+      success_url: `${req.headers.get("origin")}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${req.headers.get("origin")}/payment-cancelled`,
       metadata: {
         supabase_user_id: userId,
         user_email: email
