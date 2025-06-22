@@ -36,15 +36,26 @@ export const useSubscriptionSync = () => {
         throw error;
       }
 
-      const result = data as SyncResult;
-      if (result?.success) {
+      // Properly handle the response with type checking
+      if (!data || typeof data !== 'object' || Array.isArray(data)) {
+        throw new Error('Invalid response format from sync function');
+      }
+
+      const result = data as unknown as SyncResult;
+      
+      // Validate that the result has the expected structure
+      if (typeof result.success !== 'boolean') {
+        throw new Error('Invalid response: missing success field');
+      }
+
+      if (result.success) {
         toast({
           title: "Sync Successful",
           description: `Updated subscription for ${email}`,
         });
         return result;
       } else {
-        throw new Error(result?.error || 'Sync failed');
+        throw new Error(result.error || 'Sync failed');
       }
     } catch (error) {
       console.error('Sync error:', error);
