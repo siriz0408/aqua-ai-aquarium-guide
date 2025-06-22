@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -16,6 +17,7 @@ interface PricingSectionProps {
 
 export const PricingSection: React.FC<PricingSectionProps> = ({ onPlanSelect }) => {
   const { user } = useAuth();
+  const { toast } = useToast();
   const { refresh: refreshSubscription, isLoading: isCheckingStatus } = useSimpleSubscriptionCheck();
   const { startStripeTrial, isLoading, lastError } = useSimpleTrialManagement();
   const [selectedPlan, setSelectedPlan] = React.useState<PricingPlan>(getDefaultPlan());
@@ -24,7 +26,7 @@ export const PricingSection: React.FC<PricingSectionProps> = ({ onPlanSelect }) 
     if (!user) {
       toast({
         title: "Sign In Required",
-        description: "Please sign in to start your free trial.",
+        description: "Please sign in to start your subscription.",
         variant: "destructive",
       });
       return;
@@ -32,7 +34,9 @@ export const PricingSection: React.FC<PricingSectionProps> = ({ onPlanSelect }) 
 
     const result = await startStripeTrial(selectedPlan.id);
     
-    if (result.success) {
+    if (result.success && result.url) {
+      window.location.href = result.url;
+    } else {
       // Refresh subscription status after successful trial start
       setTimeout(() => {
         refreshSubscription();
