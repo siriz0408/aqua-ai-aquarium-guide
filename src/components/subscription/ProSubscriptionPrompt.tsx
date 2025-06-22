@@ -4,9 +4,9 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Check, Zap, Star, Shield } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSimpleTrialManagement } from '@/hooks/useSimpleTrialManagement';
+import { PRICING_PLANS, formatPrice, getDefaultPlan } from '@/config/pricing';
 
 interface ProSubscriptionPromptProps {
   isFullScreen?: boolean;
@@ -18,42 +18,26 @@ export const ProSubscriptionPrompt: React.FC<ProSubscriptionPromptProps> = ({
   onClose 
 }) => {
   const { user } = useAuth();
-  const { toast } = useToast();
-  const [isLoading, setIsLoading] = React.useState(false);
+  const { startStripeTrial, isLoading, lastError } = useSimpleTrialManagement();
+  const defaultPlan = getDefaultPlan();
 
   const handleUpgrade = async () => {
-    if (!user) {
-      toast({
-        title: "Authentication Required",
-        description: "Please sign in to upgrade to Pro.",
-        variant: "destructive",
-      });
+    if (!user?.id || !user?.email) {
+      console.error('Missing user information for checkout:', { userId: user?.id, email: user?.email });
       return;
     }
 
-    setIsLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('create-checkout', {
-        body: { 
-          priceId: 'price_1QKjQKP7WqSJWlZCmXQq5Hzi', // Pro monthly price
-          mode: 'subscription'
-        }
-      });
+    console.log('Starting Pro upgrade with:', { 
+      planId: defaultPlan.id, 
+      priceId: defaultPlan.priceId,
+      userId: user.id,
+      email: user.email 
+    });
 
-      if (error) throw error;
-
-      if (data?.url) {
-        window.location.href = data.url;
-      }
-    } catch (error) {
-      console.error('Checkout error:', error);
-      toast({
-        title: "Error",
-        description: "Failed to start checkout. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
+    const result = await startStripeTrial(defaultPlan.id);
+    
+    if (result.success && result.url) {
+      window.location.href = result.url;
     }
   };
 
@@ -89,10 +73,22 @@ export const ProSubscriptionPrompt: React.FC<ProSubscriptionPromptProps> = ({
           </Badge>
         </div>
         <div className="text-center">
-          <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">$9.99</div>
-          <div className="text-sm text-gray-600 dark:text-gray-400">per month</div>
+          <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">
+            {formatPrice(defaultPlan.price)}
+          </div>
+          <div className="text-sm text-gray-600 dark:text-gray-400">
+            per {defaultPlan.interval}
+          </div>
         </div>
       </div>
+
+      {lastError && (
+        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <p className="text-red-800 text-sm">
+            <strong>Error:</strong> {lastError}
+          </p>
+        </div>
+      )}
 
       <div className="space-y-3 mb-6">
         {features.map((feature, index) => (
@@ -106,11 +102,11 @@ export const ProSubscriptionPrompt: React.FC<ProSubscriptionPromptProps> = ({
       <div className="space-y-3">
         <Button 
           onClick={handleUpgrade} 
-          disabled={isLoading}
+          disabled={isLoading || !user}
           className="w-full bg-blue-600 hover:bg-blue-700 text-white"
           size="lg"
         >
-          {isLoading ? "Processing..." : "Upgrade to Pro - $9.99/month"}
+          {isLoading ? "Processing..." : `Upgrade to Pro - ${formatPrice(defaultPlan.price)}/${defaultPlan.interval}`}
         </Button>
         
         {onClose && (
