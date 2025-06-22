@@ -1763,6 +1763,16 @@ export type Database = {
         Args: { user_email: string; role?: string }
         Returns: boolean
       }
+      sync_stripe_subscription: {
+        Args: {
+          customer_email: string
+          stripe_customer_id: string
+          stripe_subscription_id?: string
+          subscription_status?: string
+          price_id?: string
+        }
+        Returns: Json
+      }
       update_subscription_status: {
         Args:
           | {

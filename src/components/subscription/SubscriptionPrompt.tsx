@@ -4,9 +4,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Crown, Star } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useSimpleTrialManagement } from '@/hooks/useSimpleTrialManagement';
 import { PlanSelector } from './PlanSelector';
 import { PRICING_PLANS, type PricingPlan, formatPrice } from '@/config/pricing';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 interface SubscriptionPromptProps {
   isFullScreen?: boolean;
@@ -16,17 +17,49 @@ export const SubscriptionPrompt: React.FC<SubscriptionPromptProps> = ({
   isFullScreen = false 
 }) => {
   const { user } = useAuth();
-  const { startStripeTrial, isLoading } = useSimpleTrialManagement();
+  const { toast } = useToast();
   const [selectedPlan, setSelectedPlan] = React.useState<PricingPlan>(
     PRICING_PLANS.find(p => p.popular) || PRICING_PLANS[0]
   );
+  const [isLoading, setIsLoading] = React.useState(false);
 
-  const handleStartTrial = async () => {
-    if (!user?.id) {
+  const handleSubscribe = async () => {
+    if (!user?.id || !user?.email) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to subscribe.",
+        variant: "destructive",
+      });
       return;
     }
 
-    await startStripeTrial(selectedPlan.id);
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('create-checkout', {
+        body: { 
+          userId: user.id,
+          email: user.email,
+          priceId: selectedPlan.priceId
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error('No checkout URL returned');
+      }
+    } catch (error) {
+      console.error('Checkout error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to start checkout. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const content = (
@@ -37,10 +70,10 @@ export const SubscriptionPrompt: React.FC<SubscriptionPromptProps> = ({
         </div>
         <CardTitle className="text-2xl text-blue-800 dark:text-blue-200 flex items-center justify-center gap-2">
           <Crown className="h-6 w-6" />
-          Welcome to AquaAI
+          Subscribe to AquaAI Pro
         </CardTitle>
         <CardDescription className="text-blue-600 dark:text-blue-300">
-          Choose your plan and start your 3-day free trial to access all premium features.
+          Get unlimited access to all premium aquarium management features.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -51,25 +84,28 @@ export const SubscriptionPrompt: React.FC<SubscriptionPromptProps> = ({
         />
         
         <div className="bg-blue-50 dark:bg-blue-950/50 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
-          <h4 className="font-medium text-blue-800 dark:text-blue-200 mb-2">How it works:</h4>
+          <h4 className="font-medium text-blue-800 dark:text-blue-200 mb-2">What's included:</h4>
           <ol className="text-sm text-blue-700 dark:text-blue-300 space-y-1 text-left">
-            <li>1. Start your 3-day free trial now</li>
-            <li>2. Enjoy full access to all features</li>
-            <li>3. Cancel anytime during trial - no charges</li>
-            <li>4. After trial: {formatPrice(selectedPlan.amount)}/{selectedPlan.interval} (cancel anytime)</li>
+            <li>• Unlimited AI-powered aquarium assistance</li>
+            <li>• Advanced setup planning tools</li>
+            <li>• Complete tank management dashboard</li>
+            <li>• Water parameter tracking & analysis</li>
+            <li>• Species compatibility checker</li>
+            <li>• Maintenance scheduling & reminders</li>
+            <li>• Priority customer support</li>
           </ol>
         </div>
         
         <Button 
-          onClick={handleStartTrial}
+          onClick={handleSubscribe}
           disabled={isLoading}
           className="w-full bg-blue-600 hover:bg-blue-700 text-white text-lg py-6"
         >
-          {isLoading ? "Starting Trial..." : `Start 3-Day Free Trial - ${selectedPlan.name}`}
+          {isLoading ? "Processing..." : `Subscribe Now - ${formatPrice(selectedPlan.price)}/${selectedPlan.interval}`}
         </Button>
         
         <p className="text-xs text-blue-600 dark:text-blue-400 text-center">
-          No commitment • Cancel anytime • Secure payment via Stripe
+          Cancel anytime • Full access to all features • Secure payment via Stripe
         </p>
       </CardContent>
     </Card>

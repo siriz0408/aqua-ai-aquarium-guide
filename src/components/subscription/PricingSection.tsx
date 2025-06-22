@@ -1,5 +1,5 @@
-
-import React, { useState } from 'react';
+import React from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { RefreshCw, CheckCircle, Clock, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -10,12 +10,15 @@ import { PlanSelector } from './PlanSelector';
 import { PRICING_PLANS, type PricingPlan, formatPrice, getDefaultPlan } from '@/config/pricing';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
-export const PricingSection: React.FC = () => {
-  const { toast } = useToast();
+interface PricingSectionProps {
+  onPlanSelect?: (planId: string) => void;
+}
+
+export const PricingSection: React.FC<PricingSectionProps> = ({ onPlanSelect }) => {
   const { user } = useAuth();
   const { refresh: refreshSubscription, isLoading: isCheckingStatus } = useSimpleSubscriptionCheck();
   const { startStripeTrial, isLoading, lastError } = useSimpleTrialManagement();
-  const [selectedPlan, setSelectedPlan] = useState<PricingPlan>(getDefaultPlan());
+  const [selectedPlan, setSelectedPlan] = React.useState<PricingPlan>(getDefaultPlan());
 
   const handleSubscriptionUpgrade = async () => {
     if (!user) {
