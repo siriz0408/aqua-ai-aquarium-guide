@@ -16,7 +16,7 @@ export const authService = {
     }
   },
 
-  async signUp(email: string, password: string, fullName: string, requestAdminAccess: boolean = false): Promise<AuthResponse> {
+  async signUp(email: string, password: string, fullName: string): Promise<AuthResponse> {
     try {
       const redirectUrl = `${window.location.origin}/`;
       
@@ -26,8 +26,7 @@ export const authService = {
         options: {
           emailRedirectTo: redirectUrl,
           data: {
-            full_name: fullName,
-            request_admin_access: requestAdminAccess
+            full_name: fullName
           }
         }
       });

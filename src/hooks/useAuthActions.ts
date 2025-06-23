@@ -40,10 +40,10 @@ export const useAuthActions = (setLoading: (loading: boolean) => void, setSessio
     }
   };
 
-  const signUp = async (email: string, password: string, fullName: string, requestAdminAccess: boolean = false) => {
+  const signUp = async (email: string, password: string, fullName: string) => {
     try {
       setLoading(true);
-      const { data, error } = await authService.signUp(email, password, fullName, requestAdminAccess);
+      const { data, error } = await authService.signUp(email, password, fullName);
 
       if (error) {
         if (error.message === 'User already registered') {

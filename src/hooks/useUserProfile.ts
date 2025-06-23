@@ -49,12 +49,12 @@ export const useUserProfile = () => {
         stripe_customer_id: profileData.stripe_customer_id,
         stripe_subscription_id: profileData.stripe_subscription_id,
         stripe_price_id: profileData.stripe_price_id,
-        is_admin: profileData.is_admin || false,
-        admin_role: profileData.admin_role,
-        admin_permissions: profileData.admin_permissions || [],
+        is_admin: false, // Always false in simplified version
+        admin_role: undefined,
+        admin_permissions: [], // Always empty array in simplified version
         last_admin_login: profileData.last_admin_login,
         last_active: profileData.last_active,
-        request_admin_access: profileData.request_admin_access || false,
+        request_admin_access: false, // Always false in simplified version
         created_at: profileData.created_at,
         updated_at: profileData.updated_at,
       };

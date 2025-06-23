@@ -95,7 +95,7 @@ const Auth = () => {
               {isSignUp ? 'Create Account' : 'Welcome Back'}
             </CardTitle>
             <CardDescription>
-              {isSignUp ? 'Create your AquaAI account' : 'Sign in to your AquaAI account'}
+              {isSignUp ? 'Create your AquaAI account and get access to all features' : 'Sign in to your AquaAI account'}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">

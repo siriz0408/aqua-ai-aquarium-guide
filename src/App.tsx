@@ -9,12 +9,10 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { AquariumProvider } from "@/contexts/AquariumContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
-import { AdminProtectedRoute } from "@/components/admin/AdminProtectedRoute";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { LoadingFallback } from "@/components/LoadingFallback";
 
 // Lazy-loaded components
-const Admin = lazy(() => import("./pages/Admin"));
 const SetupPlanner = lazy(() => import("./pages/SetupPlanner"));
 const AquaBot = lazy(() => import("./pages/AquaBot"));
 const Education = lazy(() => import("./pages/Education"));
@@ -154,15 +152,7 @@ const App = () => (
                         </Suspense>
                       </ProtectedRoute>
                     } />
-                    <Route path="/admin" element={
-                      <ProtectedRoute>
-                        <AdminProtectedRoute>
-                          <Suspense fallback={<LoadingFallback />}>
-                            <Admin />
-                          </Suspense>
-                        </AdminProtectedRoute>
-                      </ProtectedRoute>
-                    } />
+                    {/* Admin route removed from simplified version */}
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                 </div>
