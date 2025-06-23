@@ -6,7 +6,6 @@ export const useSubscriptionInfo = (
   trialStatus: TrialStatus | undefined | null
 ) => {
   const getSubscriptionInfo = (): SubscriptionInfo => {
-    // Admin users have admin status
     if (profile?.is_admin) {
       return {
         tier: 'unlimited',
@@ -19,7 +18,6 @@ export const useSubscriptionInfo = (
       };
     }
 
-    // Check for active paid subscription
     if (profile?.subscription_status === 'active' && profile?.subscription_tier === 'pro') {
       return {
         tier: 'pro',
@@ -32,11 +30,10 @@ export const useSubscriptionInfo = (
       };
     }
 
-    // Everyone else gets free access (all features are now free)
     return {
       tier: 'free',
       status: 'active',
-      hasAccess: true,
+      hasAccess: true, // All features are now free
       isAdmin: false,
       isTrial: false,
       trialHoursRemaining: 0,

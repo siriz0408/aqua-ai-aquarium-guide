@@ -7,18 +7,15 @@ export const useCredits = () => {
   const { data: profile, isLoading: profileLoading, error: profileError } = useUserProfile();
 
   const canUseFeature = async (feature: string = 'chat') => {
-    // All features are now available to everyone
-    return true;
+    return true; // All features are now available to everyone
   };
 
   const needsUpgrade = () => {
-    // No upgrades needed - all features are free
-    return false;
+    return false; // No upgrades needed
   };
 
   const forceRefreshAccess = async () => {
-    // Always return true since all features are free
-    return true;
+    return true; // Always return true since all features are free
   };
 
   return {

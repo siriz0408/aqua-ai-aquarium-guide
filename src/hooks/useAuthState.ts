@@ -11,7 +11,6 @@ export const useAuthState = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Set up auth state listener
     const { data: { subscription } } = authService.onAuthStateChange(
       async (event: string, session: Session | null) => {
         console.log('Auth state changed:', event, session?.user?.email);
@@ -19,15 +18,13 @@ export const useAuthState = () => {
         setUser(session?.user ?? null);
         setLoading(false);
         
-        // Handle successful sign up
         if (event === 'SIGNED_UP' && session?.user) {
           toast({
             title: "Welcome to AquaAI!",
-            description: "Your 1-day free trial has started. Enjoy full access to all features!",
+            description: "Your account has been created successfully. Enjoy access to all features!",
           });
         }
         
-        // Handle successful sign in
         if (event === 'SIGNED_IN' && session?.user) {
           toast({
             title: "Welcome back!",
@@ -35,7 +32,6 @@ export const useAuthState = () => {
           });
         }
         
-        // Handle sign out
         if (event === 'SIGNED_OUT') {
           console.log('User signed out successfully');
           toast({
@@ -46,7 +42,6 @@ export const useAuthState = () => {
       }
     );
 
-    // Get initial session
     authService.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);

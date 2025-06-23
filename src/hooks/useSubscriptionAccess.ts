@@ -9,28 +9,23 @@ export const useSubscriptionAccess = () => {
   console.log('useSubscriptionAccess - Access Data:', accessData);
 
   const canAccessFeature = (featureType: 'basic' | 'premium' = 'basic') => {
-    // All features are now accessible to everyone
-    return true;
+    return true; // All features are now free
   };
 
   const requiresUpgrade = (featureType: 'basic' | 'premium' = 'premium') => {
-    // No upgrades required - all features are free
-    return false;
+    return false; // No upgrades required
   };
 
   const shouldShowPaywall = () => {
-    // Never show paywall since all features are free
-    return false;
+    return false; // Never show paywall
   };
 
   const shouldShowSubscriptionPrompt = () => {
-    // Never show subscription prompts since all features are free
-    return false;
+    return false; // Never show subscription prompts
   };
 
   const shouldShowTrialBanner = () => {
-    // Never show trial banner since trials are removed
-    return false;
+    return false; // Never show trial banner
   };
 
   return {
@@ -38,9 +33,9 @@ export const useSubscriptionAccess = () => {
     subscriptionInfo: {
       tier: accessData?.subscription_tier || 'free',
       status: accessData?.access_type || 'free',
-      hasAccess: true, // Always true now
+      hasAccess: true,
       isAdmin: accessData?.access_type === 'admin',
-      isTrial: false, // No trials anymore
+      isTrial: false,
       trialHoursRemaining: 0,
       displayTier: accessData?.access_type === 'admin' ? 'Admin' : 
                    accessData?.access_type === 'paid' ? 'Pro' : 'Free'

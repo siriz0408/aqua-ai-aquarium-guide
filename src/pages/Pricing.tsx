@@ -11,14 +11,13 @@ const Pricing = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Redirect to auth if not logged in
     if (!user) {
       navigate('/auth');
     }
   }, [user, navigate]);
 
   if (!user) {
-    return null; // Will redirect
+    return null;
   }
 
   return (
@@ -26,9 +25,9 @@ const Pricing = () => {
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-gray-900 dark:to-blue-900">
         <div className="container mx-auto px-4 py-8">
           <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold mb-4">Choose Your Plan</h1>
+            <h1 className="text-4xl font-bold mb-4">Simple & Fair Pricing</h1>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Upgrade to Pro to unlock AI-powered features and advanced aquarium management tools.
+              All core features are completely free forever. Upgrade to Pro to support development and get early access to new features.
             </p>
           </div>
           
@@ -36,7 +35,7 @@ const Pricing = () => {
           
           <div className="text-center mt-12">
             <p className="text-sm text-muted-foreground">
-              All plans include a 7-day free trial. Cancel anytime. No hidden fees.
+              No hidden fees. Cancel Pro subscription anytime. Free features remain free forever.
             </p>
           </div>
         </div>

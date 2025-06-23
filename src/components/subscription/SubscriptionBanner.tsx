@@ -3,7 +3,7 @@ import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Star, Crown } from 'lucide-react';
+import { Star, Crown, Heart } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -23,7 +23,7 @@ export const SubscriptionBanner: React.FC<SubscriptionBannerProps> = ({
   const handleUpgrade = async () => {
     try {
       const { data, error } = await supabase.functions.invoke('create-checkout', {
-        body: { priceId: 'price_pro_monthly' } // Replace with actual price ID
+        body: { priceId: 'price_1Rb8vR1d1AvgoBGoNIjxLKRR' }
       });
 
       if (error) throw error;
@@ -60,7 +60,6 @@ export const SubscriptionBanner: React.FC<SubscriptionBannerProps> = ({
     }
   };
 
-  // Admin banner
   if (isAdmin) {
     return (
       <Card className="mb-6 border-green-200 bg-green-50">
@@ -80,7 +79,6 @@ export const SubscriptionBanner: React.FC<SubscriptionBannerProps> = ({
     );
   }
 
-  // Pro subscription banner
   if (subscriptionStatus === 'active' && subscriptionTier === 'pro') {
     return (
       <Card className="mb-6 border-blue-200 bg-blue-50">
@@ -90,7 +88,7 @@ export const SubscriptionBanner: React.FC<SubscriptionBannerProps> = ({
               <Star className="h-5 w-5 text-blue-600" />
               <div>
                 <h3 className="font-semibold text-blue-800">Pro Subscription Active</h3>
-                <p className="text-sm text-blue-600">Unlimited access to all features</p>
+                <p className="text-sm text-blue-600">Thank you for supporting AquaAI! You have access to all features.</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -105,22 +103,21 @@ export const SubscriptionBanner: React.FC<SubscriptionBannerProps> = ({
     );
   }
 
-  // Free tier banner (now shows all features are available)
   return (
     <Card className="mb-6 border-gray-200 bg-gray-50">
       <CardContent className="p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Star className="h-5 w-5 text-gray-600" />
+            <Heart className="h-5 w-5 text-gray-600" />
             <div>
-              <h3 className="font-semibold text-gray-800">Free Plan</h3>
-              <p className="text-sm text-gray-600">All features are now available for free!</p>
+              <h3 className="font-semibold text-gray-800">Free Plan - All Features Available!</h3>
+              <p className="text-sm text-gray-600">Enjoy full access to AquaAI. Consider upgrading to Pro to support development.</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <Badge variant="outline">Free</Badge>
             <Button size="sm" onClick={handleUpgrade}>
-              Upgrade to Pro
+              Support Us - Go Pro
             </Button>
           </div>
         </div>

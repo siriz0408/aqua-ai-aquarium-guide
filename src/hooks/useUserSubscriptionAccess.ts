@@ -35,7 +35,6 @@ export const useUserSubscriptionAccess = () => {
       }
 
       if (!profileData) {
-        // Default to free access since all features are now free
         return {
           has_access: true,
           access_type: 'free',
@@ -49,7 +48,6 @@ export const useUserSubscriptionAccess = () => {
 
       console.log('Subscription access data:', profileData);
 
-      // Determine access type
       let accessType: SubscriptionAccess['access_type'] = 'free';
       if (profileData.is_admin) {
         accessType = 'admin';
@@ -68,7 +66,7 @@ export const useUserSubscriptionAccess = () => {
       };
     },
     enabled: !!user?.id,
-    staleTime: 2 * 60 * 1000, // 2 minutes
+    staleTime: 2 * 60 * 1000,
     refetchOnWindowFocus: true,
   });
 };

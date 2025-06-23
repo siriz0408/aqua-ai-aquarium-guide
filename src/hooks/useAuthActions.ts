@@ -64,8 +64,8 @@ export const useAuthActions = (setLoading: (loading: boolean) => void, setSessio
 
       if (data.user && !data.user.email_confirmed_at) {
         toast({
-          title: "Check your email",
-          description: "We've sent you a confirmation link. Please check your email to complete registration.",
+          title: "Welcome to AquaAI!",
+          description: "Account created successfully! All features are now available to you.",
         });
       }
 
@@ -86,7 +86,6 @@ export const useAuthActions = (setLoading: (loading: boolean) => void, setSessio
     try {
       console.log('Starting sign out process...');
       
-      // Check if user is already signed out
       if (!setSession && !setUser) {
         console.log('User is already signed out');
         toast({
@@ -98,16 +97,13 @@ export const useAuthActions = (setLoading: (loading: boolean) => void, setSessio
 
       setLoading(true);
       
-      // Clear local state immediately to prevent race conditions
       setSession(null);
       setUser(null);
       
-      // Attempt to sign out from Supabase
       const { error } = await authService.signOut();
       
       if (error) {
         console.error('Sign out error:', error);
-        // Only show error toast if it's not a session missing error
         if (!error.message.includes('Auth session missing')) {
           toast({
             title: "Sign out failed",
@@ -115,7 +111,6 @@ export const useAuthActions = (setLoading: (loading: boolean) => void, setSessio
             variant: "destructive",
           });
         } else {
-          // For session missing errors, just log and treat as successful
           console.log('Session was already missing, treating as successful signout');
         }
       } else {
@@ -123,7 +118,6 @@ export const useAuthActions = (setLoading: (loading: boolean) => void, setSessio
       }
     } catch (error: any) {
       console.error('Unexpected sign out error:', error);
-      // For session missing errors, don't show error toast
       if (!error.message?.includes('Auth session missing')) {
         toast({
           title: "Sign out failed",
