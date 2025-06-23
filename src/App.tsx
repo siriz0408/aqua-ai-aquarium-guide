@@ -8,10 +8,10 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { AquariumProvider } from "./contexts/AquariumContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
-import Layout from "./components/Layout";
-import LoadingFallback from "./components/LoadingFallback";
-import ProtectedRoute from "./components/ProtectedRoute";
-import ErrorBoundary from "./components/ErrorBoundary";
+import { Layout } from "./components/Layout";
+import { LoadingFallback } from "./components/LoadingFallback";
+import { ProtectedRoute } from "./components/ProtectedRoute";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 
 // Lazy load components
 const Index = lazy(() => import("./pages/Index"));

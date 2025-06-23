@@ -64,9 +64,6 @@ const Header: React.FC = () => {
             <Link to="/tools" className="text-gray-700 hover:text-blue-600 font-medium">
               Tools
             </Link>
-            <Link to="/subscription-plans" className="text-gray-700 hover:text-blue-600 font-medium">
-              Plans
-            </Link>
           </nav>
 
           {/* User Menu */}
@@ -156,9 +153,6 @@ const Header: React.FC = () => {
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <Link to="/tools" className="cursor-pointer">Tools</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to="/subscription-plans" className="cursor-pointer">Plans</Link>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>

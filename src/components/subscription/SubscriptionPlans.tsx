@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Check, Star, Zap } from 'lucide-react';
+import { Check, Star, Crown } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
@@ -22,77 +22,49 @@ interface Plan {
   priceId: string;
   features: PlanFeature[];
   popular?: boolean;
-  type: 'subscription' | 'onetime';
+  savings?: string;
 }
 
 const plans: Plan[] = [
   {
-    id: 'free',
-    name: 'Free Plan',
-    description: 'Perfect for getting started',
-    price: 0,
-    period: 'forever',
-    priceId: '',
-    type: 'subscription',
-    features: [
-      { text: 'Basic tank management', included: true },
-      { text: 'Water parameter tracking', included: true },
-      { text: 'AI aquarium assistant', included: true },
-      { text: 'Task reminders', included: true },
-      { text: 'Priority support', included: false },
-      { text: 'Advanced analytics', included: false },
-    ]
-  },
-  {
     id: 'pro-monthly',
-    name: 'Pro Monthly',
+    name: 'Monthly Pro',
     description: 'Full access with monthly billing',
     price: 4.99,
     period: 'month',
     priceId: 'price_1QP9nZ1d1AvgoBGoGhpT6Nqg',
-    type: 'subscription',
-    popular: true,
     features: [
-      { text: 'Everything in Free', included: true },
-      { text: 'Priority support', included: true },
-      { text: 'Advanced analytics', included: true },
-      { text: 'Unlimited tanks', included: true },
-      { text: 'Export data', included: true },
-      { text: '3-day free trial', included: true },
+      { text: 'AI-Powered AquaBot Chat', included: true },
+      { text: 'Advanced Setup Planner', included: true },
+      { text: 'Unlimited tank tracking', included: true },
+      { text: 'Water parameter logging', included: true },
+      { text: 'Equipment management', included: true },
+      { text: 'Educational resources', included: true },
+      { text: 'Disease diagnosis tool', included: true },
+      { text: 'Task management & reminders', included: true },
+      { text: 'Priority customer support', included: true },
     ]
   },
   {
     id: 'pro-yearly',
-    name: 'Pro Yearly',
-    description: 'Full access with yearly billing (17% savings)',
+    name: 'Annual Pro',
+    description: 'Full access with yearly billing',
     price: 49.99,
     period: 'year',
     priceId: 'price_1QP9o91d1AvgoBGoLCTKfWn5',
-    type: 'subscription',
+    popular: true,
+    savings: '17% savings vs monthly',
     features: [
-      { text: 'Everything in Free', included: true },
-      { text: 'Priority support', included: true },
-      { text: 'Advanced analytics', included: true },
-      { text: 'Unlimited tanks', included: true },
-      { text: 'Export data', included: true },
+      { text: 'AI-Powered AquaBot Chat', included: true },
+      { text: 'Advanced Setup Planner', included: true },
+      { text: 'Unlimited tank tracking', included: true },
+      { text: 'Water parameter logging', included: true },
+      { text: 'Equipment management', included: true },
+      { text: 'Educational resources', included: true },
+      { text: 'Disease diagnosis tool', included: true },
+      { text: 'Task management & reminders', included: true },
+      { text: 'Priority customer support', included: true },
       { text: '17% savings vs monthly', included: true },
-    ]
-  },
-  {
-    id: 'lifetime',
-    name: 'Lifetime Access',
-    description: 'One-time payment for lifetime access',
-    price: 99.99,
-    period: 'lifetime',
-    priceId: 'prod_SWBItVMEChp6DI',
-    type: 'onetime',
-    features: [
-      { text: 'Everything in Pro', included: true },
-      { text: 'Lifetime updates', included: true },
-      { text: 'No recurring fees', included: true },
-      { text: 'Priority support', included: true },
-      { text: 'Advanced analytics', included: true },
-      { text: 'Best value', included: true },
     ]
   }
 ];
@@ -112,50 +84,26 @@ export const SubscriptionPlans: React.FC = () => {
       return;
     }
 
-    if (plan.price === 0) {
-      toast({
-        title: "Free Plan Active",
-        description: "You're already on the free plan with full access!",
-      });
-      return;
-    }
-
     setLoadingPlan(plan.id);
     try {
-      console.log(`Starting ${plan.type} process for plan:`, plan.name);
+      console.log(`Starting subscription process for plan:`, plan.name);
       
-      if (plan.type === 'subscription') {
-        // Handle subscription plans
-        const { data, error } = await supabase.functions.invoke('create-checkout', {
-          body: { priceId: plan.priceId }
-        });
+      const { data, error } = await supabase.functions.invoke('create-checkout', {
+        body: { priceId: plan.priceId }
+      });
 
-        if (error) throw error;
+      if (error) throw error;
 
-        if (data?.url) {
-          window.open(data.url, '_blank');
-        } else {
-          throw new Error('No checkout URL received');
-        }
+      if (data?.url) {
+        window.open(data.url, '_blank');
       } else {
-        // Handle one-time payment
-        const { data, error } = await supabase.functions.invoke('create-payment', {
-          body: { productId: plan.priceId }
-        });
-
-        if (error) throw error;
-
-        if (data?.url) {
-          window.open(data.url, '_blank');
-        } else {
-          throw new Error('No payment URL received');
-        }
+        throw new Error('No checkout URL received');
       }
     } catch (error) {
-      console.error(`Error creating ${plan.type}:`, error);
+      console.error(`Error creating subscription:`, error);
       toast({
         title: "Error",
-        description: `Failed to start ${plan.type === 'subscription' ? 'subscription' : 'payment'} process. Please try again.`,
+        description: "Failed to start subscription process. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -165,15 +113,15 @@ export const SubscriptionPlans: React.FC = () => {
 
   return (
     <div className="py-12 px-4">
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-4xl mx-auto">
         <div className="text-center mb-12">
           <h2 className="text-3xl font-bold mb-4">Choose Your Plan</h2>
           <p className="text-gray-600 max-w-2xl mx-auto">
-            All features are available for free! Upgrade to Pro to support development and get priority support.
+            Get full access to AquaAI's powerful aquarium management features with our affordable subscription plans.
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid md:grid-cols-2 gap-8 max-w-3xl mx-auto">
           {plans.map((plan) => (
             <Card 
               key={plan.id} 
@@ -193,7 +141,10 @@ export const SubscriptionPlans: React.FC = () => {
               )}
               
               <CardHeader className="text-center pb-4">
-                <CardTitle className="text-xl mb-2">{plan.name}</CardTitle>
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <Crown className="w-5 h-5 text-blue-600" />
+                  <CardTitle className="text-xl">{plan.name}</CardTitle>
+                </div>
                 <CardDescription className="text-sm">
                   {plan.description}
                 </CardDescription>
@@ -201,10 +152,13 @@ export const SubscriptionPlans: React.FC = () => {
                   <span className="text-4xl font-bold">
                     ${plan.price}
                   </span>
-                  {plan.period !== 'forever' && (
-                    <span className="text-gray-600">/{plan.period}</span>
-                  )}
+                  <span className="text-gray-600">/{plan.period}</span>
                 </div>
+                {plan.period === 'year' && (
+                  <div className="text-sm text-green-600 font-medium mt-1">
+                    ${(plan.price / 12).toFixed(2)}/month • {plan.savings}
+                  </div>
+                )}
               </CardHeader>
               
               <CardContent className="space-y-4">
@@ -235,22 +189,16 @@ export const SubscriptionPlans: React.FC = () => {
                   className={`w-full mt-6 ${
                     plan.popular 
                       ? 'bg-blue-600 hover:bg-blue-700' 
-                      : plan.price === 0
-                      ? 'bg-gray-600 hover:bg-gray-700'
                       : 'bg-green-600 hover:bg-green-700'
                   }`}
                 >
                   {loadingPlan === plan.id ? (
                     "Processing..."
-                  ) : plan.price === 0 ? (
-                    "Current Plan"
-                  ) : plan.type === 'subscription' ? (
-                    <>
-                      <Zap className="w-4 h-4 mr-2" />
-                      Start Free Trial
-                    </>
                   ) : (
-                    "Buy Lifetime"
+                    <>
+                      <Crown className="w-4 h-4 mr-2" />
+                      Subscribe Now
+                    </>
                   )}
                 </Button>
               </CardContent>
@@ -260,10 +208,10 @@ export const SubscriptionPlans: React.FC = () => {
 
         <div className="text-center mt-12">
           <div className="bg-blue-50 p-6 rounded-lg border max-w-2xl mx-auto">
-            <h4 className="font-medium text-blue-800 mb-2">🐠 All Features Available Free</h4>
+            <h4 className="font-medium text-blue-800 mb-2">🐠 Professional Aquarium Management</h4>
             <p className="text-sm text-blue-600">
-              Every feature in AquaAI is available for free! Pro subscriptions help support development 
-              and provide priority customer support. Cancel anytime during your free trial.
+              Join thousands of aquarists who trust AquaAI to manage their aquariums. 
+              Cancel anytime with just a few clicks.
             </p>
           </div>
         </div>

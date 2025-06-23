@@ -7,20 +7,20 @@ import { OfflineIndicator } from '@/components/OfflineIndicator';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { useDevice } from '@/hooks/use-device';
 import { useAdminStatus } from '@/hooks/useAdminStatus';
-import { Header } from '@/components/layout/Header';
 import { BottomNavigation } from '@/components/layout/BottomNavigation';
 import { BreadcrumbNavigation } from '@/components/navigation/BreadcrumbNavigation';
 import { cn } from '@/lib/utils';
+import Header from '@/components/layout/Header';
 
 interface LayoutProps {
   children: React.ReactNode;
-  title: string;
+  title?: string;
   showBackButton?: boolean;
   actions?: React.ReactNode;
   loading?: boolean;
 }
 
-export function Layout({ children, title, showBackButton = false, actions, loading = false }: LayoutProps) {
+export function Layout({ children, title = "AquaAI", showBackButton = false, actions, loading = false }: LayoutProps) {
   const { theme, setTheme } = useTheme();
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
@@ -44,15 +44,7 @@ export function Layout({ children, title, showBackButton = false, actions, loadi
     <div className="min-h-screen flex flex-col bg-background">
       <OfflineIndicator />
 
-      <Header
-        title={title}
-        showBackButton={showBackButton}
-        actions={actions}
-        isAdmin={isAdmin}
-        theme={theme}
-        onToggleTheme={toggleTheme}
-        onSignOut={handleSignOut}
-      />
+      <Header />
 
       {showBreadcrumbs && <BreadcrumbNavigation />}
 
