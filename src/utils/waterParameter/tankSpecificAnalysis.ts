@@ -8,14 +8,19 @@ export const generateTankSpecificRecommendations = (tank?: Tank): string[] => {
   const recommendations: string[] = [];
   
   // Tank size-based recommendations
-  if (tank.size_gallons && tank.size_gallons < 20) {
-    recommendations.push("Small tanks require more frequent monitoring");
+  if (tank.size) {
+    const sizeMatch = tank.size.match(/(\d+)/);
+    const sizeGallons = sizeMatch ? parseInt(sizeMatch[1]) : null;
+    
+    if (sizeGallons && sizeGallons < 20) {
+      recommendations.push("Small tanks require more frequent monitoring");
+    }
   }
   
   // Livestock-based recommendations
   if (tank.livestock && tank.livestock.length > 0) {
     const highMaintenanceFish = tank.livestock.filter(fish => 
-      fish.care_level === 'Advanced' || fish.care_level === 'Expert'
+      fish.careLevel === 'Advanced' || fish.careLevel === 'Expert'
     );
     
     if (highMaintenanceFish.length > 0) {
