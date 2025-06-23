@@ -11,31 +11,30 @@ export const useSubscriptionAccess = () => {
   const canAccessFeature = (featureType: 'basic' | 'premium' = 'basic') => {
     if (!user) return false;
     
-    // Admins always have access
-    if (accessData?.access_type === 'admin') return true;
-    
-    // Require active subscription for all features
-    return accessData?.access_type === 'paid';
+    // All features are now available to everyone
+    return true;
   };
 
   const requiresUpgrade = (featureType: 'basic' | 'premium' = 'premium') => {
     if (!user) return true;
     if (accessData?.access_type === 'admin') return false;
-    return accessData?.access_type !== 'paid';
+    // No upgrade required for any features now
+    return false;
   };
 
   const shouldShowPaywall = () => {
     if (!user) return true;
     if (accessData?.access_type === 'admin') return false;
-    return accessData?.access_type !== 'paid';
+    // No paywall needed since features are free
+    return false;
   };
 
   const shouldShowSubscriptionPrompt = () => {
-    return shouldShowPaywall();
+    return false; // No subscription prompts needed
   };
 
   const shouldShowTrialBanner = () => {
-    return false; // Trial is handled in checkout flow
+    return false; // No trial banner needed
   };
 
   return {
@@ -43,12 +42,15 @@ export const useSubscriptionAccess = () => {
     subscriptionInfo: {
       tier: accessData?.subscription_tier || 'free',
       status: accessData?.access_type || 'free',
-      hasAccess: accessData?.access_type === 'paid' || accessData?.access_type === 'admin',
+      hasAccess: true, // All features available
       isAdmin: accessData?.access_type === 'admin',
       isTrial: false,
       trialHoursRemaining: 0,
       displayTier: accessData?.access_type === 'admin' ? 'Admin' : 
-                   accessData?.access_type === 'paid' ? 'Pro' : 'Free'
+                   accessData?.access_type === 'paid' ? 'Pro' : 'Free',
+      subscriptionType: accessData?.subscription_type,
+      startDate: accessData?.subscription_start_date,
+      endDate: accessData?.subscription_end_date
     },
     trialStatus: {
       isTrialActive: false,

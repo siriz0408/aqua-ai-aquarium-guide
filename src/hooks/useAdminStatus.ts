@@ -10,11 +10,15 @@ export const useAdminStatus = () => {
   useEffect(() => {
     const checkAdminStatus = async () => {
       if (user?.id) {
+        // Check admin status directly from profiles table
         const { data, error } = await supabase
-          .rpc('check_user_admin_status', { user_id: user.id });
+          .from('profiles')
+          .select('is_admin')
+          .eq('id', user.id)
+          .single();
         
         if (!error && data) {
-          setIsAdmin(true);
+          setIsAdmin(data.is_admin || false);
         } else {
           setIsAdmin(false);
         }

@@ -35,13 +35,28 @@ export const useUserProfile = () => {
 
       const profile: UserProfile = {
         id: user.id,
+        email: profileData.email,
         full_name: profileData.full_name,
         subscription_status: (profileData.subscription_status === 'active' ? 'active' : 
-                             profileData.subscription_status === 'cancelled' ? 'cancelled' : 'free') as 'free' | 'active' | 'cancelled',
+                             profileData.subscription_status === 'cancelled' ? 'cancelled' : 
+                             profileData.subscription_status === 'expired' ? 'expired' : 'free') as 'free' | 'active' | 'cancelled' | 'expired',
         subscription_tier: (profileData.subscription_tier || 'free') as 'free' | 'pro',
+        subscription_type: profileData.subscription_type as 'monthly' | 'yearly' | 'lifetime',
         subscription_start_date: profileData.subscription_start_date,
+        subscription_end_date: profileData.subscription_end_date,
+        trial_start_date: profileData.trial_start_date,
+        trial_end_date: profileData.trial_end_date,
+        stripe_customer_id: profileData.stripe_customer_id,
+        stripe_subscription_id: profileData.stripe_subscription_id,
+        stripe_price_id: profileData.stripe_price_id,
         is_admin: profileData.is_admin || false,
         admin_role: profileData.admin_role,
+        admin_permissions: profileData.admin_permissions || [],
+        last_admin_login: profileData.last_admin_login,
+        last_active: profileData.last_active,
+        request_admin_access: profileData.request_admin_access || false,
+        created_at: profileData.created_at,
+        updated_at: profileData.updated_at,
       };
 
       console.log('Constructed user profile:', profile);

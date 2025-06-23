@@ -19,13 +19,15 @@ export const useCredits = () => {
       return true;
     }
     
-    return false; // Require subscription for all features
+    // For the simplified model, all features are now available to everyone
+    return true;
   };
 
   const needsUpgrade = () => {
-    if (!user) return true;
+    if (!user) return false; // Changed to false since features are free
     if (profile?.is_admin) return false;
-    return profile?.subscription_status !== 'active' || profile?.subscription_tier !== 'pro';
+    // For the simplified model, no upgrade needed
+    return false;
   };
 
   const forceRefreshAccess = async () => {
@@ -37,13 +39,16 @@ export const useCredits = () => {
     profileLoading,
     subscriptionInfo: {
       tier: profile?.subscription_tier || 'free',
-      status: profile?.subscription_status || 'inactive',
-      hasAccess: profile?.subscription_status === 'active' && profile?.subscription_tier === 'pro',
+      status: profile?.subscription_status || 'free',
+      hasAccess: true, // All features are now available
       isAdmin: profile?.is_admin || false,
       isTrial: false,
       trialHoursRemaining: 0,
       displayTier: profile?.is_admin ? 'Admin' : 
-                   profile?.subscription_status === 'active' && profile?.subscription_tier === 'pro' ? 'Pro' : 'Free'
+                   profile?.subscription_status === 'active' && profile?.subscription_tier === 'pro' ? 'Pro' : 'Free',
+      subscriptionType: profile?.subscription_type,
+      startDate: profile?.subscription_start_date,
+      endDate: profile?.subscription_end_date
     },
     canUseFeature,
     needsUpgrade,

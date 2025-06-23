@@ -7,10 +7,14 @@ interface SubscriptionAccess {
   has_access: boolean;
   access_type: 'admin' | 'paid' | 'free';
   subscription_tier: string;
+  subscription_type: string;
   trial_hours_remaining: number;
   trial_type: string | null;
   can_start_trial: boolean;
+  subscription_start_date: string | null;
   subscription_end_date: string | null;
+  is_admin: boolean;
+  admin_role: string | null;
 }
 
 export const useUserSubscriptionAccess = () => {
@@ -39,10 +43,14 @@ export const useUserSubscriptionAccess = () => {
           has_access: true,
           access_type: 'free',
           subscription_tier: 'free',
+          subscription_type: 'monthly',
           trial_hours_remaining: 0,
           trial_type: null,
           can_start_trial: false,
-          subscription_end_date: null
+          subscription_start_date: null,
+          subscription_end_date: null,
+          is_admin: false,
+          admin_role: null
         };
       }
 
@@ -59,10 +67,14 @@ export const useUserSubscriptionAccess = () => {
         has_access: true, // All features are now free
         access_type: accessType,
         subscription_tier: profileData.subscription_tier || 'free',
+        subscription_type: profileData.subscription_type || 'monthly',
         trial_hours_remaining: 0,
         trial_type: null,
         can_start_trial: false,
-        subscription_end_date: null
+        subscription_start_date: profileData.subscription_start_date,
+        subscription_end_date: profileData.subscription_end_date,
+        is_admin: profileData.is_admin || false,
+        admin_role: profileData.admin_role
       };
     },
     enabled: !!user?.id,

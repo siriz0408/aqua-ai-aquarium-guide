@@ -14,7 +14,10 @@ export const useSubscriptionInfo = (
         isAdmin: true,
         isTrial: false,
         trialHoursRemaining: 0,
-        displayTier: 'Admin'
+        displayTier: 'Admin',
+        subscriptionType: profile.subscription_type,
+        startDate: profile.subscription_start_date,
+        endDate: profile.subscription_end_date
       };
     }
 
@@ -26,7 +29,10 @@ export const useSubscriptionInfo = (
         isAdmin: false,
         isTrial: false,
         trialHoursRemaining: 0,
-        displayTier: 'Pro'
+        displayTier: 'Pro',
+        subscriptionType: profile.subscription_type,
+        startDate: profile.subscription_start_date,
+        endDate: profile.subscription_end_date
       };
     }
 
@@ -37,7 +43,10 @@ export const useSubscriptionInfo = (
       isAdmin: false,
       isTrial: false,
       trialHoursRemaining: 0,
-      displayTier: 'Free'
+      displayTier: 'Free',
+      subscriptionType: profile?.subscription_type,
+      startDate: profile?.subscription_start_date,
+      endDate: profile?.subscription_end_date
     };
   };
 
