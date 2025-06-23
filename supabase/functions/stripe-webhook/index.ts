@@ -11,7 +11,7 @@ const corsHeaders = {
 const logStep = (step: string, details?: any) => {
   const timestamp = new Date().toISOString();
   const detailsStr = details ? ` - ${JSON.stringify(details, null, 2)}` : '';
-  console.log(`[${timestamp}] [STRIPE-WEBHOOK-ENHANCED] ${step}${detailsStr}`);
+  console.log(`[${timestamp}] [STRIPE-WEBHOOK] ${step}${detailsStr}`);
 };
 
 serve(async (req) => {
@@ -23,13 +23,12 @@ serve(async (req) => {
   let eventType = 'unknown';
 
   try {
-    logStep("Enhanced webhook processing started", { 
+    logStep("Webhook received", { 
       method: req.method, 
       url: req.url,
       headers: Object.fromEntries(req.headers.entries())
     });
 
-    // Validate environment variables
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
     if (!stripeKey) {
       logStep("ERROR: STRIPE_SECRET_KEY not configured");
@@ -42,18 +41,12 @@ serve(async (req) => {
       throw new Error("STRIPE_WEBHOOK_SECRET is not set");
     }
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    
-    if (!supabaseUrl || !supabaseServiceKey) {
-      logStep("ERROR: Missing Supabase configuration");
-      throw new Error("Supabase configuration is incomplete");
-    }
-
     // Use service role key to bypass RLS
-    const supabaseClient = createClient(supabaseUrl, supabaseServiceKey, {
-      auth: { persistSession: false }
-    });
+    const supabaseClient = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+      { auth: { persistSession: false } }
+    );
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
     
@@ -66,6 +59,7 @@ serve(async (req) => {
     }
 
     logStep("Verifying webhook signature");
+    // Use constructEventAsync to avoid SubtleCrypto sync issue
     const event = await stripe.webhooks.constructEventAsync(body, signature, webhookSecret);
     
     eventId = event.id;
@@ -73,7 +67,7 @@ serve(async (req) => {
     
     logStep("Webhook verified successfully", { type: event.type, id: event.id });
 
-    // Store webhook event for monitoring with enhanced details
+    // Store webhook event for monitoring
     await supabaseClient
       .from('webhook_events')
       .upsert({
@@ -84,7 +78,7 @@ serve(async (req) => {
         created_at: new Date().toISOString()
       }, { onConflict: 'stripe_event_id' });
 
-    // Process different event types with enhanced logic
+    // Process different event types
     let processResult;
     switch (event.type) {
       case 'checkout.session.completed':
@@ -92,7 +86,7 @@ serve(async (req) => {
         break;
         
       case 'customer.subscription.created':
-      case 'customer.subscription.updated': 
+      case 'customer.subscription.updated':
       case 'customer.subscription.deleted':
         processResult = await handleSubscriptionEvent(event, stripe, supabaseClient);
         break;
@@ -110,7 +104,7 @@ serve(async (req) => {
         processResult = { success: true, message: 'Event type not processed' };
     }
 
-    // Update webhook event status with enhanced details
+    // Update webhook event status
     await supabaseClient
       .from('webhook_events')
       .update({
@@ -123,7 +117,7 @@ serve(async (req) => {
       })
       .eq('stripe_event_id', eventId);
 
-    logStep("Enhanced webhook processing completed", { result: processResult });
+    logStep("Webhook processing completed", { result: processResult });
 
     return new Response(JSON.stringify({ 
       received: true, 
@@ -135,17 +129,16 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
-
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    logStep("ERROR in enhanced stripe-webhook", { 
+    logStep("ERROR in stripe-webhook", { 
       message: errorMessage,
       stack: error instanceof Error ? error.stack : undefined
     });
     
     // Update webhook event with error if we have an eventId
-    try {
-      if (eventId !== 'unknown') {
+    if (eventId !== 'unknown') {
+      try {
         const supabaseClient = createClient(
           Deno.env.get("SUPABASE_URL") ?? "",
           Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
@@ -161,9 +154,9 @@ serve(async (req) => {
             error_message: errorMessage,
             processed_at: new Date().toISOString()
           }, { onConflict: 'stripe_event_id' });
+      } catch (dbError) {
+        logStep("Failed to update webhook event with error", { dbError });
       }
-    } catch (dbError) {
-      logStep("Failed to update webhook event with error", { dbError });
     }
     
     return new Response(JSON.stringify({ 
@@ -186,7 +179,7 @@ async function handleCheckoutCompleted(
   supabaseClient: any
 ) {
   try {
-    logStep("Processing enhanced checkout completed event");
+    logStep("Processing checkout completed event");
     
     const session = event.data.object as Stripe.Checkout.Session;
     const customerId = session.customer as string;
@@ -199,21 +192,8 @@ async function handleCheckoutCompleted(
       };
     }
     
-    // Get customer data from Stripe with retry logic
-    let customer: Stripe.Customer;
-    let retries = 3;
-    while (retries > 0) {
-      try {
-        customer = await stripe.customers.retrieve(customerId) as Stripe.Customer;
-        break;
-      } catch (retryError) {
-        retries--;
-        if (retries === 0) throw retryError;
-        logStep(`Retrying customer retrieval, attempts remaining: ${retries}`);
-        await new Promise(resolve => setTimeout(resolve, 1000));
-      }
-    }
-    
+    // Get customer data from Stripe
+    const customer = await stripe.customers.retrieve(customerId) as Stripe.Customer;
     if (!customer.email) {
       logStep("No email found for customer", { customerId });
       return {
@@ -223,28 +203,29 @@ async function handleCheckoutCompleted(
       };
     }
     
-    logStep("Processing enhanced checkout session", { 
+    logStep("Processing checkout session", { 
       sessionId: session.id,
       email: customer.email,
       mode: session.mode 
     });
 
-    // Handle subscription checkout with enhanced processing
+    // Handle subscription checkout
     if (session.mode === 'subscription' && session.subscription) {
+      // Get subscription details
       const subscription = await stripe.subscriptions.retrieve(session.subscription as string);
       
-      // Enhanced sync with better error handling
+      // Use sync_stripe_subscription function to update user profile
       const { data: syncResult, error: syncError } = await supabaseClient
         .rpc('sync_stripe_subscription', {
           customer_email: customer.email,
           stripe_customer_id: customerId,
           stripe_subscription_id: subscription.id,
           subscription_status: subscription.status,
-          price_id: subscription.items.data[0]?.price?.id || null
+          price_id: null
         });
 
       if (syncError) {
-        logStep("Error syncing subscription via enhanced RPC", { error: syncError });
+        logStep("Error syncing subscription via RPC", { error: syncError });
         return {
           success: false,
           error: `Failed to sync subscription: ${syncError.message}`,
@@ -254,35 +235,35 @@ async function handleCheckoutCompleted(
         };
       }
 
-      if (!syncResult?.success) {
-        logStep("Enhanced sync RPC returned failure", { result: syncResult });
+      if (!syncResult.success) {
+        logStep("Sync RPC returned failure", { result: syncResult });
         return {
           success: false,
-          error: syncResult?.error || 'Enhanced sync failed',
+          error: syncResult.error || 'Sync failed',
           userEmail: customer.email,
           customerId,
           subscriptionId: subscription.id
         };
       }
 
-      logStep("Enhanced subscription checkout completed successfully", { 
+      logStep("Subscription checkout completed successfully", { 
         email: customer.email,
         subscriptionId: subscription.id,
-        status: subscription.status,
-        syncResult: syncResult
+        status: subscription.status
       });
 
       return {
         success: true,
-        message: 'Enhanced subscription checkout completed successfully',
+        message: 'Subscription checkout completed successfully',
         userEmail: customer.email,
         customerId,
         subscriptionId: subscription.id
       };
-    }
+    } 
     
     // Handle one-time payment checkout
     if (session.mode === 'payment') {
+      // Use sync function for one-time payment (sets to active/pro status)
       const { data: syncResult, error: syncError } = await supabaseClient
         .rpc('sync_stripe_subscription', {
           customer_email: customer.email,
@@ -293,7 +274,7 @@ async function handleCheckoutCompleted(
         });
 
       if (syncError) {
-        logStep("Error syncing one-time payment via enhanced RPC", { error: syncError });
+        logStep("Error syncing one-time payment via RPC", { error: syncError });
         return {
           success: false,
           error: `Failed to sync one-time payment: ${syncError.message}`,
@@ -302,14 +283,14 @@ async function handleCheckoutCompleted(
         };
       }
 
-      logStep("Enhanced one-time payment checkout completed successfully", { 
+      logStep("One-time payment checkout completed successfully", { 
         email: customer.email,
         sessionId: session.id
       });
 
       return {
         success: true,
-        message: 'Enhanced one-time payment checkout completed successfully',
+        message: 'One-time payment checkout completed successfully',
         userEmail: customer.email,
         customerId
       };
@@ -322,9 +303,8 @@ async function handleCheckoutCompleted(
       userEmail: customer.email,
       customerId
     };
-
   } catch (error) {
-    logStep("Error in enhanced handleCheckoutCompleted", { 
+    logStep("Error in handleCheckoutCompleted", { 
       error: error instanceof Error ? error.message : String(error)
     });
     
@@ -341,26 +321,13 @@ async function handleSubscriptionEvent(
   supabaseClient: any
 ) {
   try {
-    logStep("Processing enhanced subscription event", { eventType: event.type });
+    logStep("Processing subscription event", { eventType: event.type });
     
     const subscription = event.data.object as Stripe.Subscription;
     const customerId = subscription.customer as string;
     
-    // Get customer data from Stripe with retry logic
-    let customer: Stripe.Customer;
-    let retries = 3;
-    while (retries > 0) {
-      try {
-        customer = await stripe.customers.retrieve(customerId) as Stripe.Customer;
-        break;
-      } catch (retryError) {
-        retries--;
-        if (retries === 0) throw retryError;
-        logStep(`Retrying customer retrieval, attempts remaining: ${retries}`);
-        await new Promise(resolve => setTimeout(resolve, 1000));
-      }
-    }
-    
+    // Get customer data from Stripe
+    const customer = await stripe.customers.retrieve(customerId) as Stripe.Customer;
     if (!customer.email) {
       logStep("No email found for customer", { customerId });
       return {
@@ -370,22 +337,20 @@ async function handleSubscriptionEvent(
       };
     }
     
-    logStep("Enhanced customer retrieved", { email: customer.email, customerId });
+    logStep("Customer retrieved", { email: customer.email, customerId });
     
-    // Enhanced sync with additional price information
-    const priceId = subscription.items.data[0]?.price?.id || null;
-    
+    // Use sync_stripe_subscription function
     const { data: syncResult, error: syncError } = await supabaseClient
       .rpc('sync_stripe_subscription', {
         customer_email: customer.email,
         stripe_customer_id: customerId,
         stripe_subscription_id: subscription.id,
         subscription_status: subscription.status,
-        price_id: priceId
+        price_id: null
       });
 
     if (syncError) {
-      logStep("Error syncing subscription via enhanced RPC", { error: syncError });
+      logStep("Error syncing subscription via RPC", { error: syncError });
       return {
         success: false,
         error: `Failed to sync subscription: ${syncError.message}`,
@@ -395,35 +360,32 @@ async function handleSubscriptionEvent(
       };
     }
 
-    if (!syncResult?.success) {
-      logStep("Enhanced sync RPC returned failure", { result: syncResult });
+    if (!syncResult.success) {
+      logStep("Sync RPC returned failure", { result: syncResult });
       return {
         success: false,
-        error: syncResult?.error || 'Enhanced sync failed',
+        error: syncResult.error || 'Sync failed',
         userEmail: customer.email,
         customerId,
         subscriptionId: subscription.id
       };
     }
     
-    logStep("Enhanced subscription sync completed successfully", { 
+    logStep("Subscription sync completed successfully", { 
       email: customer.email,
       subscriptionId: subscription.id,
-      status: subscription.status,
-      priceId: priceId,
-      syncResult: syncResult
+      status: subscription.status
     });
     
     return {
       success: true,
-      message: 'Enhanced subscription processed successfully',
+      message: 'Subscription processed successfully',
       userEmail: customer.email,
       customerId,
       subscriptionId: subscription.id
     };
-
   } catch (error) {
-    logStep("Error in enhanced handleSubscriptionEvent", { 
+    logStep("Error in handleSubscriptionEvent", { 
       error: error instanceof Error ? error.message : String(error),
       eventType: event.type
     });
@@ -441,7 +403,7 @@ async function handlePaymentSucceeded(
   supabaseClient: any
 ) {
   try {
-    logStep("Processing enhanced payment succeeded event");
+    logStep("Processing payment succeeded event");
     
     const invoice = event.data.object as Stripe.Invoice;
     const customerId = invoice.customer as string;
@@ -456,17 +418,18 @@ async function handlePaymentSucceeded(
     if (invoice.subscription) {
       const subscription = await stripe.subscriptions.retrieve(invoice.subscription as string);
       
+      // Use sync_stripe_subscription function
       const { data: syncResult, error: syncError } = await supabaseClient
         .rpc('sync_stripe_subscription', {
           customer_email: customer.email,
           stripe_customer_id: customerId,
           stripe_subscription_id: subscription.id,
           subscription_status: subscription.status,
-          price_id: subscription.items.data[0]?.price?.id || null
+          price_id: null
         });
 
       if (syncError) {
-        logStep("Error syncing payment via enhanced RPC", { error: syncError });
+        logStep("Error syncing payment via RPC", { error: syncError });
         return {
           success: false,
           error: `Failed to sync payment: ${syncError.message}`,
@@ -476,20 +439,19 @@ async function handlePaymentSucceeded(
       }
     }
     
-    logStep("Enhanced payment succeeded event processed", { 
+    logStep("Payment succeeded event processed", { 
       invoiceId: invoice.id,
       userEmail: customer.email 
     });
     
     return { 
       success: true, 
-      message: 'Enhanced payment succeeded processed',
+      message: 'Payment succeeded processed',
       userEmail: customer.email,
       customerId
     };
-
   } catch (error) {
-    logStep("Error in enhanced handlePaymentSucceeded", { 
+    logStep("Error in handlePaymentSucceeded", { 
       error: error instanceof Error ? error.message : String(error)
     });
     return { 
@@ -505,7 +467,7 @@ async function handlePaymentFailed(
   supabaseClient: any
 ) {
   try {
-    logStep("Processing enhanced payment failed event");
+    logStep("Processing payment failed event");
     
     const invoice = event.data.object as Stripe.Invoice;
     const customerId = invoice.customer as string;
@@ -516,20 +478,19 @@ async function handlePaymentFailed(
       throw new Error(`No email found for customer ${customerId}`);
     }
     
-    logStep("Enhanced payment failed event processed", { 
+    logStep("Payment failed event processed", { 
       invoiceId: invoice.id,
       userEmail: customer.email 
     });
     
     return { 
       success: true, 
-      message: 'Enhanced payment failed processed',
+      message: 'Payment failed processed',
       userEmail: customer.email,
       customerId
     };
-
   } catch (error) {
-    logStep("Error in enhanced handlePaymentFailed", { 
+    logStep("Error in handlePaymentFailed", { 
       error: error instanceof Error ? error.message : String(error)
     });
     return { 

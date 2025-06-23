@@ -1,142 +1,75 @@
 
 import React from 'react';
-import { Sidebar } from './Sidebar';
-import { Button } from './ui/button';
-import { Menu, User, ArrowLeft } from 'lucide-react';
-import { useState } from 'react';
-import { cn } from '@/lib/utils';
+import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { useSubscriptionAccess } from '@/hooks/useSubscriptionAccess';
-import { Badge } from './ui/badge';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { OfflineIndicator } from '@/components/OfflineIndicator';
+import { LoadingSpinner } from '@/components/LoadingSpinner';
+import { useDevice } from '@/hooks/use-device';
+import { useAdminStatus } from '@/hooks/useAdminStatus';
+import { Header } from '@/components/layout/Header';
+import { BottomNavigation } from '@/components/layout/BottomNavigation';
+import { BreadcrumbNavigation } from '@/components/navigation/BreadcrumbNavigation';
+import { cn } from '@/lib/utils';
 
 interface LayoutProps {
   children: React.ReactNode;
-  title?: string;
-  loading?: boolean;
+  title: string;
   showBackButton?: boolean;
   actions?: React.ReactNode;
+  loading?: boolean;
 }
 
-export const Layout: React.FC<LayoutProps> = ({ 
-  children, 
-  title, 
-  loading = false, 
-  showBackButton = false,
-  actions 
-}) => {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+export function Layout({ children, title, showBackButton = false, actions, loading = false }: LayoutProps) {
+  const { theme, setTheme } = useTheme();
   const { user, signOut } = useAuth();
-  const { tier, isActive, isAdmin } = useSubscriptionAccess();
   const navigate = useNavigate();
+  const location = useLocation();
+  const { isMobile } = useDevice();
+  const isAdmin = useAdminStatus();
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
+  const toggleTheme = () => {
+    setTheme(theme === 'dark' ? 'light' : 'dark');
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/auth');
+  };
+
+  // Don't show breadcrumbs on auth page or root page
+  const showBreadcrumbs = user && location.pathname !== '/' && location.pathname !== '/auth';
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Mobile sidebar backdrop */}
-      {sidebarOpen && (
-        <div 
-          className="fixed inset-0 z-40 lg:hidden bg-black bg-opacity-50"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
+    <div className="min-h-screen flex flex-col bg-background">
+      <OfflineIndicator />
 
-      {/* Sidebar */}
-      <div className={cn(
-        "fixed inset-y-0 left-0 z-50 w-64 transform bg-white shadow-lg transition-transform lg:translate-x-0 lg:static lg:inset-0",
-        sidebarOpen ? "translate-x-0" : "-translate-x-full"
+      <Header
+        title={title}
+        showBackButton={showBackButton}
+        actions={actions}
+        isAdmin={isAdmin}
+        theme={theme}
+        onToggleTheme={toggleTheme}
+        onSignOut={handleSignOut}
+      />
+
+      {showBreadcrumbs && <BreadcrumbNavigation />}
+
+      <main className={cn(
+        "flex-1 container mx-auto px-3 sm:px-4 py-3 sm:py-4 md:py-6",
+        isMobile ? "pb-20" : "pb-16"
       )}>
-        <Sidebar onItemClick={() => setSidebarOpen(false)} />
-      </div>
-
-      {/* Main content */}
-      <div className="lg:pl-64">
-        {/* Top navigation */}
-        <header className="bg-white shadow-sm border-b">
-          <div className="flex items-center justify-between px-4 py-3">
-            <div className="flex items-center gap-4">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="lg:hidden"
-                onClick={() => setSidebarOpen(true)}
-              >
-                <Menu className="h-5 w-5" />
-              </Button>
-              
-              {showBackButton && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => navigate(-1)}
-                  className="flex items-center gap-2"
-                >
-                  <ArrowLeft className="h-4 w-4" />
-                  Back
-                </Button>
-              )}
-              
-              {title && (
-                <h1 className="text-xl font-semibold text-gray-900">{title}</h1>
-              )}
-            </div>
-
-            <div className="flex items-center gap-4">
-              {actions}
-              
-              {/* Subscription badge */}
-              <Badge variant={isActive ? 'default' : 'secondary'} className="hidden sm:inline-flex">
-                {isAdmin ? 'Admin' : isActive ? 'Pro' : 'Free'}
-              </Badge>
-
-              {/* User menu */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="flex items-center gap-2">
-                    <User className="h-4 w-4" />
-                    <span className="hidden sm:inline">{user?.email}</span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <div className="px-2 py-1.5">
-                    <p className="text-sm font-medium">{user?.email}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {isAdmin ? 'Administrator' : `${tier} Plan`}
-                    </p>
-                  </div>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => window.location.href = '/subscription'}>
-                    Manage Subscription
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={signOut}>
-                    Sign Out
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+        {loading ? (
+          <div className="flex items-center justify-center min-h-[200px]">
+            <LoadingSpinner size="lg" text="Loading..." />
           </div>
-        </header>
+        ) : (
+          children
+        )}
+      </main>
 
-        {/* Page content */}
-        <main className="p-6">
-          {children}
-        </main>
-      </div>
+      {user && <BottomNavigation />}
     </div>
   );
-};
+}

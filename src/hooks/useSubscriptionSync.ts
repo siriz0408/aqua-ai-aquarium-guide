@@ -1,71 +1,86 @@
 
 import { useState } from 'react';
-import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-
-interface SyncResult {
-  success: boolean;
-  error?: string;
-  user_id?: string;
-  email?: string;
-  old_status?: string;
-  new_status?: string;
-  updated_at?: string;
-}
+import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
+import type { ManualSyncResult } from './types/manualSyncTypes';
+import type { SyncStripeSubscriptionResponse } from '@/types/syncResponse';
 
 export const useSubscriptionSync = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const syncUserSubscription = async (
-    email: string,
+    targetEmail: string,
     stripeCustomerId: string,
-    stripeSubscriptionId?: string,
+    stripeSubscriptionId: string,
     subscriptionStatus: string = 'active'
-  ): Promise<SyncResult> => {
+  ): Promise<ManualSyncResult> => {
+    if (!user?.id) {
+      return { success: false, message: 'User not authenticated' };
+    }
+
     setIsLoading(true);
     try {
+      console.log('Starting subscription sync:', {
+        targetEmail,
+        stripeCustomerId,
+        stripeSubscriptionId,
+        subscriptionStatus
+      });
+      
       const { data, error } = await supabase.rpc('sync_stripe_subscription', {
-        customer_email: email,
+        customer_email: targetEmail,
         stripe_customer_id: stripeCustomerId,
         stripe_subscription_id: stripeSubscriptionId || null,
-        subscription_status: subscriptionStatus
+        subscription_status: subscriptionStatus,
+        price_id: null
       });
 
       if (error) {
-        throw error;
+        console.error('Subscription sync error:', error);
+        const errorMessage = error.message || 'Failed to sync user subscription';
+        toast({
+          title: "Sync Failed",
+          description: errorMessage,
+          variant: "destructive",
+        });
+        return { success: false, message: errorMessage };
       }
 
-      // Properly handle the response with type checking
-      if (!data || typeof data !== 'object' || Array.isArray(data)) {
-        throw new Error('Invalid response format from sync function');
-      }
-
-      const result = data as unknown as SyncResult;
+      console.log('Subscription sync result:', data);
       
-      // Validate that the result has the expected structure
-      if (typeof result.success !== 'boolean') {
-        throw new Error('Invalid response: missing success field');
-      }
-
-      if (result.success) {
+      const syncResult = data as unknown as SyncStripeSubscriptionResponse;
+      
+      if (syncResult?.success) {
         toast({
           title: "Sync Successful",
-          description: `Updated subscription for ${email}`,
+          description: `Successfully synced subscription for ${targetEmail}`,
         });
-        return result;
+        return { 
+          success: true, 
+          message: 'Subscription synced successfully',
+          details: syncResult 
+        };
       } else {
-        throw new Error(result.error || 'Sync failed');
+        const errorMessage = syncResult?.error || 'Unknown sync error';
+        toast({
+          title: "Sync Failed",
+          description: errorMessage,
+          variant: "destructive",
+        });
+        return { success: false, message: errorMessage, details: syncResult };
       }
     } catch (error) {
-      console.error('Sync error:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('Subscription sync exception:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       toast({
-        title: "Sync Failed",
+        title: "Sync Error",
         description: errorMessage,
         variant: "destructive",
       });
-      return { success: false, error: errorMessage };
+      return { success: false, message: errorMessage };
     } finally {
       setIsLoading(false);
     }

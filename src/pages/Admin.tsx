@@ -3,14 +3,13 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Users, CreditCard, Settings, Activity, Webhook, Clock, BarChart3 } from 'lucide-react';
+import { Users, CreditCard, Settings, Activity, Webhook, Clock } from 'lucide-react';
 import { AdminUserManagement } from '@/components/admin/AdminUserManagement';
 import { AdminSubscriptionManagement } from '@/components/admin/AdminSubscriptionManagement';
 import { AdminSystemSettings } from '@/components/admin/AdminSystemSettings';
 import { AdminActivityLogs } from '@/components/admin/AdminActivityLogs';
 import { WebhookMonitor } from '@/components/admin/WebhookMonitor';
 import { AdminTrialManagement } from '@/components/admin/AdminTrialManagement';
-import { AdminDashboard } from '@/components/admin/AdminDashboard';
 import { Layout } from '@/components/Layout';
 import { checkAdminStatus } from '@/utils/adminAuth';
 
@@ -59,12 +58,8 @@ const Admin = () => {
           )}
         </div>
 
-        <Tabs defaultValue="dashboard" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-7">
-            <TabsTrigger value="dashboard" className="flex items-center gap-2">
-              <BarChart3 className="h-4 w-4" />
-              Dashboard
-            </TabsTrigger>
+        <Tabs defaultValue="users" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="users" className="flex items-center gap-2">
               <Users className="h-4 w-4" />
               Users
@@ -90,10 +85,6 @@ const Admin = () => {
               Activity
             </TabsTrigger>
           </TabsList>
-
-          <TabsContent value="dashboard">
-            <AdminDashboard />
-          </TabsContent>
 
           <TabsContent value="users">
             <Card>

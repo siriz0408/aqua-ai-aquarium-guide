@@ -2,13 +2,13 @@
 export interface PricingPlan {
   id: string;
   name: string;
+  description: string;
   priceId: string;
-  price: number;
-  amount: number; // Price in cents for Stripe
+  amount: number; // in cents
+  currency: string;
   interval: 'month' | 'year';
+  intervalCount: number;
   trialDays?: number;
-  features: string[];
-  description?: string;
   popular?: boolean;
   savings?: string;
 }
@@ -16,61 +16,49 @@ export interface PricingPlan {
 export const PRICING_PLANS: PricingPlan[] = [
   {
     id: 'monthly',
-    name: 'AquaAI Pro Monthly',
+    name: 'Monthly Pro',
+    description: 'Full access to all features',
     priceId: 'price_1Rb8vR1d1AvgoBGoNIjxLKRR',
-    price: 9.99,
-    amount: 999, // Price in cents
+    amount: 999, // $9.99
+    currency: 'usd',
     interval: 'month',
-    description: 'Full access to all premium features',
-    popular: true,
-    features: [
-      'Unlimited AI-Powered AquaBot Assistant',
-      'Advanced Setup Planner & Recommendations',
-      'Unlimited Tank Management',
-      'Parameter Analysis & Tracking',
-      'Species Compatibility Checker',
-      'Maintenance Scheduling & Reminders',
-      'Priority Support'
-    ]
+    intervalCount: 1,
+    trialDays: 3,
   },
   {
     id: 'annual',
-    name: 'AquaAI Pro Annual',
-    priceId: 'price_1Rb8wD1d1AvgoBGoC8nfQXNK',
-    price: 79.99,
-    amount: 7999, // Price in cents
+    name: 'Annual Pro',
+    description: 'Full access to all features - Save 10%',
+    priceId: 'price_1Rb8wD1d1AvgoBGoC8nfQXNK', // Your actual annual price ID
+    amount: 10788, // $107.88 (equivalent to $8.99/month)
+    currency: 'usd',
     interval: 'year',
-    description: 'Best value - 2 months free',
-    savings: 'Save 33%',
-    features: [
-      'All Monthly Features',
-      '2 months free (save 33%)',
-      'Priority Feature Requests',
-      'Exclusive Beta Access'
-    ]
-  }
+    intervalCount: 1,
+    trialDays: 3,
+    popular: true,
+    savings: 'Save 10%',
+  },
 ];
 
-export const formatPrice = (amount: number): string => {
-  return `$${amount.toFixed(2)}`;
+export const getPlanById = (planId: string): PricingPlan | undefined => {
+  return PRICING_PLANS.find(plan => plan.id === planId);
+};
+
+export const getPlanByPriceId = (priceId: string): PricingPlan | undefined => {
+  return PRICING_PLANS.find(plan => plan.priceId === priceId);
+};
+
+export const formatPrice = (amount: number, currency: string = 'usd'): string => {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: currency.toUpperCase(),
+  }).format(amount / 100);
 };
 
 export const getMonthlyEquivalent = (plan: PricingPlan): string => {
-  if (plan.interval === 'year') {
-    const monthlyPrice = plan.price / 12;
-    return `$${monthlyPrice.toFixed(2)}`;
+  if (plan.interval === 'month') {
+    return formatPrice(plan.amount);
   }
-  return formatPrice(plan.price);
-};
-
-export const getDefaultPlan = (): PricingPlan => {
-  return PRICING_PLANS.find(p => p.popular) || PRICING_PLANS[0];
-};
-
-export const validatePriceId = (priceId: string) => {
-  const validPriceIds = PRICING_PLANS.map(plan => plan.priceId);
-  return {
-    valid: validPriceIds.includes(priceId),
-    error: validPriceIds.includes(priceId) ? null : `Invalid price ID. Valid options: ${validPriceIds.join(', ')}`
-  };
+  const monthlyAmount = plan.amount / 12;
+  return formatPrice(monthlyAmount);
 };

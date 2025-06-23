@@ -1,127 +1,115 @@
 
 import React from 'react';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Check, Zap, AlertTriangle, Star } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { AlertTriangle, Lock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/contexts/AuthContext';
+import { PlanSelector } from './PlanSelector';
+import { PRICING_PLANS, type PricingPlan, formatPrice } from '@/config/pricing';
 
-export const ExpiredTrialPaywall: React.FC = () => {
-  const { user } = useAuth();
+interface ExpiredTrialPaywallProps {
+  isFullScreen?: boolean;
+}
+
+export const ExpiredTrialPaywall: React.FC<ExpiredTrialPaywallProps> = ({ 
+  isFullScreen = false 
+}) => {
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = React.useState(false);
+  const [loading, setLoading] = React.useState(false);
+  const [selectedPlan, setSelectedPlan] = React.useState<PricingPlan>(
+    PRICING_PLANS.find(p => p.popular) || PRICING_PLANS[0]
+  );
 
   const handleUpgrade = async () => {
-    if (!user) {
-      toast({
-        title: "Authentication Required",
-        description: "Please sign in to upgrade to Pro.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsLoading(true);
+    setLoading(true);
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({
+          title: "Authentication Required",
+          description: "Please sign in to upgrade your subscription.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
       const { data, error } = await supabase.functions.invoke('create-checkout', {
-        body: { 
-          userId: user.id,
-          email: user.email,
-          priceId: 'price_1Rb8vR1d1AvgoBGoNIjxLKRR' // Monthly Pro plan
-        }
+        body: { priceId: selectedPlan.priceId }
       });
 
       if (error) {
-        throw error;
+        console.error('Supabase function error:', error);
+        toast({
+          title: "Error",
+          description: "Failed to start checkout process. Please try again.",
+          variant: "destructive",
+        });
+        return;
       }
 
       if (data?.url) {
         window.location.href = data.url;
       } else {
-        throw new Error('No checkout URL returned');
+        throw new Error('No checkout URL received');
       }
     } catch (error) {
-      console.error('Checkout error:', error);
+      console.error('Error creating checkout session:', error);
       toast({
         title: "Error",
-        description: "Failed to start checkout. Please try again.",
+        description: "An unexpected error occurred. Please try again.",
         variant: "destructive",
       });
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
-  const features = [
-    "Unlimited AI-Powered AquaBot Assistant",
-    "Advanced Setup Planner & Recommendations", 
-    "Unlimited Tank Management",
-    "Parameter Analysis & Tracking",
-    "Species Compatibility Checker",
-    "Maintenance Scheduling & Reminders",
-    "Priority Support"
-  ];
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 dark:from-gray-900 dark:to-orange-900 flex items-center justify-center p-4">
-      <Card className="max-w-md w-full shadow-xl">
-        <CardHeader className="text-center">
-          <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-orange-100 dark:bg-orange-900/20 flex items-center justify-center">
-            <AlertTriangle className="h-8 w-8 text-orange-600" />
-          </div>
-          <CardTitle className="text-2xl text-orange-800 dark:text-orange-200">
-            Subscription Required
-          </CardTitle>
-          <CardDescription className="text-orange-600 dark:text-orange-300">
-            AquaAI requires an active subscription to access all features
-          </CardDescription>
-        </CardHeader>
+  const content = (
+    <Card className="border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20 max-w-4xl mx-auto">
+      <CardHeader className="text-center">
+        <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-red-100 dark:bg-red-900 flex items-center justify-center">
+          <AlertTriangle className="h-8 w-8 text-red-600" />
+        </div>
+        <CardTitle className="text-2xl text-red-800 dark:text-red-200 flex items-center justify-center gap-2">
+          <Lock className="h-6 w-6" />
+          Trial Expired
+        </CardTitle>
+        <CardDescription className="text-red-600 dark:text-red-300">
+          Your 3-day free trial has ended. Subscribe to continue using AquaAI's powerful features.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <PlanSelector
+          selectedPlan={selectedPlan}
+          onPlanSelect={setSelectedPlan}
+          showFeatures={true}
+        />
         
-        <CardContent className="space-y-6">
-          <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg border">
-            <div className="flex items-center justify-center mb-2">
-              <Badge variant="secondary" className="bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200">
-                <Star className="h-3 w-3 mr-1" />
-                Best Value
-              </Badge>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">$9.99</div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">per month</div>
-            </div>
-          </div>
-
-          <div className="space-y-3">
-            <h3 className="font-semibold text-gray-900 dark:text-white">
-              What you'll get:
-            </h3>
-            {features.map((feature, index) => (
-              <div key={index} className="flex items-center gap-3">
-                <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
-                <span className="text-sm text-gray-700 dark:text-gray-300">{feature}</span>
-              </div>
-            ))}
-          </div>
-
+        <div className="text-center">
           <Button 
-            onClick={handleUpgrade} 
-            disabled={isLoading}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-            size="lg"
+            onClick={handleUpgrade}
+            disabled={loading}
+            className="w-full bg-red-600 hover:bg-red-700 text-white text-lg py-6 max-w-md mx-auto"
           >
-            <Zap className="h-4 w-4 mr-2" />
-            {isLoading ? "Processing..." : "Subscribe Now - $9.99/month"}
+            {loading ? "Processing..." : `Subscribe to ${selectedPlan.name} - ${formatPrice(selectedPlan.amount)}/${selectedPlan.interval}`}
           </Button>
-
-          <div className="text-center">
-            <p className="text-xs text-gray-500 dark:text-gray-400">
-              🔒 Secure payment with Stripe • Cancel anytime
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+          
+          <p className="text-xs text-red-600 dark:text-red-400 mt-4">
+            Cancel anytime • Secure payment via Stripe
+          </p>
+        </div>
+      </CardContent>
+    </Card>
   );
+
+  if (isFullScreen) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-red-50 to-orange-50 dark:from-gray-900 dark:to-red-900">
+        {content}
+      </div>
+    );
+  }
+
+  return content;
 };
