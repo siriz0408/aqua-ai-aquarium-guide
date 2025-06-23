@@ -9,46 +9,28 @@ export const useSubscriptionAccess = () => {
   console.log('useSubscriptionAccess - Access Data:', accessData);
 
   const canAccessFeature = (featureType: 'basic' | 'premium' = 'basic') => {
-    if (isLoading || !accessData) return false;
-    
-    // Admin always has access
-    if (accessData.access_type === 'admin') return true;
-    
-    // All features require subscription access (trial, paid, or admin)
-    return accessData.has_access;
+    // All features are now accessible to everyone
+    return true;
   };
 
   const requiresUpgrade = (featureType: 'basic' | 'premium' = 'premium') => {
-    if (!accessData) return true;
-    if (accessData.access_type === 'admin') return false;
-    return !accessData.has_access;
+    // No upgrades required - all features are free
+    return false;
   };
 
   const shouldShowPaywall = () => {
-    if (isLoading || !accessData) return false;
-    if (accessData.access_type === 'admin') return false;
-    
-    // Show paywall if trial is expired or user is free with no trial option
-    return accessData.access_type === 'trial_expired' || 
-           (accessData.access_type === 'free' && !accessData.can_start_trial);
+    // Never show paywall since all features are free
+    return false;
   };
 
   const shouldShowSubscriptionPrompt = () => {
-    if (isLoading || !accessData) return false;
-    if (accessData.access_type === 'admin') return false;
-    
-    // Show subscription prompt if user is free and can start trial OR has no access
-    return accessData.access_type === 'free' || !accessData.has_access;
+    // Never show subscription prompts since all features are free
+    return false;
   };
 
   const shouldShowTrialBanner = () => {
-    if (isLoading || !accessData) return false;
-    if (accessData.access_type === 'admin') return false;
-    
-    // Show trial banner for active trials, expired trials, or free users who can start trial
-    return accessData.access_type === 'trial' || 
-           accessData.access_type === 'trial_expired' ||
-           (accessData.access_type === 'free' && accessData.can_start_trial);
+    // Never show trial banner since trials are removed
+    return false;
   };
 
   return {
@@ -56,18 +38,17 @@ export const useSubscriptionAccess = () => {
     subscriptionInfo: {
       tier: accessData?.subscription_tier || 'free',
       status: accessData?.access_type || 'free',
-      hasAccess: accessData?.has_access || false,
+      hasAccess: true, // Always true now
       isAdmin: accessData?.access_type === 'admin',
-      isTrial: accessData?.access_type === 'trial',
-      trialHoursRemaining: accessData?.trial_hours_remaining || 0,
+      isTrial: false, // No trials anymore
+      trialHoursRemaining: 0,
       displayTier: accessData?.access_type === 'admin' ? 'Admin' : 
-                   accessData?.access_type === 'trial' ? 'Trial' :
                    accessData?.access_type === 'paid' ? 'Pro' : 'Free'
     },
     trialStatus: {
-      isTrialActive: accessData?.access_type === 'trial',
-      hoursRemaining: accessData?.trial_hours_remaining || 0,
-      isTrialExpired: accessData?.access_type === 'trial_expired'
+      isTrialActive: false,
+      hoursRemaining: 0,
+      isTrialExpired: false
     },
     accessData,
     isLoading,
@@ -78,10 +59,10 @@ export const useSubscriptionAccess = () => {
     shouldShowSubscriptionPrompt,
     shouldShowTrialBanner,
     hasActiveSubscription: accessData?.access_type === 'paid',
-    isTrialActive: accessData?.access_type === 'trial',
-    isTrialExpired: accessData?.access_type === 'trial_expired',
+    isTrialActive: false,
+    isTrialExpired: false,
     isAdmin: accessData?.access_type === 'admin',
-    canStartTrial: accessData?.can_start_trial || false,
-    hasUsedTrial: !accessData?.can_start_trial && accessData?.access_type !== 'admin'
+    canStartTrial: false,
+    hasUsedTrial: false
   };
 };

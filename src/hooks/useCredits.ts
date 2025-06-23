@@ -1,44 +1,41 @@
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserProfile } from './useUserProfile';
-import { useTrialStatus } from './useTrialStatus';
-import { useSubscriptionInfo } from './useSubscriptionInfo';
-
-// Re-export types for backward compatibility
-export type { UserProfile, TrialStatus } from '@/types/subscription';
 
 export const useCredits = () => {
   const { user } = useAuth();
   const { data: profile, isLoading: profileLoading, error: profileError } = useUserProfile();
-  const { data: trialStatus, isLoading: trialLoading } = useTrialStatus(profile);
-  const { getSubscriptionInfo } = useSubscriptionInfo(profile, trialStatus);
-
-  const subscriptionInfo = getSubscriptionInfo();
 
   const canUseFeature = async (feature: string = 'chat') => {
-    // Check if user has access based on subscription status
-    return subscriptionInfo.hasAccess;
+    // All features are now available to everyone
+    return true;
   };
 
   const needsUpgrade = () => {
-    // Returns true if user needs to upgrade (no access)
-    return !subscriptionInfo.hasAccess;
+    // No upgrades needed - all features are free
+    return false;
   };
 
   const forceRefreshAccess = async () => {
-    // Refresh subscription status
-    return subscriptionInfo.hasAccess;
+    // Always return true since all features are free
+    return true;
   };
 
   return {
     profile,
-    profileLoading: profileLoading || trialLoading,
-    trialStatus,
-    subscriptionInfo,
+    profileLoading,
+    subscriptionInfo: {
+      tier: 'free',
+      status: 'active',
+      hasAccess: true,
+      isAdmin: profile?.is_admin || false,
+      isTrial: false,
+      trialHoursRemaining: 0,
+      displayTier: profile?.is_admin ? 'Admin' : 'Free'
+    },
     canUseFeature,
     needsUpgrade,
-    getSubscriptionInfo,
-    profileError,
     forceRefreshAccess,
+    profileError,
   };
 };

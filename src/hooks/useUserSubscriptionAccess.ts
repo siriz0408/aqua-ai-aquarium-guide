@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 
 interface SubscriptionAccess {
   has_access: boolean;
-  access_type: 'admin' | 'paid' | 'trial' | 'trial_expired' | 'free' | 'no_user';
+  access_type: 'admin' | 'paid' | 'free';
   subscription_tier: string;
   trial_hours_remaining: number;
   trial_type: string | null;
@@ -21,20 +21,20 @@ export const useUserSubscriptionAccess = () => {
     queryFn: async (): Promise<SubscriptionAccess | null> => {
       if (!user?.id) return null;
       
-      console.log('Checking comprehensive subscription access for user:', user.id);
+      console.log('Checking subscription access for user:', user.id);
       
-      // Since we removed trial functionality, we'll use a simplified access check
-      const { data, error } = await supabase.rpc('check_user_access', {
-        user_id: user.id
-      });
+      const { data: profileData, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
 
       if (error) {
         console.error('Error checking subscription access:', error);
         return null;
       }
 
-      const accessData = data?.[0];
-      if (!accessData) {
+      if (!profileData) {
         // Default to free access since all features are now free
         return {
           has_access: true,
@@ -47,25 +47,20 @@ export const useUserSubscriptionAccess = () => {
         };
       }
 
-      console.log('Subscription access data:', accessData);
+      console.log('Subscription access data:', profileData);
 
-      // Map the access_reason to access_type
+      // Determine access type
       let accessType: SubscriptionAccess['access_type'] = 'free';
-      switch (accessData.access_reason) {
-        case 'admin':
-          accessType = 'admin';
-          break;
-        case 'paid':
-          accessType = 'paid';
-          break;
-        default:
-          accessType = 'free';
+      if (profileData.is_admin) {
+        accessType = 'admin';
+      } else if (profileData.subscription_status === 'active' && profileData.subscription_tier === 'pro') {
+        accessType = 'paid';
       }
 
       return {
         has_access: true, // All features are now free
         access_type: accessType,
-        subscription_tier: accessType === 'admin' ? 'pro' : 'free',
+        subscription_tier: profileData.subscription_tier || 'free',
         trial_hours_remaining: 0,
         trial_type: null,
         can_start_trial: false,

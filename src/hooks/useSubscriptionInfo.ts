@@ -6,7 +6,7 @@ export const useSubscriptionInfo = (
   trialStatus: TrialStatus | undefined | null
 ) => {
   const getSubscriptionInfo = (): SubscriptionInfo => {
-    // Admin users always have full access
+    // Admin users have admin status
     if (profile?.is_admin) {
       return {
         tier: 'unlimited',
@@ -32,37 +32,11 @@ export const useSubscriptionInfo = (
       };
     }
 
-    // Check for active trial
-    if (trialStatus?.isTrialActive && trialStatus?.hoursRemaining > 0) {
-      return {
-        tier: 'trial',
-        status: 'trial',
-        hasAccess: true,
-        isAdmin: false,
-        isTrial: true,
-        trialHoursRemaining: trialStatus.hoursRemaining,
-        displayTier: 'Trial'
-      };
-    }
-
-    // Check for expired trial
-    if (trialStatus?.isTrialExpired) {
-      return {
-        tier: 'free',
-        status: 'expired',
-        hasAccess: false,
-        isAdmin: false,
-        isTrial: false,
-        trialHoursRemaining: 0,
-        displayTier: 'Free (Trial Expired)'
-      };
-    }
-
-    // Default to free tier with no access to premium features
+    // Everyone else gets free access (all features are now free)
     return {
       tier: 'free',
-      status: 'free',
-      hasAccess: false,
+      status: 'active',
+      hasAccess: true,
       isAdmin: false,
       isTrial: false,
       trialHoursRemaining: 0,

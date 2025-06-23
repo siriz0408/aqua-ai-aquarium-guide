@@ -78,6 +78,69 @@ export type Database = {
         }
         Relationships: []
       }
+      _backup_profiles_before_overhaul: {
+        Row: {
+          admin_permissions: Json | null
+          admin_role: string | null
+          avatar_url: string | null
+          created_at: string | null
+          created_by_admin_id: string | null
+          email: string | null
+          full_name: string | null
+          id: string | null
+          is_admin: boolean | null
+          last_active: string | null
+          last_admin_login: string | null
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          subscription_end_date: string | null
+          subscription_start_date: string | null
+          subscription_status: string | null
+          subscription_tier: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          admin_permissions?: Json | null
+          admin_role?: string | null
+          avatar_url?: string | null
+          created_at?: string | null
+          created_by_admin_id?: string | null
+          email?: string | null
+          full_name?: string | null
+          id?: string | null
+          is_admin?: boolean | null
+          last_active?: string | null
+          last_admin_login?: string | null
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          subscription_end_date?: string | null
+          subscription_start_date?: string | null
+          subscription_status?: string | null
+          subscription_tier?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          admin_permissions?: Json | null
+          admin_role?: string | null
+          avatar_url?: string | null
+          created_at?: string | null
+          created_by_admin_id?: string | null
+          email?: string | null
+          full_name?: string | null
+          id?: string | null
+          is_admin?: boolean | null
+          last_active?: string | null
+          last_admin_login?: string | null
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          subscription_end_date?: string | null
+          subscription_start_date?: string | null
+          subscription_status?: string | null
+          subscription_tier?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       admin_activity_logs: {
         Row: {
           action: string
@@ -838,56 +901,6 @@ export type Database = {
         }
         Relationships: []
       }
-      manual_sync_operations: {
-        Row: {
-          admin_user_id: string | null
-          after_state: Json | null
-          before_state: Json | null
-          created_at: string | null
-          error_message: string | null
-          id: string
-          operation_type: string
-          stripe_customer_id: string | null
-          success: boolean | null
-          target_email: string | null
-          target_user_id: string | null
-        }
-        Insert: {
-          admin_user_id?: string | null
-          after_state?: Json | null
-          before_state?: Json | null
-          created_at?: string | null
-          error_message?: string | null
-          id?: string
-          operation_type: string
-          stripe_customer_id?: string | null
-          success?: boolean | null
-          target_email?: string | null
-          target_user_id?: string | null
-        }
-        Update: {
-          admin_user_id?: string | null
-          after_state?: Json | null
-          before_state?: Json | null
-          created_at?: string | null
-          error_message?: string | null
-          id?: string
-          operation_type?: string
-          stripe_customer_id?: string | null
-          success?: boolean | null
-          target_email?: string | null
-          target_user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "manual_sync_operations_admin_user_id_fkey"
-            columns: ["admin_user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       messages: {
         Row: {
           content: string
@@ -995,7 +1008,6 @@ export type Database = {
           last_admin_login: string | null
           stripe_customer_id: string | null
           stripe_subscription_id: string | null
-          subscription_end_date: string | null
           subscription_start_date: string | null
           subscription_status: string | null
           subscription_tier: string | null
@@ -1015,7 +1027,6 @@ export type Database = {
           last_admin_login?: string | null
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
-          subscription_end_date?: string | null
           subscription_start_date?: string | null
           subscription_status?: string | null
           subscription_tier?: string | null
@@ -1035,7 +1046,6 @@ export type Database = {
           last_admin_login?: string | null
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
-          subscription_end_date?: string | null
           subscription_start_date?: string | null
           subscription_status?: string | null
           subscription_tier?: string | null
@@ -1663,14 +1673,6 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
-      check_user_access: {
-        Args: { user_id: string }
-        Returns: {
-          has_access: boolean
-          access_reason: string
-          trial_hours_remaining: number
-        }[]
-      }
       check_user_admin_status: {
         Args: { user_id: string }
         Returns: boolean
@@ -1764,13 +1766,20 @@ export type Database = {
         Returns: boolean
       }
       sync_stripe_subscription: {
-        Args: {
-          customer_email: string
-          stripe_customer_id: string
-          stripe_subscription_id?: string
-          subscription_status?: string
-          price_id?: string
-        }
+        Args:
+          | {
+              customer_email: string
+              stripe_customer_id: string
+              stripe_subscription_id?: string
+              subscription_status?: string
+            }
+          | {
+              customer_email: string
+              stripe_customer_id: string
+              stripe_subscription_id?: string
+              subscription_status?: string
+              price_id?: string
+            }
         Returns: Json
       }
       update_subscription_status: {

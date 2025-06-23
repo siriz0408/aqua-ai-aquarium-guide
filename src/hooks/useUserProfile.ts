@@ -13,16 +13,6 @@ export const useUserProfile = () => {
       if (!user?.id) return null;
       
       console.log('Fetching user profile for:', user.id);
-      
-      // First ensure the profile exists
-      const { error: ensureError } = await supabase.rpc('ensure_user_profile', {
-        user_id: user.id
-      });
-      
-      if (ensureError) {
-        console.error('Error ensuring profile exists:', ensureError);
-        // Continue anyway - the profile might already exist
-      }
 
       // Get profile data from profiles table
       const { data: profileData, error: profileError } = await supabase
@@ -48,10 +38,8 @@ export const useUserProfile = () => {
         full_name: profileData.full_name,
         subscription_status: (profileData.subscription_status || 'free') as 'free' | 'trial' | 'active' | 'expired',
         subscription_tier: (profileData.subscription_tier || 'free') as 'free' | 'pro',
-        trial_start_date: null, // Removed trial functionality
-        trial_end_date: null, // Removed trial functionality
         subscription_start_date: profileData.subscription_start_date,
-        subscription_end_date: profileData.subscription_end_date,
+        subscription_end_date: null, // Removed from schema
         is_admin: profileData.is_admin || false,
         admin_role: profileData.admin_role,
       };
