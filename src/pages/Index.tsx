@@ -1,12 +1,10 @@
+
 import React from 'react';
 import { Layout } from '@/components/Layout';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { DropletIcon, FishIcon, Thermometer, Zap, MessageSquare, Calculator } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { TrialStatusBanner } from '@/components/subscription/TrialStatusBanner';
-import { ExpiredTrialPaywall } from '@/components/subscription/ExpiredTrialPaywall';
-import { EnhancedSubscriptionPrompt } from '@/components/subscription/EnhancedSubscriptionPrompt';
 import { useSubscriptionAccess } from '@/hooks/useSubscriptionAccess';
 
 const Index = () => {
@@ -14,13 +12,8 @@ const Index = () => {
   const { user } = useAuth();
   const {
     accessData,
-    shouldShowPaywall,
-    shouldShowSubscriptionPrompt,
-    shouldShowTrialBanner,
     isLoading,
     isAdmin,
-    canStartTrial,
-    hasUsedTrial
   } = useSubscriptionAccess();
 
   // Show loading state
@@ -43,28 +36,6 @@ const Index = () => {
   if (!user) {
     navigate('/auth');
     return null;
-  }
-
-  // Show subscription prompt for users without access who haven't started a trial
-  if (shouldShowSubscriptionPrompt()) {
-    return (
-      <Layout title="AquaAI - Start Your Journey">
-        <EnhancedSubscriptionPrompt 
-          isFullScreen 
-          canStartTrial={canStartTrial}
-          hasUsedTrial={hasUsedTrial}
-        />
-      </Layout>
-    );
-  }
-
-  // Show paywall for expired trials or users who can't start trials
-  if (shouldShowPaywall()) {
-    return (
-      <Layout title="AquaAI - Trial Expired">
-        <ExpiredTrialPaywall isFullScreen />
-      </Layout>
-    );
   }
 
   const handleFeatureClick = async (path: string) => {
@@ -102,16 +73,6 @@ const Index = () => {
     <Layout title="AquaAI - Intelligent Aquarium Management">
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-gray-900 dark:to-blue-900">
         <div className="container mx-auto px-4 py-8">
-          {/* Show trial status banner */}
-          {shouldShowTrialBanner() && accessData && (
-            <TrialStatusBanner
-              accessType={accessData.access_type as 'trial' | 'trial_expired' | 'free'}
-              hoursRemaining={accessData.trial_hours_remaining}
-              trialType={accessData.trial_type}
-              canStartTrial={accessData.can_start_trial}
-            />
-          )}
-
           <div className="text-center mb-12">
             <div className="flex items-center justify-center mb-6">
               <div className="h-16 w-16 rounded-full ocean-gradient flex items-center justify-center mr-4">
@@ -218,7 +179,7 @@ const Index = () => {
                 <div className="h-12 w-12 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center mx-auto mb-4">
                   <FishIcon className="h-6 w-6 text-purple-600" />
                 </div>
-                <h3 className="font-semibold mb-2">Expert Knowledge</h3>
+                <h3 className="font-semibold mb-3">Expert Knowledge</h3>
                 <p className="text-sm text-muted-foreground">
                   Access a vast database of fish species, equipment guides, and care instructions.
                 </p>
