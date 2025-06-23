@@ -22,32 +22,34 @@ export const useUserAccessRefresh = () => {
         console.error('Error ensuring profile:', ensureError);
       }
 
-      // Check their access status using the updated function
-      const { data: accessData, error: accessError } = await supabase.rpc('check_user_access', {
-        user_id: userId
-      });
+      // Since we removed the check_user_access function, just update the profile
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
       
-      if (accessError) {
-        console.error('Error checking access:', accessError);
+      if (profileError) {
+        console.error('Error checking profile:', profileError);
         toast({
           title: "Access Check Failed",
-          description: accessError.message,
+          description: profileError.message,
           variant: "destructive",
         });
-        return { success: false, message: accessError.message };
+        return { success: false, message: profileError.message };
       }
       
-      console.log('Access check result:', accessData);
+      console.log('Profile data:', profileData);
       
       toast({
         title: "Access Refreshed",
-        description: `User access updated. Status: ${accessData?.[0]?.access_reason || 'unknown'}`,
+        description: `User access updated. Status: ${profileData?.subscription_status || 'free'}`,
       });
       
       return { 
         success: true, 
         message: 'User access refreshed successfully',
-        details: accessData?.[0] 
+        details: profileData 
       };
     } catch (error) {
       console.error('Refresh access exception:', error);

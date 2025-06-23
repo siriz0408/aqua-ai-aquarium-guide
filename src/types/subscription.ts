@@ -5,7 +5,6 @@ export interface UserProfile {
   subscription_status: 'free' | 'active' | 'cancelled';
   subscription_tier: 'free' | 'pro';
   subscription_start_date?: string;
-  subscription_end_date?: string; // Keeping for compatibility
   is_admin?: boolean;
   admin_role?: string;
 }

@@ -67,17 +67,15 @@ export function Layout({ children, title, showBackButton = false, actions, loadi
         isMobile ? "pb-24" : "pb-20"
       )}>
         {loading ? (
-          <div className="flex items-center justify-center min-h-[200px] sm:min-h-[300px]">
-            <LoadingSpinner size="lg" text="Loading..." />
+          <div className="flex items-center justify-center min-h-[400px]">
+            <LoadingSpinner />
           </div>
         ) : (
-          <div className="w-full max-w-full">
-            {children}
-          </div>
+          children
         )}
       </main>
 
-      {user && <BottomNavigation />}
+      {isMobile && <BottomNavigation />}
     </div>
   );
 }

@@ -10,6 +10,12 @@ interface ManualSyncResult {
   details?: any;
 }
 
+interface SyncResult {
+  success?: boolean;
+  error?: string;
+  [key: string]: any;
+}
+
 export const useSubscriptionSync = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
@@ -54,7 +60,9 @@ export const useSubscriptionSync = () => {
 
       console.log('Subscription sync result:', data);
       
-      if (data?.success) {
+      const syncResult = data as SyncResult;
+      
+      if (syncResult?.success) {
         toast({
           title: "Sync Successful",
           description: `Successfully synced subscription for ${targetEmail}`,
@@ -65,7 +73,7 @@ export const useSubscriptionSync = () => {
           details: data 
         };
       } else {
-        const errorMessage = data?.error || 'Unknown sync error';
+        const errorMessage = syncResult?.error || 'Unknown sync error';
         toast({
           title: "Sync Failed",
           description: errorMessage,

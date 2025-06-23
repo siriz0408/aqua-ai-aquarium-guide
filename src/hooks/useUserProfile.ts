@@ -36,10 +36,10 @@ export const useUserProfile = () => {
       const profile: UserProfile = {
         id: user.id,
         full_name: profileData.full_name,
-        subscription_status: (profileData.subscription_status || 'free') as 'free' | 'trial' | 'active' | 'expired',
+        subscription_status: (profileData.subscription_status === 'active' ? 'active' : 
+                             profileData.subscription_status === 'cancelled' ? 'cancelled' : 'free') as 'free' | 'active' | 'cancelled',
         subscription_tier: (profileData.subscription_tier || 'free') as 'free' | 'pro',
         subscription_start_date: profileData.subscription_start_date,
-        subscription_end_date: null, // Removed from schema
         is_admin: profileData.is_admin || false,
         admin_role: profileData.admin_role,
       };
