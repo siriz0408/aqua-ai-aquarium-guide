@@ -75,7 +75,7 @@ serve(async (req) => {
     logStep("User authenticated", { userId: user.id, email: user.email });
 
     // Get request body
-    const { priceId, trialPeriodDays } = await req.json();
+    const { priceId, mode = "subscription" } = await req.json();
     if (!priceId) {
       logStep("ERROR: No price ID provided");
       throw new Error("Price ID is required");
@@ -87,7 +87,7 @@ serve(async (req) => {
       throw new Error(`Invalid price ID: ${priceId}. Please use a valid price ID.`);
     }
 
-    logStep("Request body received", { priceId, trialPeriodDays });
+    logStep("Request body received", { priceId, mode });
 
     // Initialize Stripe with better error handling
     const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
@@ -133,7 +133,7 @@ serve(async (req) => {
     const origin = req.headers.get("origin") || "http://localhost:3000";
     logStep("Origin detected", { origin });
     
-    // Create checkout session with proper trial configuration
+    // Create checkout session
     const sessionConfig: any = {
       customer: customerId,
       line_items: [
@@ -142,9 +142,9 @@ serve(async (req) => {
           quantity: 1,
         },
       ],
-      mode: "subscription",
+      mode: mode,
       success_url: `${origin}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}/`,
+      cancel_url: `${origin}/payment-cancelled`,
       metadata: {
         user_id: user.id,
         price_id: priceId,
@@ -153,24 +153,10 @@ serve(async (req) => {
       billing_address_collection: "auto",
     };
 
-    // Add subscription data with trial period if specified
-    if (trialPeriodDays && trialPeriodDays > 0) {
-      sessionConfig.subscription_data = {
-        trial_period_days: trialPeriodDays,
-        metadata: {
-          user_id: user.id,
-          trial_days: trialPeriodDays.toString(),
-          price_id: priceId,
-        }
-      };
-      logStep("Adding trial period to subscription", { trialPeriodDays });
-    }
-
     logStep("Creating checkout session with config", { 
       mode: sessionConfig.mode,
       successUrl: sessionConfig.success_url,
       cancelUrl: sessionConfig.cancel_url,
-      trialDays: trialPeriodDays,
       priceId: priceId
     });
 
