@@ -26,10 +26,12 @@ export function BottomNavigation() {
 
   return (
     <nav className="sticky bottom-0 left-0 right-0 bg-background/95 backdrop-blur border-t border-border/40 supports-[backdrop-filter]:bg-background/60 safe-area-inset-bottom">
-      <div className="container px-1 sm:px-2">
+      <div className="w-full max-w-full px-2 sm:px-4">
         <div className={cn(
-          "flex items-center justify-around",
-          "py-1 sm:py-2"
+          "flex items-center justify-around w-full",
+          // Mobile-first responsive padding
+          "py-2",
+          "sm:py-3"
         )}>
           {navItems.map(({ path, icon: Icon, label, pattern }) => (
             <Button
@@ -38,15 +40,23 @@ export function BottomNavigation() {
               size="sm"
               onClick={() => navigate(path)}
               className={cn(
-                "flex flex-col gap-0.5 text-xs min-w-0 px-2 sm:px-3",
-                // Ensure minimum 48x48px touch target
-                "min-h-[48px] min-w-[48px] h-12 sm:h-14",
+                "flex flex-col items-center justify-center gap-1 text-xs min-w-0 flex-1 max-w-[80px]",
+                // Ensure proper touch targets
+                "min-h-[60px] px-1",
+                "sm:min-h-[64px] sm:px-2",
                 // Better touch feedback
-                "touch-manipulation active:scale-95 transition-transform duration-100"
+                "touch-manipulation active:scale-95 transition-transform duration-100",
+                // Responsive text and icon sizing
+                "text-[10px] leading-none",
+                "sm:text-xs"
               )}
             >
-              <Icon className="h-5 w-5 sm:h-6 sm:w-6 flex-shrink-0" />
-              <span className="truncate leading-none text-[10px] sm:text-xs">{label}</span>
+              <Icon className={cn(
+                "flex-shrink-0",
+                "h-5 w-5",
+                "sm:h-6 sm:w-6"
+              )} />
+              <span className="truncate w-full text-center">{label}</span>
             </Button>
           ))}
         </div>

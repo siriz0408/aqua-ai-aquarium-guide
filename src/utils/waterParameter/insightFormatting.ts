@@ -28,7 +28,7 @@ export const formatInsightsForDisplay = (
   // Add tank-specific recommendations
   recommendations.push(...tankRecommendations);
   
-  // Compile final insights
+  // Format insights for mobile-first display with better spacing
   const finalInsights = [
     healthSummary,
     ...priorities.slice(0, 3), // Top 3 priorities
@@ -36,7 +36,7 @@ export const formatInsightsForDisplay = (
     "",
     "🎯 RECOMMENDED ACTIONS:",
     ...recommendations.slice(0, 4) // Top 4 recommendations
-  ].filter(Boolean).join(" • ");
+  ].filter(Boolean).join("\n\n");
 
   return finalInsights;
 };
