@@ -1,19 +1,26 @@
 
 export interface UserProfile {
   id: string;
-  email?: string;
   full_name?: string;
-  role: 'user' | 'admin';
-  subscription_status: 'expired' | 'active';
-  stripe_customer_id?: string;
-  stripe_subscription_id?: string;
-  created_at?: string;
-  updated_at?: string;
+  subscription_status: 'free' | 'active' | 'cancelled';
+  subscription_tier: 'free' | 'pro';
+  subscription_start_date?: string;
+  is_admin?: boolean;
+  admin_role?: string;
+}
+
+export interface TrialStatus {
+  isTrialActive: boolean;
+  hoursRemaining: number;
+  isTrialExpired: boolean;
 }
 
 export interface SubscriptionInfo {
+  tier: string;
+  status: string;
   hasAccess: boolean;
-  status: 'expired' | 'active';
   isAdmin: boolean;
+  isTrial: boolean;
+  trialHoursRemaining: number;
   displayTier: string;
 }

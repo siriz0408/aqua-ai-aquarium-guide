@@ -52,7 +52,7 @@ export function UpgradeButton() {
   return (
     <Button onClick={handleUpgrade} disabled={loading}>
       <Crown className="mr-2 h-4 w-4" />
-      {loading ? "Loading..." : "Subscribe to Pro"}
+      {loading ? "Loading..." : "Upgrade to Pro"}
     </Button>
   );
 }

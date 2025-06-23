@@ -13,7 +13,7 @@ const logStep = (step: string, details?: any) => {
   console.log(`[CREATE-CHECKOUT] ${step}${detailsStr}`);
 };
 
-// Valid price IDs for the simplified pricing structure
+// Valid price IDs for the new pricing structure
 const VALID_PRICE_IDS = [
   "price_1QP9nZ1d1AvgoBGoGhpT6Nqg", // Monthly Pro ($4.99/month)
   "price_1QP9o91d1AvgoBGoLCTKfWn5", // Annual Pro ($49.99/year - 17% discount)
@@ -131,13 +131,17 @@ const createCheckoutSession = async (
     },
     allow_promotion_codes: true,
     billing_address_collection: "auto",
+    subscription_data: {
+      trial_period_days: 3,
+    },
   };
 
   logStep("Creating checkout session with config", { 
     mode: sessionConfig.mode,
     successUrl: sessionConfig.success_url,
     cancelUrl: sessionConfig.cancel_url,
-    priceId: priceId
+    priceId: priceId,
+    trialDays: 3
   });
 
   const session = await stripe.checkout.sessions.create(sessionConfig);

@@ -1,39 +1,71 @@
 
 import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { useUserProfile } from './useUserProfile';
+
+interface SubscriptionAccess {
+  has_access: boolean;
+  access_type: 'admin' | 'paid' | 'free';
+  subscription_tier: string;
+  trial_hours_remaining: number;
+  trial_type: string | null;
+  can_start_trial: boolean;
+  subscription_end_date: string | null;
+}
 
 export const useUserSubscriptionAccess = () => {
   const { user } = useAuth();
-  const { data: profile } = useUserProfile();
 
   return useQuery({
     queryKey: ['user-subscription-access', user?.id],
-    queryFn: async () => {
-      if (!user?.id || !profile) return {
-        has_access: false,
-        access_type: 'expired' as const,
-        subscription_tier: 'free',
-        trial_hours_remaining: 0,
-        trial_type: null,
-        can_start_trial: false,
-        subscription_end_date: null
-      };
+    queryFn: async (): Promise<SubscriptionAccess | null> => {
+      if (!user?.id) return null;
       
-      const accessType = profile.role === 'admin' ? 'admin' : 
-                        profile.subscription_status === 'active' ? 'paid' : 'expired';
+      console.log('Checking subscription access for user:', user.id);
+      
+      const { data: profileData, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (error) {
+        console.error('Error checking subscription access:', error);
+        return null;
+      }
+
+      if (!profileData) {
+        return {
+          has_access: true,
+          access_type: 'free',
+          subscription_tier: 'free',
+          trial_hours_remaining: 0,
+          trial_type: null,
+          can_start_trial: false,
+          subscription_end_date: null
+        };
+      }
+
+      console.log('Subscription access data:', profileData);
+
+      let accessType: SubscriptionAccess['access_type'] = 'free';
+      if (profileData.is_admin) {
+        accessType = 'admin';
+      } else if (profileData.subscription_status === 'active' && profileData.subscription_tier === 'pro') {
+        accessType = 'paid';
+      }
 
       return {
-        has_access: profile.subscription_status === 'active' || profile.role === 'admin',
+        has_access: true, // All features are now free
         access_type: accessType,
-        subscription_tier: profile.subscription_status === 'active' ? 'pro' : 'free',
+        subscription_tier: profileData.subscription_tier || 'free',
         trial_hours_remaining: 0,
         trial_type: null,
         can_start_trial: false,
         subscription_end_date: null
       };
     },
-    enabled: !!user?.id && !!profile,
+    enabled: !!user?.id,
     staleTime: 2 * 60 * 1000,
     refetchOnWindowFocus: true,
   });

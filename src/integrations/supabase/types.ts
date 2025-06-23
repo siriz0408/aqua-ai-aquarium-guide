@@ -9,6 +9,138 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      _backup_profiles: {
+        Row: {
+          admin_permissions: Json | null
+          admin_role: string | null
+          avatar_url: string | null
+          created_at: string | null
+          created_by_admin_id: string | null
+          email: string | null
+          full_name: string | null
+          id: string | null
+          is_admin: boolean | null
+          last_active: string | null
+          last_admin_login: string | null
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          subscription_end_date: string | null
+          subscription_start_date: string | null
+          subscription_status: string | null
+          subscription_tier: string | null
+          trial_end_date: string | null
+          trial_start_date: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          admin_permissions?: Json | null
+          admin_role?: string | null
+          avatar_url?: string | null
+          created_at?: string | null
+          created_by_admin_id?: string | null
+          email?: string | null
+          full_name?: string | null
+          id?: string | null
+          is_admin?: boolean | null
+          last_active?: string | null
+          last_admin_login?: string | null
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          subscription_end_date?: string | null
+          subscription_start_date?: string | null
+          subscription_status?: string | null
+          subscription_tier?: string | null
+          trial_end_date?: string | null
+          trial_start_date?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          admin_permissions?: Json | null
+          admin_role?: string | null
+          avatar_url?: string | null
+          created_at?: string | null
+          created_by_admin_id?: string | null
+          email?: string | null
+          full_name?: string | null
+          id?: string | null
+          is_admin?: boolean | null
+          last_active?: string | null
+          last_admin_login?: string | null
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          subscription_end_date?: string | null
+          subscription_start_date?: string | null
+          subscription_status?: string | null
+          subscription_tier?: string | null
+          trial_end_date?: string | null
+          trial_start_date?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      _backup_profiles_before_overhaul: {
+        Row: {
+          admin_permissions: Json | null
+          admin_role: string | null
+          avatar_url: string | null
+          created_at: string | null
+          created_by_admin_id: string | null
+          email: string | null
+          full_name: string | null
+          id: string | null
+          is_admin: boolean | null
+          last_active: string | null
+          last_admin_login: string | null
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          subscription_end_date: string | null
+          subscription_start_date: string | null
+          subscription_status: string | null
+          subscription_tier: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          admin_permissions?: Json | null
+          admin_role?: string | null
+          avatar_url?: string | null
+          created_at?: string | null
+          created_by_admin_id?: string | null
+          email?: string | null
+          full_name?: string | null
+          id?: string | null
+          is_admin?: boolean | null
+          last_active?: string | null
+          last_admin_login?: string | null
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          subscription_end_date?: string | null
+          subscription_start_date?: string | null
+          subscription_status?: string | null
+          subscription_tier?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          admin_permissions?: Json | null
+          admin_role?: string | null
+          avatar_url?: string | null
+          created_at?: string | null
+          created_by_admin_id?: string | null
+          email?: string | null
+          full_name?: string | null
+          id?: string | null
+          is_admin?: boolean | null
+          last_active?: string | null
+          last_admin_login?: string | null
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          subscription_end_date?: string | null
+          subscription_start_date?: string | null
+          subscription_status?: string | null
+          subscription_tier?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       admin_activity_logs: {
         Row: {
           action: string
@@ -43,7 +175,15 @@ export type Database = {
           target_type?: string | null
           user_agent?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_admin_activity_logs_admin_user_id"
+            columns: ["admin_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       admin_invitations: {
         Row: {
@@ -76,7 +216,15 @@ export type Database = {
           invited_by?: string | null
           permissions?: Json | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "admin_invitations_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       admin_notes: {
         Row: {
@@ -103,7 +251,22 @@ export type Database = {
           note_type?: string | null
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_admin_notes_admin_id"
+            columns: ["admin_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_admin_notes_user_id"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       aquariums: {
         Row: {
@@ -832,37 +995,61 @@ export type Database = {
       }
       profiles: {
         Row: {
-          created_at: string | null
+          admin_permissions: Json | null
+          admin_role: string | null
+          avatar_url: string | null
+          created_at: string
+          created_by_admin_id: string | null
           email: string | null
           full_name: string | null
           id: string
-          role: string | null
+          is_admin: boolean | null
+          last_active: string | null
+          last_admin_login: string | null
           stripe_customer_id: string | null
           stripe_subscription_id: string | null
+          subscription_start_date: string | null
           subscription_status: string | null
-          updated_at: string | null
+          subscription_tier: string | null
+          updated_at: string
         }
         Insert: {
-          created_at?: string | null
+          admin_permissions?: Json | null
+          admin_role?: string | null
+          avatar_url?: string | null
+          created_at?: string
+          created_by_admin_id?: string | null
           email?: string | null
           full_name?: string | null
           id: string
-          role?: string | null
+          is_admin?: boolean | null
+          last_active?: string | null
+          last_admin_login?: string | null
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
+          subscription_start_date?: string | null
           subscription_status?: string | null
-          updated_at?: string | null
+          subscription_tier?: string | null
+          updated_at?: string
         }
         Update: {
-          created_at?: string | null
+          admin_permissions?: Json | null
+          admin_role?: string | null
+          avatar_url?: string | null
+          created_at?: string
+          created_by_admin_id?: string | null
           email?: string | null
           full_name?: string | null
           id?: string
-          role?: string | null
+          is_admin?: boolean | null
+          last_active?: string | null
+          last_admin_login?: string | null
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
+          subscription_start_date?: string | null
           subscription_status?: string | null
-          updated_at?: string | null
+          subscription_tier?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
@@ -941,6 +1128,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "fk_support_ticket_responses_user_id"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "support_ticket_responses_ticket_id_fkey"
             columns: ["ticket_id"]
             isOneToOne: false
@@ -989,7 +1183,15 @@ export type Database = {
           updated_at?: string
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_support_tickets_user_id"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       task_lists: {
         Row: {
@@ -1208,6 +1410,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_profile_setup: {
+        Row: {
+          completed: boolean
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed?: boolean
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       users: {
         Row: {
