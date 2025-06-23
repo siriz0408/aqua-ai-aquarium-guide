@@ -3,66 +3,55 @@ import { Tank } from '@/contexts/AquariumContext';
 import { ParameterInsight } from './parameterAnalysis';
 
 export const generateTankSpecificRecommendations = (tank?: Tank): string[] => {
+  if (!tank) return [];
+  
   const recommendations: string[] = [];
   
-  if (!tank) return recommendations;
+  // Tank size-based recommendations
+  if (tank.size_gallons && tank.size_gallons < 20) {
+    recommendations.push("Small tanks require more frequent monitoring");
+  }
   
+  // Livestock-based recommendations
   if (tank.livestock && tank.livestock.length > 0) {
-    const sensitiveSpecies = tank.livestock.filter(l => 
-      l.species.toLowerCase().includes('sps') || 
-      l.species.toLowerCase().includes('acropora') ||
-      l.careLevel === 'Expert'
+    const highMaintenanceFish = tank.livestock.filter(fish => 
+      fish.care_level === 'Advanced' || fish.care_level === 'Expert'
     );
     
-    if (sensitiveSpecies.length > 0) {
-      recommendations.push("🪸 Your SPS corals require ultra-stable parameters - maintain consistency");
-    }
-    
-    const fishCount = tank.livestock.filter(l => l.type === 'fish').length;
-    const coralCount = tank.livestock.filter(l => l.type === 'coral').length;
-    
-    if (fishCount > 5) {
-      recommendations.push("🐟 High fish bioload - monitor nitrogen levels closely");
-    }
-    
-    if (coralCount > 10) {
-      recommendations.push("🪸 Coral-dominant tank - focus on stable calcium and alkalinity");
+    if (highMaintenanceFish.length > 0) {
+      recommendations.push("High-maintenance livestock requires daily monitoring");
     }
   }
   
-  // Tank size considerations
-  if (tank.size) {
-    const sizeNum = parseInt(tank.size);
-    if (sizeNum < 30) {
-      recommendations.push("📏 Small tank volume - parameters can change rapidly, test frequently");
-    } else if (sizeNum > 100) {
-      recommendations.push("📏 Large tank volume - changes should be gradual and well-planned");
+  // Equipment-based recommendations
+  if (tank.equipment && tank.equipment.length > 0) {
+    const hasSkimmer = tank.equipment.some(eq => 
+      eq.name.toLowerCase().includes('skimmer')
+    );
+    
+    if (!hasSkimmer) {
+      recommendations.push("Consider adding a protein skimmer for better water quality");
     }
   }
   
   return recommendations;
 };
 
-export const assessTankHealth = (insights: ParameterInsight[]): {
-  healthSummary: string;
-  criticalCount: number;
-  warningCount: number;
-} => {
-  const criticalIssues = insights.filter(insight => insight.status === 'critical').length;
-  const warnings = insights.filter(insight => insight.status === 'warning').length;
+export const assessTankHealth = (insights: ParameterInsight[]) => {
+  const criticalIssues = insights.filter(i => i.status === 'critical').length;
+  const warnings = insights.filter(i => i.status === 'warning').length;
   
   let healthSummary = "";
+  
   if (criticalIssues > 0) {
-    healthSummary = `🔴 IMMEDIATE ACTION REQUIRED: ${criticalIssues} critical issue(s) detected. `;
+    healthSummary = `🔴 CRITICAL: Your tank needs immediate attention (${criticalIssues} critical issues)`;
+  } else if (warnings > 2) {
+    healthSummary = `⚠️ CAUTION: Multiple parameters need adjustment (${warnings} warnings)`;
   } else if (warnings > 0) {
-    healthSummary = `⚠️ ATTENTION NEEDED: ${warnings} parameter(s) need adjustment. `;
+    healthSummary = `⚠️ ATTENTION: Some parameters could be improved (${warnings} warnings)`;
   } else {
-    healthSummary = "✅ EXCELLENT: All parameters within optimal ranges! ";
+    healthSummary = "✅ HEALTHY: Your tank parameters look good!";
   }
   
-  return {
-    healthSummary,
-    criticalCount: criticalIssues,
-    warningCount: warnings
-  };
+  return { healthSummary, criticalCount: criticalIssues, warningCount: warnings };
 };

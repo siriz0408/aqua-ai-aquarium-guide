@@ -21,7 +21,7 @@ import {
   prioritizeInsights 
 } from './waterParameter/insightFormatting';
 
-export { WaterParameterValues };
+export type { WaterParameterValues };
 
 export const generateEnhancedAIInsights = async (
   params: WaterParameterValues, 
