@@ -8,7 +8,6 @@ export interface PricingPlan {
   currency: string;
   interval: 'month' | 'year';
   intervalCount: number;
-  trialDays?: number;
   popular?: boolean;
   savings?: string;
 }
@@ -23,7 +22,6 @@ export const PRICING_PLANS: PricingPlan[] = [
     currency: 'usd',
     interval: 'month',
     intervalCount: 1,
-    trialDays: 3,
   },
   {
     id: 'annual',
@@ -34,7 +32,6 @@ export const PRICING_PLANS: PricingPlan[] = [
     currency: 'usd',
     interval: 'year',
     intervalCount: 1,
-    trialDays: 3,
     popular: true,
     savings: 'Save 17%',
   },

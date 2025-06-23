@@ -7,25 +7,19 @@ export const useCredits = () => {
   const { data: profile, isLoading: profileLoading, error: profileError } = useUserProfile();
 
   const canUseFeature = async (feature: string = 'chat') => {
-    if (!user) return false;
+    if (!user || !profile) return false;
     
-    // Check if user has active subscription
-    if (profile?.subscription_status === 'active' && profile?.subscription_tier === 'pro') {
-      return true;
-    }
+    // Admins always have access
+    if (profile.role === 'admin') return true;
     
-    // Check if user is admin
-    if (profile?.is_admin) {
-      return true;
-    }
-    
-    return false; // Require subscription for all features
+    // Users with active subscription have access
+    return profile.subscription_status === 'active';
   };
 
   const needsUpgrade = () => {
-    if (!user) return true;
-    if (profile?.is_admin) return false;
-    return profile?.subscription_status !== 'active' || profile?.subscription_tier !== 'pro';
+    if (!user || !profile) return true;
+    if (profile.role === 'admin') return false;
+    return profile.subscription_status !== 'active';
   };
 
   const forceRefreshAccess = async () => {
@@ -36,14 +30,11 @@ export const useCredits = () => {
     profile,
     profileLoading,
     subscriptionInfo: {
-      tier: profile?.subscription_tier || 'free',
-      status: profile?.subscription_status || 'inactive',
-      hasAccess: profile?.subscription_status === 'active' && profile?.subscription_tier === 'pro',
-      isAdmin: profile?.is_admin || false,
-      isTrial: false,
-      trialHoursRemaining: 0,
-      displayTier: profile?.is_admin ? 'Admin' : 
-                   profile?.subscription_status === 'active' && profile?.subscription_tier === 'pro' ? 'Pro' : 'Free'
+      hasAccess: profile?.subscription_status === 'active' || profile?.role === 'admin',
+      status: profile?.subscription_status || 'expired',
+      isAdmin: profile?.role === 'admin',
+      displayTier: profile?.role === 'admin' ? 'Admin' : 
+                   profile?.subscription_status === 'active' ? 'Pro' : 'Expired'
     },
     canUseFeature,
     needsUpgrade,

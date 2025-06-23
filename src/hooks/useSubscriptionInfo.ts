@@ -1,43 +1,40 @@
 
-import type { UserProfile, TrialStatus, SubscriptionInfo } from '@/types/subscription';
+import type { UserProfile, SubscriptionInfo } from '@/types/subscription';
+
+interface TrialStatus {
+  isTrialActive: boolean;
+  hoursRemaining: number;
+  isTrialExpired: boolean;
+}
 
 export const useSubscriptionInfo = (
   profile: UserProfile | undefined | null,
   trialStatus: TrialStatus | undefined | null
 ) => {
   const getSubscriptionInfo = (): SubscriptionInfo => {
-    if (profile?.is_admin) {
+    if (!profile) {
       return {
-        tier: 'unlimited',
-        status: 'active',
+        hasAccess: false,
+        status: 'expired',
+        isAdmin: false,
+        displayTier: 'Expired'
+      };
+    }
+
+    if (profile.role === 'admin') {
+      return {
         hasAccess: true,
+        status: 'active',
         isAdmin: true,
-        isTrial: false,
-        trialHoursRemaining: 0,
         displayTier: 'Admin'
       };
     }
 
-    if (profile?.subscription_status === 'active' && profile?.subscription_tier === 'pro') {
-      return {
-        tier: 'pro',
-        status: 'active',
-        hasAccess: true,
-        isAdmin: false,
-        isTrial: false,
-        trialHoursRemaining: 0,
-        displayTier: 'Pro'
-      };
-    }
-
     return {
-      tier: 'free',
-      status: 'active',
-      hasAccess: true, // All features are now free
+      hasAccess: profile.subscription_status === 'active',
+      status: profile.subscription_status,
       isAdmin: false,
-      isTrial: false,
-      trialHoursRemaining: 0,
-      displayTier: 'Free'
+      displayTier: profile.subscription_status === 'active' ? 'Pro' : 'Expired'
     };
   };
 

@@ -142,14 +142,6 @@ export const PricingSection: React.FC = () => {
                     <Check className={`h-5 w-5 ${plan.popular ? 'text-blue-600' : 'text-gray-600'}`} />
                     <span>Priority customer support</span>
                   </div>
-                  {plan.trialDays && (
-                    <div className="flex items-center gap-2">
-                      <Check className={`h-5 w-5 ${plan.popular ? 'text-blue-600' : 'text-gray-600'}`} />
-                      <span className="font-medium text-green-600">
-                        {plan.trialDays}-day free trial
-                      </span>
-                    </div>
-                  )}
                 </div>
                 <Button 
                   onClick={() => handleSubscriptionUpgrade(plan.priceId, plan.name)}
@@ -160,7 +152,7 @@ export const PricingSection: React.FC = () => {
                       : 'bg-gray-600 hover:bg-gray-700'
                   }`}
                 >
-                  {isLoading === plan.priceId ? "Processing..." : `Start ${plan.trialDays}-Day Free Trial`}
+                  {isLoading === plan.priceId ? "Processing..." : "Subscribe Now"}
                 </Button>
               </CardContent>
             </Card>
@@ -169,10 +161,9 @@ export const PricingSection: React.FC = () => {
 
         <div className="text-center mt-12">
           <div className="bg-gray-50 p-6 rounded-lg border max-w-2xl mx-auto">
-            <h4 className="font-medium text-gray-800 mb-2">🐠 Start Your Free Trial</h4>
+            <h4 className="font-medium text-gray-800 mb-2">🐠 Start Your Subscription</h4>
             <p className="text-sm text-gray-600">
-              Try AquaAI risk-free with our 3-day free trial. Cancel anytime during the trial period 
-              and you won't be charged. No setup fees, no hidden costs.
+              Get instant access to all AquaAI features. Cancel anytime through your account settings.
             </p>
           </div>
         </div>

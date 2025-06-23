@@ -14,7 +14,6 @@ export const useUserProfile = () => {
       
       console.log('Fetching user profile for:', user.id);
 
-      // Get profile data from profiles table
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
@@ -31,17 +30,18 @@ export const useUserProfile = () => {
         return null;
       }
 
-      console.log('Raw profile data from database:', profileData);
+      console.log('Profile data:', profileData);
 
       const profile: UserProfile = {
         id: user.id,
+        email: profileData.email,
         full_name: profileData.full_name,
-        subscription_status: (profileData.subscription_status === 'active' ? 'active' : 
-                             profileData.subscription_status === 'cancelled' ? 'cancelled' : 'free') as 'free' | 'active' | 'cancelled',
-        subscription_tier: (profileData.subscription_tier || 'free') as 'free' | 'pro',
-        subscription_start_date: profileData.subscription_start_date,
-        is_admin: profileData.is_admin || false,
-        admin_role: profileData.admin_role,
+        role: profileData.role || 'user',
+        subscription_status: profileData.subscription_status || 'expired',
+        stripe_customer_id: profileData.stripe_customer_id,
+        stripe_subscription_id: profileData.stripe_subscription_id,
+        created_at: profileData.created_at,
+        updated_at: profileData.updated_at,
       };
 
       console.log('Constructed user profile:', profile);
