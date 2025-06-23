@@ -13,10 +13,10 @@ const logStep = (step: string, details?: any) => {
   console.log(`[CREATE-CHECKOUT] ${step}${detailsStr}`);
 };
 
-// Valid price IDs for the application
+// Valid price IDs for the new pricing structure
 const VALID_PRICE_IDS = [
-  "price_1Rb8vR1d1AvgoBGoNIjxLKRR", // Monthly Pro ($9.99/month)
-  "price_1Rb8wD1d1AvgoBGoC8nfQXNK", // Annual Pro ($107.88/year - 10% discount)
+  "price_1QP9nZ1d1AvgoBGoGhpT6Nqg", // Monthly Pro ($4.99/month)
+  "price_1QP9o91d1AvgoBGoLCTKfWn5", // Annual Pro ($49.99/year - 17% discount)
 ];
 
 const validateEnvironment = () => {
@@ -112,8 +112,7 @@ const createCheckoutSession = async (
   customerId: string, 
   priceId: string, 
   userId: string, 
-  origin: string,
-  mode: string
+  origin: string
 ) => {
   const sessionConfig: Stripe.Checkout.SessionCreateParams = {
     customer: customerId,
@@ -123,22 +122,26 @@ const createCheckoutSession = async (
         quantity: 1,
       },
     ],
-    mode: mode as Stripe.Checkout.SessionCreateParams.Mode,
+    mode: 'subscription',
     success_url: `${origin}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${origin}/payment-cancelled`,
+    cancel_url: `${origin}/pricing`,
     metadata: {
       user_id: userId,
       price_id: priceId,
     },
     allow_promotion_codes: true,
     billing_address_collection: "auto",
+    subscription_data: {
+      trial_period_days: 3,
+    },
   };
 
   logStep("Creating checkout session with config", { 
     mode: sessionConfig.mode,
     successUrl: sessionConfig.success_url,
     cancelUrl: sessionConfig.cancel_url,
-    priceId: priceId
+    priceId: priceId,
+    trialDays: 3
   });
 
   const session = await stripe.checkout.sessions.create(sessionConfig);
@@ -177,11 +180,11 @@ serve(async (req) => {
     logStep("User authenticated", { userId: user.id, email: user.email });
 
     // Parse request body
-    const { priceId, mode = "subscription" } = await req.json();
+    const { priceId } = await req.json();
     if (!priceId) {
       throw new Error("Price ID is required");
     }
-    logStep("Request body parsed", { priceId, mode });
+    logStep("Request body parsed", { priceId });
 
     // Validate price
     await validatePriceId(stripe, priceId);
@@ -191,7 +194,7 @@ serve(async (req) => {
 
     // Create checkout session
     const origin = req.headers.get("origin") || "http://localhost:3000";
-    const session = await createCheckoutSession(stripe, customerId, priceId, user.id, origin, mode);
+    const session = await createCheckoutSession(stripe, customerId, priceId, user.id, origin);
 
     return new Response(JSON.stringify({ url: session.url }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

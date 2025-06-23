@@ -7,28 +7,43 @@ export const useCredits = () => {
   const { data: profile, isLoading: profileLoading, error: profileError } = useUserProfile();
 
   const canUseFeature = async (feature: string = 'chat') => {
-    return true; // All features are now available to everyone
+    if (!user) return false;
+    
+    // Check if user has active subscription
+    if (profile?.subscription_status === 'active' && profile?.subscription_tier === 'pro') {
+      return true;
+    }
+    
+    // Check if user is admin
+    if (profile?.is_admin) {
+      return true;
+    }
+    
+    return false; // Require subscription for all features
   };
 
   const needsUpgrade = () => {
-    return false; // No upgrades needed
+    if (!user) return true;
+    if (profile?.is_admin) return false;
+    return profile?.subscription_status !== 'active' || profile?.subscription_tier !== 'pro';
   };
 
   const forceRefreshAccess = async () => {
-    return true; // Always return true since all features are free
+    return canUseFeature();
   };
 
   return {
     profile,
     profileLoading,
     subscriptionInfo: {
-      tier: 'free',
-      status: 'active',
-      hasAccess: true,
+      tier: profile?.subscription_tier || 'free',
+      status: profile?.subscription_status || 'inactive',
+      hasAccess: profile?.subscription_status === 'active' && profile?.subscription_tier === 'pro',
       isAdmin: profile?.is_admin || false,
       isTrial: false,
       trialHoursRemaining: 0,
-      displayTier: profile?.is_admin ? 'Admin' : 'Free'
+      displayTier: profile?.is_admin ? 'Admin' : 
+                   profile?.subscription_status === 'active' && profile?.subscription_tier === 'pro' ? 'Pro' : 'Free'
     },
     canUseFeature,
     needsUpgrade,

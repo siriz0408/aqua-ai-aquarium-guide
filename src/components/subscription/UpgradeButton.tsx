@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Crown } from 'lucide-react';
+import { PRICING_PLANS } from '@/config/pricing';
 
 export function UpgradeButton() {
   const { user } = useAuth();
@@ -22,15 +23,20 @@ export function UpgradeButton() {
 
     setLoading(true);
     try {
+      // Use the monthly plan by default
+      const monthlyPlan = PRICING_PLANS.find(plan => plan.interval === 'month');
+      if (!monthlyPlan) {
+        throw new Error('Monthly plan not found');
+      }
+
       const { data, error } = await supabase.functions.invoke('create-checkout', {
         body: { 
-          priceId: 'price_1Rb8vR1d1AvgoBGoNIjxLKRR', // Monthly Pro price ID
-          mode: 'subscription'
+          priceId: monthlyPlan.priceId
         }
       });
 
       if (error) throw error;
-      if (data?.url) window.location.href = data.url;
+      if (data?.url) window.open(data.url, '_blank');
     } catch (error) {
       console.error('Checkout error:', error);
       toast({ 
