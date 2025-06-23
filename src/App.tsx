@@ -4,7 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { AquariumProvider } from "./contexts/AquariumContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
@@ -40,6 +40,15 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
 
+// Layout wrapper component for protected routes
+const ProtectedLayout = () => {
+  return (
+    <Layout>
+      <Outlet />
+    </Layout>
+  );
+};
+
 const App = () => {
   return (
     <ErrorBoundary>
@@ -67,7 +76,7 @@ const App = () => {
                         <PaymentCancelled />
                       </Suspense>
                     } />
-                    <Route path="/" element={<Layout />}>
+                    <Route path="/" element={<ProtectedLayout />}>
                       <Route index element={
                         <ProtectedRoute>
                           <Suspense fallback={<LoadingFallback />}>
