@@ -3,18 +3,8 @@ import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-
-interface ManualSyncResult {
-  success: boolean;
-  message: string;
-  details?: any;
-}
-
-interface SyncResult {
-  success?: boolean;
-  error?: string;
-  [key: string]: any;
-}
+import type { ManualSyncResult } from './types/manualSyncTypes';
+import type { SyncStripeSubscriptionResponse } from '@/types/syncResponse';
 
 export const useSubscriptionSync = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -44,7 +34,8 @@ export const useSubscriptionSync = () => {
         customer_email: targetEmail,
         stripe_customer_id: stripeCustomerId,
         stripe_subscription_id: stripeSubscriptionId || null,
-        subscription_status: subscriptionStatus
+        subscription_status: subscriptionStatus,
+        price_id: null
       });
 
       if (error) {
@@ -60,7 +51,7 @@ export const useSubscriptionSync = () => {
 
       console.log('Subscription sync result:', data);
       
-      const syncResult = data as SyncResult;
+      const syncResult = data as unknown as SyncStripeSubscriptionResponse;
       
       if (syncResult?.success) {
         toast({
@@ -70,7 +61,7 @@ export const useSubscriptionSync = () => {
         return { 
           success: true, 
           message: 'Subscription synced successfully',
-          details: data 
+          details: syncResult 
         };
       } else {
         const errorMessage = syncResult?.error || 'Unknown sync error';
@@ -79,7 +70,7 @@ export const useSubscriptionSync = () => {
           description: errorMessage,
           variant: "destructive",
         });
-        return { success: false, message: errorMessage, details: data };
+        return { success: false, message: errorMessage, details: syncResult };
       }
     } catch (error) {
       console.error('Subscription sync exception:', error);

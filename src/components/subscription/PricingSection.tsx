@@ -2,33 +2,40 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { RefreshCw, Check } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscriptionStatus } from '@/hooks/useSubscriptionStatus';
-import { PRICING_PLANS, formatPrice } from '@/config/pricing';
+import { PlanSelector } from './PlanSelector';
+import { PRICING_PLANS, type PricingPlan, formatPrice } from '@/config/pricing';
 
 export const PricingSection: React.FC = () => {
   const { toast } = useToast();
   const { user } = useAuth();
-  const [isLoading, setIsLoading] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const { checkSubscriptionStatus, isLoading: isCheckingStatus } = useSubscriptionStatus();
+  const [selectedPlan, setSelectedPlan] = useState<PricingPlan>(
+    PRICING_PLANS.find(p => p.popular) || PRICING_PLANS[0]
+  );
 
-  const handleSubscriptionUpgrade = async (priceId: string, planName: string) => {
+  const handleSubscriptionUpgrade = async () => {
     if (!user) {
       toast({
         title: "Sign In Required",
-        description: "Please sign in to upgrade to Pro.",
+        description: "Please sign in to start your free trial.",
         variant: "destructive",
       });
       return;
     }
 
-    setIsLoading(priceId);
+    setIsLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('create-checkout', {
-        body: { priceId }
+        body: { 
+          priceId: selectedPlan.priceId,
+          trialPeriodDays: selectedPlan.trialDays || 3
+        }
       });
 
       if (error) throw error;
@@ -44,7 +51,7 @@ export const PricingSection: React.FC = () => {
         variant: "destructive",
       });
     } finally {
-      setIsLoading(null);
+      setIsLoading(false);
     }
   };
 
@@ -52,9 +59,9 @@ export const PricingSection: React.FC = () => {
     <section id="pricing" className="py-16 px-4">
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold mb-4">Choose Your Plan</h2>
-          <p className="text-gray-600 max-w-2xl mx-auto mb-6">
-            Get full access to AquaAI's powerful aquarium management features with our affordable subscription plans.
+          <h2 className="text-3xl font-bold mb-4">Choose Your AquaAI Plan</h2>
+          <p className="text-gray-600 max-w-2xl mx-auto">
+            Start your 3-day free trial today. Cancel anytime within 3 days to avoid charges.
           </p>
           
           {user && (
@@ -67,122 +74,50 @@ export const PricingSection: React.FC = () => {
                 className="gap-2"
               >
                 <RefreshCw className={`h-4 w-4 ${isCheckingStatus ? 'animate-spin' : ''}`} />
-                {isCheckingStatus ? 'Checking...' : 'Refresh Status'}
+                {isCheckingStatus ? 'Checking...' : 'Refresh Subscription Status'}
               </Button>
             </div>
           )}
         </div>
 
-        <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-          {PRICING_PLANS.map((plan) => (
-            <Card 
-              key={plan.id} 
-              className={`relative border-2 ${
-                plan.popular 
-                  ? 'border-blue-200 bg-blue-50' 
-                  : 'border-gray-200 bg-gray-50'
-              }`}
+        <div className="max-w-4xl mx-auto">
+          <PlanSelector
+            selectedPlan={selectedPlan}
+            onPlanSelect={setSelectedPlan}
+            showFeatures={true}
+          />
+          
+          <div className="mt-8 text-center">
+            <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 mb-6">
+              <h4 className="font-medium text-blue-800 mb-2">How it works:</h4>
+              <ol className="text-sm text-blue-700 space-y-1">
+                <li>1. Start your 3-day free trial</li>
+                <li>2. Enjoy full access to all features</li>
+                <li>3. Cancel within 3 days to avoid charges</li>
+                <li>4. Or continue at {formatPrice(selectedPlan.amount)}/{selectedPlan.interval}</li>
+              </ol>
+            </div>
+            
+            <Button 
+              onClick={handleSubscriptionUpgrade}
+              disabled={isLoading}
+              className="bg-blue-600 hover:bg-blue-700 text-lg py-6 px-8"
             >
-              {plan.popular && (
-                <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                  <Badge className="bg-blue-600 text-white px-3 py-1">
-                    Most Popular
-                  </Badge>
-                </div>
-              )}
-              <CardHeader className="text-center pt-8">
-                <CardTitle className="text-2xl">{plan.name}</CardTitle>
-                <CardDescription>
-                  {plan.description}
-                </CardDescription>
-                <div className={`text-4xl font-bold mt-4 ${
-                  plan.popular ? 'text-blue-600' : 'text-gray-600'
-                }`}>
-                  {formatPrice(plan.amount)}
-                  <span className="text-lg font-normal text-gray-600">
-                    /{plan.interval}
-                  </span>
-                </div>
-                {plan.savings && (
-                  <div className="text-green-600 font-medium">{plan.savings}</div>
-                )}
-                {plan.interval === 'year' && (
-                  <div className="text-sm text-gray-500">
-                    Equivalent to ${(plan.amount / 100 / 12).toFixed(2)}/month
-                  </div>
-                )}
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Check className={`h-5 w-5 ${plan.popular ? 'text-blue-600' : 'text-gray-600'}`} />
-                    <span>AI-powered aquarium assistant</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Check className={`h-5 w-5 ${plan.popular ? 'text-blue-600' : 'text-gray-600'}`} />
-                    <span>Complete tank management</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Check className={`h-5 w-5 ${plan.popular ? 'text-blue-600' : 'text-gray-600'}`} />
-                    <span>Water parameter tracking</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Check className={`h-5 w-5 ${plan.popular ? 'text-blue-600' : 'text-gray-600'}`} />
-                    <span>Disease diagnosis tool</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Check className={`h-5 w-5 ${plan.popular ? 'text-blue-600' : 'text-gray-600'}`} />
-                    <span>Task management & reminders</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Check className={`h-5 w-5 ${plan.popular ? 'text-blue-600' : 'text-gray-600'}`} />
-                    <span>Complete knowledge base</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Check className={`h-5 w-5 ${plan.popular ? 'text-blue-600' : 'text-gray-600'}`} />
-                    <span>Priority customer support</span>
-                  </div>
-                  {plan.trialDays && (
-                    <div className="flex items-center gap-2">
-                      <Check className={`h-5 w-5 ${plan.popular ? 'text-blue-600' : 'text-gray-600'}`} />
-                      <span className="font-medium text-green-600">
-                        {plan.trialDays}-day free trial
-                      </span>
-                    </div>
-                  )}
-                </div>
-                <Button 
-                  onClick={() => handleSubscriptionUpgrade(plan.priceId, plan.name)}
-                  disabled={isLoading === plan.priceId}
-                  className={`w-full mt-6 ${
-                    plan.popular 
-                      ? 'bg-blue-600 hover:bg-blue-700' 
-                      : 'bg-gray-600 hover:bg-gray-700'
-                  }`}
-                >
-                  {isLoading === plan.priceId ? "Processing..." : `Start ${plan.trialDays}-Day Free Trial`}
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        <div className="text-center mt-12">
-          <div className="bg-gray-50 p-6 rounded-lg border max-w-2xl mx-auto">
-            <h4 className="font-medium text-gray-800 mb-2">🐠 Start Your Free Trial</h4>
-            <p className="text-sm text-gray-600">
-              Try AquaAI risk-free with our 3-day free trial. Cancel anytime during the trial period 
-              and you won't be charged. No setup fees, no hidden costs.
+              {isLoading ? "Starting Trial..." : `Start 3-Day Free Trial - ${selectedPlan.name}`}
+            </Button>
+            
+            <p className="text-xs text-gray-500 text-center mt-4">
+              No commitment • Cancel anytime • Secure payment via Stripe
             </p>
           </div>
+        </div>
+
+        <div className="text-center mt-8 text-sm text-gray-600">
+          <p>
+            Questions? All features are included with your subscription.
+          </p>
         </div>
       </div>
     </section>
   );
 };
-
-const Badge: React.FC<{ className: string; children: React.ReactNode }> = ({ className, children }) => (
-  <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${className}`}>
-    {children}
-  </span>
-);

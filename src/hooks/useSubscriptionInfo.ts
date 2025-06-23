@@ -6,6 +6,7 @@ export const useSubscriptionInfo = (
   trialStatus: TrialStatus | undefined | null
 ) => {
   const getSubscriptionInfo = (): SubscriptionInfo => {
+    // Admin users always have full access
     if (profile?.is_admin) {
       return {
         tier: 'unlimited',
@@ -14,13 +15,11 @@ export const useSubscriptionInfo = (
         isAdmin: true,
         isTrial: false,
         trialHoursRemaining: 0,
-        displayTier: 'Admin',
-        subscriptionType: profile.subscription_type,
-        startDate: profile.subscription_start_date,
-        endDate: profile.subscription_end_date
+        displayTier: 'Admin'
       };
     }
 
+    // Check for active paid subscription
     if (profile?.subscription_status === 'active' && profile?.subscription_tier === 'pro') {
       return {
         tier: 'pro',
@@ -29,24 +28,45 @@ export const useSubscriptionInfo = (
         isAdmin: false,
         isTrial: false,
         trialHoursRemaining: 0,
-        displayTier: 'Pro',
-        subscriptionType: profile.subscription_type,
-        startDate: profile.subscription_start_date,
-        endDate: profile.subscription_end_date
+        displayTier: 'Pro'
       };
     }
 
+    // Check for active trial
+    if (trialStatus?.isTrialActive && trialStatus?.hoursRemaining > 0) {
+      return {
+        tier: 'trial',
+        status: 'trial',
+        hasAccess: true,
+        isAdmin: false,
+        isTrial: true,
+        trialHoursRemaining: trialStatus.hoursRemaining,
+        displayTier: 'Trial'
+      };
+    }
+
+    // Check for expired trial
+    if (trialStatus?.isTrialExpired) {
+      return {
+        tier: 'free',
+        status: 'expired',
+        hasAccess: false,
+        isAdmin: false,
+        isTrial: false,
+        trialHoursRemaining: 0,
+        displayTier: 'Free (Trial Expired)'
+      };
+    }
+
+    // Default to free tier with no access to premium features
     return {
       tier: 'free',
-      status: 'active',
-      hasAccess: true, // All features are now free
+      status: 'free',
+      hasAccess: false,
       isAdmin: false,
       isTrial: false,
       trialHoursRemaining: 0,
-      displayTier: 'Free',
-      subscriptionType: profile?.subscription_type,
-      startDate: profile?.subscription_start_date,
-      endDate: profile?.subscription_end_date
+      displayTier: 'Free'
     };
   };
 

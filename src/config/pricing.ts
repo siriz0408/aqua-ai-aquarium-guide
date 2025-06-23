@@ -18,8 +18,8 @@ export const PRICING_PLANS: PricingPlan[] = [
     id: 'monthly',
     name: 'Monthly Pro',
     description: 'Full access to all features',
-    priceId: 'price_1QP9nZ1d1AvgoBGoGhpT6Nqg',
-    amount: 499, // $4.99
+    priceId: 'price_1Rb8vR1d1AvgoBGoNIjxLKRR',
+    amount: 999, // $9.99
     currency: 'usd',
     interval: 'month',
     intervalCount: 1,
@@ -28,15 +28,15 @@ export const PRICING_PLANS: PricingPlan[] = [
   {
     id: 'annual',
     name: 'Annual Pro',
-    description: 'Full access to all features - Save 17%',
-    priceId: 'price_1QP9o91d1AvgoBGoLCTKfWn5',
-    amount: 4999, // $49.99 (equivalent to $4.16/month)
+    description: 'Full access to all features - Save 10%',
+    priceId: 'price_1Rb8wD1d1AvgoBGoC8nfQXNK', // Your actual annual price ID
+    amount: 10788, // $107.88 (equivalent to $8.99/month)
     currency: 'usd',
     interval: 'year',
     intervalCount: 1,
     trialDays: 3,
     popular: true,
-    savings: 'Save 17%',
+    savings: 'Save 10%',
   },
 ];
 

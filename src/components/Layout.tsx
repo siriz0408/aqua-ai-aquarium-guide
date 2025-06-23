@@ -7,20 +7,20 @@ import { OfflineIndicator } from '@/components/OfflineIndicator';
 import { LoadingSpinner } from '@/components/LoadingSpinner';
 import { useDevice } from '@/hooks/use-device';
 import { useAdminStatus } from '@/hooks/useAdminStatus';
+import { Header } from '@/components/layout/Header';
 import { BottomNavigation } from '@/components/layout/BottomNavigation';
 import { BreadcrumbNavigation } from '@/components/navigation/BreadcrumbNavigation';
 import { cn } from '@/lib/utils';
-import Header from '@/components/layout/Header';
 
 interface LayoutProps {
   children: React.ReactNode;
-  title?: string;
+  title: string;
   showBackButton?: boolean;
   actions?: React.ReactNode;
   loading?: boolean;
 }
 
-export function Layout({ children, title = "AquaAI", showBackButton = false, actions, loading = false }: LayoutProps) {
+export function Layout({ children, title, showBackButton = false, actions, loading = false }: LayoutProps) {
   const { theme, setTheme } = useTheme();
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
@@ -44,30 +44,32 @@ export function Layout({ children, title = "AquaAI", showBackButton = false, act
     <div className="min-h-screen flex flex-col bg-background">
       <OfflineIndicator />
 
-      <Header />
+      <Header
+        title={title}
+        showBackButton={showBackButton}
+        actions={actions}
+        isAdmin={isAdmin}
+        theme={theme}
+        onToggleTheme={toggleTheme}
+        onSignOut={handleSignOut}
+      />
 
       {showBreadcrumbs && <BreadcrumbNavigation />}
 
       <main className={cn(
-        "flex-1 w-full max-w-full overflow-x-hidden",
-        // Mobile-first padding with responsive adjustments
-        "px-4 py-4",
-        "sm:px-6 sm:py-6", 
-        "md:px-8 md:py-8",
-        "lg:container lg:mx-auto",
-        // Account for bottom navigation on mobile
-        isMobile ? "pb-24" : "pb-20"
+        "flex-1 container mx-auto px-3 sm:px-4 py-3 sm:py-4 md:py-6",
+        isMobile ? "pb-20" : "pb-16"
       )}>
         {loading ? (
-          <div className="flex items-center justify-center min-h-[400px]">
-            <LoadingSpinner />
+          <div className="flex items-center justify-center min-h-[200px]">
+            <LoadingSpinner size="lg" text="Loading..." />
           </div>
         ) : (
           children
         )}
       </main>
 
-      {isMobile && <BottomNavigation />}
+      {user && <BottomNavigation />}
     </div>
   );
 }

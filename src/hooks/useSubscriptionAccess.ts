@@ -9,32 +9,46 @@ export const useSubscriptionAccess = () => {
   console.log('useSubscriptionAccess - Access Data:', accessData);
 
   const canAccessFeature = (featureType: 'basic' | 'premium' = 'basic') => {
-    if (!user) return false;
+    if (isLoading || !accessData) return false;
     
-    // All features are now available to everyone
-    return true;
+    // Admin always has access
+    if (accessData.access_type === 'admin') return true;
+    
+    // All features require subscription access (trial, paid, or admin)
+    return accessData.has_access;
   };
 
   const requiresUpgrade = (featureType: 'basic' | 'premium' = 'premium') => {
-    if (!user) return true;
-    if (accessData?.access_type === 'admin') return false;
-    // No upgrade required for any features now
-    return false;
+    if (!accessData) return true;
+    if (accessData.access_type === 'admin') return false;
+    return !accessData.has_access;
   };
 
   const shouldShowPaywall = () => {
-    if (!user) return true;
-    if (accessData?.access_type === 'admin') return false;
-    // No paywall needed since features are free
-    return false;
+    if (isLoading || !accessData) return false;
+    if (accessData.access_type === 'admin') return false;
+    
+    // Show paywall if trial is expired or user is free with no trial option
+    return accessData.access_type === 'trial_expired' || 
+           (accessData.access_type === 'free' && !accessData.can_start_trial);
   };
 
   const shouldShowSubscriptionPrompt = () => {
-    return false; // No subscription prompts needed
+    if (isLoading || !accessData) return false;
+    if (accessData.access_type === 'admin') return false;
+    
+    // Show subscription prompt if user is free and can start trial OR has no access
+    return accessData.access_type === 'free' || !accessData.has_access;
   };
 
   const shouldShowTrialBanner = () => {
-    return false; // No trial banner needed
+    if (isLoading || !accessData) return false;
+    if (accessData.access_type === 'admin') return false;
+    
+    // Show trial banner for active trials, expired trials, or free users who can start trial
+    return accessData.access_type === 'trial' || 
+           accessData.access_type === 'trial_expired' ||
+           (accessData.access_type === 'free' && accessData.can_start_trial);
   };
 
   return {
@@ -42,20 +56,18 @@ export const useSubscriptionAccess = () => {
     subscriptionInfo: {
       tier: accessData?.subscription_tier || 'free',
       status: accessData?.access_type || 'free',
-      hasAccess: true, // All features available
+      hasAccess: accessData?.has_access || false,
       isAdmin: accessData?.access_type === 'admin',
-      isTrial: false,
-      trialHoursRemaining: 0,
+      isTrial: accessData?.access_type === 'trial',
+      trialHoursRemaining: accessData?.trial_hours_remaining || 0,
       displayTier: accessData?.access_type === 'admin' ? 'Admin' : 
-                   accessData?.access_type === 'paid' ? 'Pro' : 'Free',
-      subscriptionType: accessData?.subscription_type,
-      startDate: accessData?.subscription_start_date,
-      endDate: accessData?.subscription_end_date
+                   accessData?.access_type === 'trial' ? 'Trial' :
+                   accessData?.access_type === 'paid' ? 'Pro' : 'Free'
     },
     trialStatus: {
-      isTrialActive: false,
-      hoursRemaining: 0,
-      isTrialExpired: false
+      isTrialActive: accessData?.access_type === 'trial',
+      hoursRemaining: accessData?.trial_hours_remaining || 0,
+      isTrialExpired: accessData?.access_type === 'trial_expired'
     },
     accessData,
     isLoading,
@@ -66,10 +78,10 @@ export const useSubscriptionAccess = () => {
     shouldShowSubscriptionPrompt,
     shouldShowTrialBanner,
     hasActiveSubscription: accessData?.access_type === 'paid',
-    isTrialActive: false,
-    isTrialExpired: false,
+    isTrialActive: accessData?.access_type === 'trial',
+    isTrialExpired: accessData?.access_type === 'trial_expired',
     isAdmin: accessData?.access_type === 'admin',
-    canStartTrial: false,
-    hasUsedTrial: false
+    canStartTrial: accessData?.can_start_trial || false,
+    hasUsedTrial: !accessData?.can_start_trial && accessData?.access_type !== 'admin'
   };
 };

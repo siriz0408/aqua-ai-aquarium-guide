@@ -4,220 +4,175 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
-import { AuthProvider } from "./contexts/AuthContext";
-import { AquariumProvider } from "./contexts/AquariumContext";
-import { ThemeProvider } from "./contexts/ThemeContext";
-import { Layout } from "./components/Layout";
-import { LoadingFallback } from "./components/LoadingFallback";
-import { ProtectedRoute } from "./components/ProtectedRoute";
-import { ErrorBoundary } from "./components/ErrorBoundary";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { ThemeProvider } from "@/contexts/ThemeContext";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { AquariumProvider } from "@/contexts/AquariumContext";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { AdminProtectedRoute } from "@/components/admin/AdminProtectedRoute";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { LoadingFallback } from "@/components/LoadingFallback";
 
-// Lazy load components
-const Index = lazy(() => import("./pages/Index"));
-const Auth = lazy(() => import("./pages/Auth"));
-const Tanks = lazy(() => import("./pages/Tanks"));
-const AddTank = lazy(() => import("./pages/AddTank"));
-const EditTank = lazy(() => import("./pages/EditTank"));
-const TankDetails = lazy(() => import("./pages/TankDetails"));
-const LogParameters = lazy(() => import("./pages/LogParameters"));
-const AquaBot = lazy(() => import("./pages/AquaBot"));
-const SetupPlanner = lazy(() => import("./pages/SetupPlanner"));
-const Education = lazy(() => import("./pages/Education"));
-const Livestock = lazy(() => import("./pages/Livestock"));
-const Equipment = lazy(() => import("./pages/Equipment"));
-const Tools = lazy(() => import("./pages/Tools"));
-const WaterChangeCalculator = lazy(() => import("./pages/WaterChangeCalculator"));
-const Reminders = lazy(() => import("./pages/Reminders"));
-const Account = lazy(() => import("./pages/Account"));
+// Lazy-loaded components
 const Admin = lazy(() => import("./pages/Admin"));
-const Pricing = lazy(() => import("./pages/Pricing"));
-const PaymentSuccess = lazy(() => import("./pages/PaymentSuccess"));
-const PaymentCancelled = lazy(() => import("./pages/PaymentCancelled"));
-const SubscriptionPlans = lazy(() => import("./pages/SubscriptionPlans"));
-const PaymentSuccessPage = lazy(() => import("./pages/PaymentSuccessPage"));
-const NotFound = lazy(() => import("./pages/NotFound"));
+const SetupPlanner = lazy(() => import("./pages/SetupPlanner"));
+const AquaBot = lazy(() => import("./pages/AquaBot"));
+const Education = lazy(() => import("./pages/Education"));
+const Equipment = lazy(() => import("./pages/Equipment"));
+const Livestock = lazy(() => import("./pages/Livestock"));
+const WaterChangeCalculator = lazy(() => import("./pages/WaterChangeCalculator"));
 
-const queryClient = new QueryClient();
+// Regular imports for components that should load immediately
+import Index from "./pages/Index";
+import TankDetails from "./pages/TankDetails";
+import LogParameters from "./pages/LogParameters";
+import Reminders from "./pages/Reminders";
+import Auth from "./pages/Auth";
+import NotFound from "./pages/NotFound";
+import Tanks from "./pages/Tanks";
+import AddTank from "./pages/AddTank";
+import EditTank from "./pages/EditTank";
+import PaymentSuccess from "./pages/PaymentSuccess";
+import PaymentCancelled from "./pages/PaymentCancelled";
+import Pricing from "./pages/Pricing";
+import Account from "./pages/Account";
+import Tools from "./pages/Tools";
 
-// Layout wrapper component for protected routes
-const ProtectedLayout = () => {
-  return (
-    <Layout>
-      <Outlet />
-    </Layout>
-  );
-};
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
-const App = () => {
-  return (
-    <ErrorBoundary>
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <ThemeProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <AuthProvider>
-                <AquariumProvider>
+const App = () => (
+  <ErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider>
+        <AuthProvider>
+          <AquariumProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter>
+                <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-cyan-50 dark:from-slate-900 dark:via-blue-900 dark:to-cyan-900">
                   <Routes>
-                    <Route path="/auth" element={
-                      <Suspense fallback={<LoadingFallback />}>
-                        <Auth />
-                      </Suspense>
+                    <Route path="/auth" element={<Auth />} />
+                    <Route path="/payment-success" element={<PaymentSuccess />} />
+                    <Route path="/payment-cancelled" element={<PaymentCancelled />} />
+                    <Route path="/pricing" element={
+                      <ProtectedRoute>
+                        <Pricing />
+                      </ProtectedRoute>
                     } />
-                    <Route path="/payment-success" element={
-                      <Suspense fallback={<LoadingFallback />}>
-                        <PaymentSuccessPage />
-                      </Suspense>
+                    <Route path="/account" element={
+                      <ProtectedRoute>
+                        <Account />
+                      </ProtectedRoute>
                     } />
-                    <Route path="/payment-cancelled" element={
-                      <Suspense fallback={<LoadingFallback />}>
-                        <PaymentCancelled />
-                      </Suspense>
+                    <Route path="/" element={
+                      <ProtectedRoute>
+                        <Index />
+                      </ProtectedRoute>
                     } />
-                    <Route path="/" element={<ProtectedLayout />}>
-                      <Route index element={
-                        <ProtectedRoute>
-                          <Suspense fallback={<LoadingFallback />}>
-                            <Index />
-                          </Suspense>
-                        </ProtectedRoute>
-                      } />
-                      <Route path="tanks" element={
-                        <ProtectedRoute>
-                          <Suspense fallback={<LoadingFallback />}>
-                            <Tanks />
-                          </Suspense>
-                        </ProtectedRoute>
-                      } />
-                      <Route path="add-tank" element={
-                        <ProtectedRoute>
-                          <Suspense fallback={<LoadingFallback />}>
-                            <AddTank />
-                          </Suspense>
-                        </ProtectedRoute>
-                      } />
-                      <Route path="edit-tank/:id" element={
-                        <ProtectedRoute>
-                          <Suspense fallback={<LoadingFallback />}>
-                            <EditTank />
-                          </Suspense>
-                        </ProtectedRoute>
-                      } />
-                      <Route path="tank/:id" element={
-                        <ProtectedRoute>
-                          <Suspense fallback={<LoadingFallback />}>
-                            <TankDetails />
-                          </Suspense>
-                        </ProtectedRoute>
-                      } />
-                      <Route path="log-parameters/:id" element={
-                        <ProtectedRoute>
-                          <Suspense fallback={<LoadingFallback />}>
-                            <LogParameters />
-                          </Suspense>
-                        </ProtectedRoute>
-                      } />
-                      <Route path="aquabot" element={
-                        <ProtectedRoute>
-                          <Suspense fallback={<LoadingFallback />}>
-                            <AquaBot />
-                          </Suspense>
-                        </ProtectedRoute>
-                      } />
-                      <Route path="setup-planner" element={
-                        <ProtectedRoute>
-                          <Suspense fallback={<LoadingFallback />}>
-                            <SetupPlanner />
-                          </Suspense>
-                        </ProtectedRoute>
-                      } />
-                      <Route path="education" element={
-                        <ProtectedRoute>
-                          <Suspense fallback={<LoadingFallback />}>
-                            <Education />
-                          </Suspense>
-                        </ProtectedRoute>
-                      } />
-                      <Route path="livestock" element={
-                        <ProtectedRoute>
-                          <Suspense fallback={<LoadingFallback />}>
-                            <Livestock />
-                          </Suspense>
-                        </ProtectedRoute>
-                      } />
-                      <Route path="equipment" element={
-                        <ProtectedRoute>
-                          <Suspense fallback={<LoadingFallback />}>
-                            <Equipment />
-                          </Suspense>
-                        </ProtectedRoute>
-                      } />
-                      <Route path="tools" element={
-                        <ProtectedRoute>
-                          <Suspense fallback={<LoadingFallback />}>
-                            <Tools />
-                          </Suspense>
-                        </ProtectedRoute>
-                      } />
-                      <Route path="water-change-calculator" element={
-                        <ProtectedRoute>
-                          <Suspense fallback={<LoadingFallback />}>
-                            <WaterChangeCalculator />
-                          </Suspense>
-                        </ProtectedRoute>
-                      } />
-                      <Route path="reminders" element={
-                        <ProtectedRoute>
-                          <Suspense fallback={<LoadingFallback />}>
-                            <Reminders />
-                          </Suspense>
-                        </ProtectedRoute>
-                      } />
-                      <Route path="account" element={
-                        <ProtectedRoute>
-                          <Suspense fallback={<LoadingFallback />}>
-                            <Account />
-                          </Suspense>
-                        </ProtectedRoute>
-                      } />
-                      <Route path="admin" element={
-                        <ProtectedRoute>
+                    <Route path="/tanks" element={
+                      <ProtectedRoute>
+                        <Tanks />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/add-tank" element={
+                      <ProtectedRoute>
+                        <AddTank />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/tank/:tankId" element={
+                      <ProtectedRoute>
+                        <TankDetails />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/tank/:tankId/edit" element={
+                      <ProtectedRoute>
+                        <EditTank />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/tank/:tankId/log-parameters" element={
+                      <ProtectedRoute>
+                        <LogParameters />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/tank/:tankId/equipment" element={
+                      <ProtectedRoute>
+                        <Suspense fallback={<LoadingFallback />}>
+                          <Equipment />
+                        </Suspense>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/tank/:tankId/livestock" element={
+                      <ProtectedRoute>
+                        <Suspense fallback={<LoadingFallback />}>
+                          <Livestock />
+                        </Suspense>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/tools" element={
+                      <ProtectedRoute>
+                        <Tools />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/setup-planner" element={
+                      <ProtectedRoute>
+                        <Suspense fallback={<LoadingFallback />}>
+                          <SetupPlanner />
+                        </Suspense>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/water-change-calculator" element={
+                      <ProtectedRoute>
+                        <Suspense fallback={<LoadingFallback />}>
+                          <WaterChangeCalculator />
+                        </Suspense>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/aquabot" element={
+                      <ProtectedRoute>
+                        <Suspense fallback={<LoadingFallback />}>
+                          <AquaBot />
+                        </Suspense>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/reminders" element={
+                      <ProtectedRoute>
+                        <Reminders />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/education" element={
+                      <ProtectedRoute>
+                        <Suspense fallback={<LoadingFallback />}>
+                          <Education />
+                        </Suspense>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin" element={
+                      <ProtectedRoute>
+                        <AdminProtectedRoute>
                           <Suspense fallback={<LoadingFallback />}>
                             <Admin />
                           </Suspense>
-                        </ProtectedRoute>
-                      } />
-                      <Route path="pricing" element={
-                        <ProtectedRoute>
-                          <Suspense fallback={<LoadingFallback />}>
-                            <Pricing />
-                          </Suspense>
-                        </ProtectedRoute>
-                      } />
-                      <Route path="subscription-plans" element={
-                        <ProtectedRoute>
-                          <Suspense fallback={<LoadingFallback />}>
-                            <SubscriptionPlans />
-                          </Suspense>
-                        </ProtectedRoute>
-                      } />
-                      <Route path="*" element={
-                        <Suspense fallback={<LoadingFallback />}>
-                          <NotFound />
-                        </Suspense>
-                      } />
-                    </Route>
+                        </AdminProtectedRoute>
+                      </ProtectedRoute>
+                    } />
+                    <Route path="*" element={<NotFound />} />
                   </Routes>
-                </AquariumProvider>
-              </AuthProvider>
-            </BrowserRouter>
-          </ThemeProvider>
-        </TooltipProvider>
-      </QueryClientProvider>
-    </ErrorBoundary>
-  );
-};
+                </div>
+              </BrowserRouter>
+            </TooltipProvider>
+          </AquariumProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
+  </ErrorBoundary>
+);
 
 export default App;

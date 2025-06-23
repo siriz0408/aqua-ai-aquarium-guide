@@ -1,58 +1,44 @@
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserProfile } from './useUserProfile';
+import { useTrialStatus } from './useTrialStatus';
+import { useSubscriptionInfo } from './useSubscriptionInfo';
+
+// Re-export types for backward compatibility
+export type { UserProfile, TrialStatus } from '@/types/subscription';
 
 export const useCredits = () => {
   const { user } = useAuth();
   const { data: profile, isLoading: profileLoading, error: profileError } = useUserProfile();
+  const { data: trialStatus, isLoading: trialLoading } = useTrialStatus(profile);
+  const { getSubscriptionInfo } = useSubscriptionInfo(profile, trialStatus);
+
+  const subscriptionInfo = getSubscriptionInfo();
 
   const canUseFeature = async (feature: string = 'chat') => {
-    if (!user) return false;
-    
-    // Check if user has active subscription
-    if (profile?.subscription_status === 'active' && profile?.subscription_tier === 'pro') {
-      return true;
-    }
-    
-    // Check if user is admin
-    if (profile?.is_admin) {
-      return true;
-    }
-    
-    // For the simplified model, all features are now available to everyone
-    return true;
+    // Check if user has access based on subscription status
+    return subscriptionInfo.hasAccess;
   };
 
   const needsUpgrade = () => {
-    if (!user) return false; // Changed to false since features are free
-    if (profile?.is_admin) return false;
-    // For the simplified model, no upgrade needed
-    return false;
+    // Returns true if user needs to upgrade (no access)
+    return !subscriptionInfo.hasAccess;
   };
 
   const forceRefreshAccess = async () => {
-    return canUseFeature();
+    // Refresh subscription status
+    return subscriptionInfo.hasAccess;
   };
 
   return {
     profile,
-    profileLoading,
-    subscriptionInfo: {
-      tier: profile?.subscription_tier || 'free',
-      status: profile?.subscription_status || 'free',
-      hasAccess: true, // All features are now available
-      isAdmin: profile?.is_admin || false,
-      isTrial: false,
-      trialHoursRemaining: 0,
-      displayTier: profile?.is_admin ? 'Admin' : 
-                   profile?.subscription_status === 'active' && profile?.subscription_tier === 'pro' ? 'Pro' : 'Free',
-      subscriptionType: profile?.subscription_type,
-      startDate: profile?.subscription_start_date,
-      endDate: profile?.subscription_end_date
-    },
+    profileLoading: profileLoading || trialLoading,
+    trialStatus,
+    subscriptionInfo,
     canUseFeature,
     needsUpgrade,
-    forceRefreshAccess,
+    getSubscriptionInfo,
     profileError,
+    forceRefreshAccess,
   };
 };
