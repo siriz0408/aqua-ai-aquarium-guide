@@ -19,6 +19,143 @@ const VALID_PRICE_IDS = [
   "price_1Rb8wD1d1AvgoBGoC8nfQXNK", // Annual Pro ($107.88/year - 10% discount)
 ];
 
+const validateEnvironment = () => {
+  const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
+  const supabaseUrl = Deno.env.get("SUPABASE_URL");
+  const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
+
+  if (!stripeKey) {
+    throw new Error("STRIPE_SECRET_KEY is not configured. Please set it in Supabase Dashboard.");
+  }
+  
+  if (!stripeKey.startsWith('sk_')) {
+    throw new Error("Invalid STRIPE_SECRET_KEY format. It should start with 'sk_' (secret key), not 'pk_' (publishable key). Please use your secret key from the Stripe Dashboard.");
+  }
+  
+  if (!supabaseUrl || !supabaseAnonKey) {
+    throw new Error("Supabase configuration is incomplete.");
+  }
+
+  return { stripeKey, supabaseUrl, supabaseAnonKey };
+};
+
+const authenticateUser = async (req: Request, supabaseClient: any) => {
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader) {
+    throw new Error("No authorization header provided");
+  }
+
+  const token = authHeader.replace("Bearer ", "");
+  const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
+  
+  if (userError) {
+    throw new Error(`Authentication error: ${userError.message}`);
+  }
+  
+  const user = userData.user;
+  if (!user?.email) {
+    throw new Error("User not authenticated or email not available");
+  }
+
+  return user;
+};
+
+const validatePriceId = async (stripe: Stripe, priceId: string) => {
+  if (!VALID_PRICE_IDS.includes(priceId)) {
+    throw new Error(`Invalid price ID: ${priceId}. Please use a valid price ID.`);
+  }
+
+  try {
+    const price = await stripe.prices.retrieve(priceId);
+    
+    if (!price.active) {
+      throw new Error("The selected price is not active in Stripe");
+    }
+
+    logStep("Price verified in Stripe", { 
+      priceId: price.id, 
+      active: price.active, 
+      amount: price.unit_amount,
+      interval: price.recurring?.interval,
+      intervalCount: price.recurring?.interval_count
+    });
+
+    return price;
+  } catch (priceError: any) {
+    if (priceError.code === 'resource_missing') {
+      throw new Error(`Price ID '${priceId}' does not exist in your Stripe account. Please verify the price ID in your Stripe Dashboard.`);
+    }
+    throw new Error(`Price validation failed: ${priceError.message}`);
+  }
+};
+
+const getOrCreateCustomer = async (stripe: Stripe, userEmail: string, userId: string) => {
+  const customers = await stripe.customers.list({ email: userEmail, limit: 1 });
+  
+  if (customers.data.length > 0) {
+    const customerId = customers.data[0].id;
+    logStep("Existing customer found", { customerId });
+    return customerId;
+  }
+
+  const customer = await stripe.customers.create({
+    email: userEmail,
+    metadata: { user_id: userId }
+  });
+  
+  logStep("New customer created", { customerId: customer.id });
+  return customer.id;
+};
+
+const createCheckoutSession = async (
+  stripe: Stripe, 
+  customerId: string, 
+  priceId: string, 
+  userId: string, 
+  origin: string,
+  mode: string
+) => {
+  const sessionConfig: Stripe.Checkout.SessionCreateParams = {
+    customer: customerId,
+    line_items: [
+      {
+        price: priceId,
+        quantity: 1,
+      },
+    ],
+    mode: mode as Stripe.Checkout.SessionCreateParams.Mode,
+    success_url: `${origin}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${origin}/payment-cancelled`,
+    metadata: {
+      user_id: userId,
+      price_id: priceId,
+    },
+    allow_promotion_codes: true,
+    billing_address_collection: "auto",
+  };
+
+  logStep("Creating checkout session with config", { 
+    mode: sessionConfig.mode,
+    successUrl: sessionConfig.success_url,
+    cancelUrl: sessionConfig.cancel_url,
+    priceId: priceId
+  });
+
+  const session = await stripe.checkout.sessions.create(sessionConfig);
+
+  if (!session.url) {
+    throw new Error("Stripe checkout session created but no URL returned");
+  }
+
+  logStep("Checkout session created successfully", { 
+    sessionId: session.id, 
+    url: session.url,
+    urlLength: session.url?.length 
+  });
+
+  return session;
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -28,160 +165,43 @@ serve(async (req) => {
     logStep("Function started");
 
     // Validate environment variables
-    const stripeKey = Deno.env.get("STRIPE_SECRET_KEY");
-    if (!stripeKey) {
-      logStep("ERROR: STRIPE_SECRET_KEY not found");
-      throw new Error("STRIPE_SECRET_KEY is not configured. Please set it in Supabase Dashboard.");
-    }
-    
-    // Validate Stripe key format
-    if (!stripeKey.startsWith('sk_')) {
-      logStep("ERROR: Invalid STRIPE_SECRET_KEY format", { keyPrefix: stripeKey.substring(0, 7) });
-      throw new Error("Invalid STRIPE_SECRET_KEY format. It should start with 'sk_' (secret key), not 'pk_' (publishable key). Please use your secret key from the Stripe Dashboard.");
-    }
-    
-    logStep("Stripe key verified", { keyPrefix: stripeKey.substring(0, 7) });
+    const { stripeKey, supabaseUrl, supabaseAnonKey } = validateEnvironment();
+    logStep("Environment validated");
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
-    
-    if (!supabaseUrl || !supabaseAnonKey) {
-      logStep("ERROR: Missing Supabase configuration");
-      throw new Error("Supabase configuration is incomplete.");
-    }
-
+    // Initialize clients
     const supabaseClient = createClient(supabaseUrl, supabaseAnonKey);
+    const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
 
-    // Validate authorization
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      logStep("ERROR: No authorization header");
-      throw new Error("No authorization header provided");
-    }
-    logStep("Authorization header found");
-
-    const token = authHeader.replace("Bearer ", "");
-    const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
-    if (userError) {
-      logStep("ERROR: Authentication failed", { error: userError.message });
-      throw new Error(`Authentication error: ${userError.message}`);
-    }
-    
-    const user = userData.user;
-    if (!user?.email) {
-      logStep("ERROR: User not authenticated or email not available");
-      throw new Error("User not authenticated or email not available");
-    }
+    // Authenticate user
+    const user = await authenticateUser(req, supabaseClient);
     logStep("User authenticated", { userId: user.id, email: user.email });
 
-    // Get request body
+    // Parse request body
     const { priceId, mode = "subscription" } = await req.json();
     if (!priceId) {
-      logStep("ERROR: No price ID provided");
       throw new Error("Price ID is required");
     }
+    logStep("Request body parsed", { priceId, mode });
 
-    // Validate price ID
-    if (!VALID_PRICE_IDS.includes(priceId)) {
-      logStep("ERROR: Invalid price ID", { priceId, validPriceIds: VALID_PRICE_IDS });
-      throw new Error(`Invalid price ID: ${priceId}. Please use a valid price ID.`);
-    }
+    // Validate price
+    await validatePriceId(stripe, priceId);
 
-    logStep("Request body received", { priceId, mode });
+    // Get or create customer
+    const customerId = await getOrCreateCustomer(stripe, user.email, user.id);
 
-    // Initialize Stripe with better error handling
-    const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
-    
-    // Validate price exists in Stripe
-    try {
-      const price = await stripe.prices.retrieve(priceId);
-      logStep("Price verified in Stripe", { 
-        priceId: price.id, 
-        active: price.active, 
-        amount: price.unit_amount,
-        interval: price.recurring?.interval,
-        intervalCount: price.recurring?.interval_count
-      });
-      
-      if (!price.active) {
-        throw new Error("The selected price is not active in Stripe");
-      }
-    } catch (priceError: any) {
-      logStep("ERROR: Price validation failed", { error: priceError.message, code: priceError.code });
-      if (priceError.code === 'resource_missing') {
-        throw new Error(`Price ID '${priceId}' does not exist in your Stripe account. Please verify the price ID in your Stripe Dashboard.`);
-      }
-      throw new Error(`Price validation failed: ${priceError.message}`);
-    }
-    
-    // Check if customer exists or create new one
-    const customers = await stripe.customers.list({ email: user.email, limit: 1 });
-    let customerId;
-    
-    if (customers.data.length > 0) {
-      customerId = customers.data[0].id;
-      logStep("Existing customer found", { customerId });
-    } else {
-      const customer = await stripe.customers.create({
-        email: user.email,
-        metadata: { user_id: user.id }
-      });
-      customerId = customer.id;
-      logStep("New customer created", { customerId });
-    }
-
-    const origin = req.headers.get("origin") || "http://localhost:3000";
-    logStep("Origin detected", { origin });
-    
     // Create checkout session
-    const sessionConfig: any = {
-      customer: customerId,
-      line_items: [
-        {
-          price: priceId,
-          quantity: 1,
-        },
-      ],
-      mode: mode,
-      success_url: `${origin}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}/payment-cancelled`,
-      metadata: {
-        user_id: user.id,
-        price_id: priceId,
-      },
-      allow_promotion_codes: true,
-      billing_address_collection: "auto",
-    };
-
-    logStep("Creating checkout session with config", { 
-      mode: sessionConfig.mode,
-      successUrl: sessionConfig.success_url,
-      cancelUrl: sessionConfig.cancel_url,
-      priceId: priceId
-    });
-
-    const session = await stripe.checkout.sessions.create(sessionConfig);
-
-    logStep("Checkout session created successfully", { 
-      sessionId: session.id, 
-      url: session.url,
-      urlLength: session.url?.length 
-    });
-
-    // Validate the URL before returning
-    if (!session.url) {
-      throw new Error("Stripe checkout session created but no URL returned");
-    }
+    const origin = req.headers.get("origin") || "http://localhost:3000";
+    const session = await createCheckoutSession(stripe, customerId, priceId, user.id, origin, mode);
 
     return new Response(JSON.stringify({ url: session.url }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
+
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logStep("ERROR in create-checkout", { message: errorMessage });
     
-    // Return user-friendly error messages
     return new Response(JSON.stringify({ 
       error: errorMessage,
       details: "Check the Edge Function logs in Supabase Dashboard for more information."
