@@ -31,6 +31,11 @@ export const authService = {
         }
       });
 
+      // If sign up was successful, the profile will be created automatically by the database trigger
+      if (data.user && !error) {
+        console.log('User account created successfully:', data.user.id);
+      }
+
       return { data, error };
     } catch (error: any) {
       return { error };

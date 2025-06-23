@@ -43,9 +43,12 @@ export const useAuthActions = (setLoading: (loading: boolean) => void, setSessio
   const signUp = async (email: string, password: string, fullName: string) => {
     try {
       setLoading(true);
+      console.log('Creating account for:', email, 'with name:', fullName);
+      
       const { data, error } = await authService.signUp(email, password, fullName);
 
       if (error) {
+        console.error('Sign up error:', error);
         if (error.message === 'User already registered') {
           toast({
             title: "Account exists",
@@ -62,15 +65,19 @@ export const useAuthActions = (setLoading: (loading: boolean) => void, setSessio
         return { error };
       }
 
-      if (data.user && !data.user.email_confirmed_at) {
+      if (data.user) {
+        console.log('Account created successfully:', data.user.id);
+        
+        // Show success message
         toast({
-          title: "Welcome to AquaAI!",
-          description: "Account created successfully! All features are now available to you.",
+          title: "Account created successfully!",
+          description: "Welcome to AquaAI! Your profile has been set up and you now have access to all features.",
         });
       }
 
       return { data, error: null };
     } catch (error: any) {
+      console.error('Unexpected sign up error:', error);
       toast({
         title: "Sign up failed",
         description: error.message || "An unexpected error occurred",

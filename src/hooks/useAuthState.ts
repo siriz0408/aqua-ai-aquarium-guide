@@ -19,13 +19,15 @@ export const useAuthState = () => {
         setLoading(false);
         
         if (event === 'SIGNED_UP' && session?.user) {
+          console.log('New user signed up:', session.user.id);
           toast({
             title: "Welcome to AquaAI!",
-            description: "Your account has been created successfully. Enjoy access to all features!",
+            description: "Your account has been created successfully. You now have access to all features!",
           });
         }
         
         if (event === 'SIGNED_IN' && session?.user) {
+          console.log('User signed in:', session.user.id);
           toast({
             title: "Welcome back!",
             description: "You've successfully signed in to AquaAI.",
@@ -43,6 +45,7 @@ export const useAuthState = () => {
     );
 
     authService.getSession().then(({ data: { session } }) => {
+      console.log('Initial session:', session?.user?.email);
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
