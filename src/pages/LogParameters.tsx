@@ -8,12 +8,12 @@ import { useAquarium, WaterParameters } from '@/contexts/AquariumContext';
 import { useToast } from '@/hooks/use-toast';
 import { useAutoSave } from '@/hooks/useAutoSave';
 import { AutoSaveIndicator } from '@/components/ui/auto-save-indicator';
-import { Save } from 'lucide-react';
+import { Save, Brain } from 'lucide-react';
 import { EssentialParametersForm } from '@/components/water-parameters/EssentialParametersForm';
 import { NitrogenCycleForm } from '@/components/water-parameters/NitrogenCycleForm';
 import { ReefChemistryForm } from '@/components/water-parameters/ReefChemistryForm';
 import { AnalysisLoadingIndicator } from '@/components/water-parameters/AnalysisLoadingIndicator';
-import { generateAIInsights } from '@/utils/aiInsights';
+import { generateEnhancedAIInsights } from '@/utils/enhancedAIInsights';
 import { useWaterParameterValidation, WaterParameters as ParameterState } from '@/hooks/useWaterParameterValidation';
 
 const LogParameters = () => {
@@ -82,10 +82,18 @@ const LogParameters = () => {
     setIsLoading(true);
     
     try {
-      // Simulate AI analysis
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      console.log('Starting AI analysis for parameters:', parameters);
       
-      const aiInsights = generateAIInsights(parameters);
+      // Show analysis starting message
+      toast({
+        title: "Analyzing water parameters...",
+        description: "AI is processing your test results",
+      });
+      
+      // Generate enhanced AI insights with more detailed analysis
+      const aiInsights = await generateEnhancedAIInsights(parameters, tank);
+      
+      console.log('AI analysis completed:', aiInsights);
       
       const newParameters: Omit<WaterParameters, 'id'> = {
         date: new Date().toISOString(),
@@ -101,21 +109,24 @@ const LogParameters = () => {
         aiInsights,
       };
 
+      console.log('Saving parameters with AI insights:', newParameters);
+      
       await addParameters(tankId!, newParameters);
       
       // Clear auto-save backup after successful save
       autoSave.clearLocalStorage();
       
       toast({
-        title: "Parameters logged successfully!",
-        description: "AI analysis complete. Your test data has been saved.",
+        title: "Analysis Complete! 🎉",
+        description: "Your water test has been analyzed and saved. Check the test results history for detailed insights.",
       });
       
       navigate(`/tank/${tankId}`);
     } catch (error) {
+      console.error('Error during AI analysis and save:', error);
       toast({
-        title: "Error saving parameters",
-        description: "Please try again",
+        title: "Analysis failed",
+        description: "There was an error analyzing your water parameters. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -139,8 +150,17 @@ const LogParameters = () => {
             disabled={isLoading}
             className="ocean-gradient text-white"
           >
-            <Save className="mr-1 h-3 w-3" />
-            {isLoading ? 'Analyzing...' : 'Save & Analyze'}
+            {isLoading ? (
+              <>
+                <Brain className="mr-1 h-3 w-3 animate-pulse" />
+                Analyzing...
+              </>
+            ) : (
+              <>
+                <Save className="mr-1 h-3 w-3" />
+                Save & Analyze
+              </>
+            )}
           </Button>
         </div>
       }
@@ -182,6 +202,24 @@ const LogParameters = () => {
             />
 
             <AnalysisLoadingIndicator isLoading={isLoading} />
+            
+            {isLoading && (
+              <Card className="bg-blue-50 dark:bg-blue-900/20 border-blue-200">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <Brain className="h-5 w-5 text-blue-600 animate-pulse" />
+                    <div>
+                      <p className="font-medium text-blue-800 dark:text-blue-200">
+                        AI Analysis in Progress
+                      </p>
+                      <p className="text-sm text-blue-600 dark:text-blue-300">
+                        Analyzing your water parameters and generating personalized recommendations...
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </CardContent>
         </Card>
       </div>
