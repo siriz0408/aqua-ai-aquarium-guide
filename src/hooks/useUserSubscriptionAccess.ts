@@ -23,7 +23,8 @@ export const useUserSubscriptionAccess = () => {
       
       console.log('Checking comprehensive subscription access for user:', user.id);
       
-      const { data, error } = await supabase.rpc('check_user_subscription_access', {
+      // Since we removed trial functionality, we'll use a simplified access check
+      const { data, error } = await supabase.rpc('check_user_access', {
         user_id: user.id
       });
 
@@ -33,24 +34,42 @@ export const useUserSubscriptionAccess = () => {
       }
 
       const accessData = data?.[0];
-      if (!accessData) return null;
+      if (!accessData) {
+        // Default to free access since all features are now free
+        return {
+          has_access: true,
+          access_type: 'free',
+          subscription_tier: 'free',
+          trial_hours_remaining: 0,
+          trial_type: null,
+          can_start_trial: false,
+          subscription_end_date: null
+        };
+      }
 
       console.log('Subscription access data:', accessData);
 
-      // Ensure access_type is properly typed
-      const validAccessTypes = ['admin', 'paid', 'trial', 'trial_expired', 'free', 'no_user'] as const;
-      const accessType = validAccessTypes.includes(accessData.access_type as any) 
-        ? accessData.access_type as SubscriptionAccess['access_type']
-        : 'free' as const;
+      // Map the access_reason to access_type
+      let accessType: SubscriptionAccess['access_type'] = 'free';
+      switch (accessData.access_reason) {
+        case 'admin':
+          accessType = 'admin';
+          break;
+        case 'paid':
+          accessType = 'paid';
+          break;
+        default:
+          accessType = 'free';
+      }
 
       return {
-        has_access: accessData.has_access,
+        has_access: true, // All features are now free
         access_type: accessType,
-        subscription_tier: accessData.subscription_tier,
-        trial_hours_remaining: accessData.trial_hours_remaining || 0,
-        trial_type: accessData.trial_type,
-        can_start_trial: accessData.can_start_trial,
-        subscription_end_date: accessData.subscription_end_date
+        subscription_tier: accessType === 'admin' ? 'pro' : 'free',
+        trial_hours_remaining: 0,
+        trial_type: null,
+        can_start_trial: false,
+        subscription_end_date: null
       };
     },
     enabled: !!user?.id,

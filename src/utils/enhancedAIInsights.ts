@@ -165,7 +165,7 @@ export const generateEnhancedAIInsights = async (
       const sensitiveSpecies = tank.livestock.filter(l => 
         l.species.toLowerCase().includes('sps') || 
         l.species.toLowerCase().includes('acropora') ||
-        l.care_level === 'Expert'
+        l.care_level === 'Expert' // Fixed: using care_level instead of careLevel
       );
       
       if (sensitiveSpecies.length > 0) {
