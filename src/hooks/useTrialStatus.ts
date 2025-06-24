@@ -16,7 +16,7 @@ export const useTrialStatus = (profile: UserProfile | undefined | null) => {
       }
 
       // Use the database function to check user access and trial status
-      const { data, error } = await supabase.rpc('check_user_access', {
+      const { data, error } = await supabase.rpc('check_user_subscription_access', {
         user_id: profile.id
       });
 
@@ -39,12 +39,12 @@ export const useTrialStatus = (profile: UserProfile | undefined | null) => {
       }
 
       // Stripe-managed trial or our database trial
-      const isTrialActive = accessData.access_reason === 'trial' && accessData.has_access;
-      const isTrialExpired = accessData.access_reason === 'trial_expired';
+      const isTrialActive = accessData.access_type === 'trial' && accessData.has_access;
+      const isTrialExpired = accessData.access_type === 'trial_expired';
       const hoursRemaining = accessData.trial_hours_remaining || 0;
 
       console.log('Trial status check:', {
-        accessReason: accessData.access_reason,
+        accessType: accessData.access_type,
         hasAccess: accessData.has_access,
         isTrialActive,
         isTrialExpired,

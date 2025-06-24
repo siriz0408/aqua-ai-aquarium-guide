@@ -45,6 +45,47 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_invitations: {
+        Row: {
+          admin_role: string
+          created_at: string | null
+          email: string
+          expires_at: string | null
+          id: string
+          invited_by: string | null
+          permissions: Json | null
+          used: boolean | null
+        }
+        Insert: {
+          admin_role?: string
+          created_at?: string | null
+          email: string
+          expires_at?: string | null
+          id?: string
+          invited_by?: string | null
+          permissions?: Json | null
+          used?: boolean | null
+        }
+        Update: {
+          admin_role?: string
+          created_at?: string | null
+          email?: string
+          expires_at?: string | null
+          id?: string
+          invited_by?: string | null
+          permissions?: Json | null
+          used?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_invitations_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       admin_notes: {
         Row: {
           admin_id: string | null
@@ -1420,6 +1461,14 @@ export type Database = {
         Args: { requesting_admin_id: string; target_user_id: string }
         Returns: boolean
       }
+      admin_extend_user_trial: {
+        Args: {
+          admin_user_id: string
+          target_user_id: string
+          extension_days?: number
+        }
+        Returns: Json
+      }
       admin_get_all_profiles: {
         Args: { requesting_admin_id: string }
         Returns: {
@@ -1475,6 +1524,14 @@ export type Database = {
       check_is_admin: {
         Args: Record<PropertyKey, never>
         Returns: boolean
+      }
+      check_user_access: {
+        Args: { user_id: string }
+        Returns: {
+          has_access: boolean
+          access_reason: string
+          trial_hours_remaining: number
+        }[]
       }
       check_user_admin_status: {
         Args: { user_id: string }

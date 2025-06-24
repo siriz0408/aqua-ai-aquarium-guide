@@ -24,10 +24,16 @@ interface UserStatus {
   is_admin: boolean;
 }
 
+interface AccessResult {
+  has_access: boolean;
+  access_reason: string;
+  trial_hours_remaining: number;
+}
+
 export const SubscriptionStatusChecker: React.FC = () => {
   const [searchEmail, setSearchEmail] = useState('');
   const [userStatus, setUserStatus] = useState<UserStatus | null>(null);
-  const [accessResult, setAccessResult] = useState<any>(null);
+  const [accessResult, setAccessResult] = useState<AccessResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
@@ -67,14 +73,21 @@ export const SubscriptionStatusChecker: React.FC = () => {
       setUserStatus(profileData);
 
       // Check access status using the database function
-      const { data: accessData, error: accessError } = await supabase.rpc('check_user_access', {
+      const { data: accessData, error: accessError } = await supabase.rpc('check_user_subscription_access', {
         user_id: profileData.id
       });
 
       if (accessError) {
         console.error('Error checking access:', accessError);
       } else {
-        setAccessResult(accessData?.[0] || null);
+        const result = accessData?.[0];
+        if (result) {
+          setAccessResult({
+            has_access: result.has_access,
+            access_reason: result.access_type,
+            trial_hours_remaining: result.trial_hours_remaining || 0
+          });
+        }
       }
 
       toast({

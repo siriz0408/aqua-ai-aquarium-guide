@@ -32,9 +32,9 @@ export const ManualSyncForm: React.FC = () => {
 
     setIsLoading(true);
     try {
-      console.log('Starting manual sync with simplified function...');
+      console.log('Starting manual sync with enhanced function...');
       
-      const { data, error } = await supabase.rpc('sync_stripe_subscription', {
+      const { data, error } = await supabase.rpc('sync_stripe_subscription_enhanced', {
         customer_email: email,
         stripe_customer_id: stripeCustomerId,
         stripe_subscription_id: stripeSubscriptionId || null,
@@ -101,7 +101,7 @@ export const ManualSyncForm: React.FC = () => {
             Manual Subscription Sync
           </CardTitle>
           <CardDescription>
-            Manually sync a user's subscription from Stripe data using the simplified schema
+            Manually sync a user's subscription from Stripe data using the enhanced schema
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -189,7 +189,8 @@ export const ManualSyncForm: React.FC = () => {
                 <div className="text-sm text-muted-foreground">
                   <p><strong>User ID:</strong> {lastResult.user_id}</p>
                   <p><strong>Email:</strong> {lastResult.email}</p>
-                  <p><strong>Status:</strong> {lastResult.status_updated}</p>
+                  <p><strong>Old Status:</strong> {lastResult.old_status}</p>
+                  <p><strong>New Status:</strong> {lastResult.new_status}</p>
                 </div>
               </div>
             ) : (

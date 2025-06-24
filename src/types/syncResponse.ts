@@ -8,4 +8,5 @@ export interface SyncStripeSubscriptionResponse {
   stripe_subscription_id?: string;
   error?: string;
   updated_at?: string;
+  status_updated?: string; // Add missing property
 }

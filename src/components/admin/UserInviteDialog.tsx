@@ -17,7 +17,7 @@ export const UserInviteDialog: React.FC = () => {
 
   const inviteUserMutation = useMutation({
     mutationFn: async (data: { email: string; adminRole: string; adminPermissions: string[] }) => {
-      // First create an admin invitation
+      // Create an admin invitation using the correct table structure
       const { error: inviteError } = await supabase
         .from('admin_invitations')
         .insert({
