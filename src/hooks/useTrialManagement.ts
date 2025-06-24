@@ -9,6 +9,8 @@ interface TrialStartResponse {
   error?: string;
   trial_length_days?: number;
   trial_end_date?: string;
+  trial_type?: string;
+  message?: string;
 }
 
 export const useTrialManagement = () => {

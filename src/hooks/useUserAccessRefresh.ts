@@ -23,7 +23,7 @@ export const useUserAccessRefresh = () => {
       }
 
       // Check their access status using the updated function
-      const { data: accessData, error: accessError } = await supabase.rpc('check_user_access', {
+      const { data: accessData, error: accessError } = await supabase.rpc('check_user_subscription_access', {
         user_id: userId
       });
       
@@ -41,7 +41,7 @@ export const useUserAccessRefresh = () => {
       
       toast({
         title: "Access Refreshed",
-        description: `User access updated. Status: ${accessData?.[0]?.access_reason || 'unknown'}`,
+        description: `User access updated. Status: ${accessData?.[0]?.access_type || 'unknown'}`,
       });
       
       return { 

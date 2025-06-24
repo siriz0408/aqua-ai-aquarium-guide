@@ -9,75 +9,6 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      _backup_profiles: {
-        Row: {
-          admin_permissions: Json | null
-          admin_role: string | null
-          avatar_url: string | null
-          created_at: string | null
-          created_by_admin_id: string | null
-          email: string | null
-          full_name: string | null
-          id: string | null
-          is_admin: boolean | null
-          last_active: string | null
-          last_admin_login: string | null
-          stripe_customer_id: string | null
-          stripe_subscription_id: string | null
-          subscription_end_date: string | null
-          subscription_start_date: string | null
-          subscription_status: string | null
-          subscription_tier: string | null
-          trial_end_date: string | null
-          trial_start_date: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          admin_permissions?: Json | null
-          admin_role?: string | null
-          avatar_url?: string | null
-          created_at?: string | null
-          created_by_admin_id?: string | null
-          email?: string | null
-          full_name?: string | null
-          id?: string | null
-          is_admin?: boolean | null
-          last_active?: string | null
-          last_admin_login?: string | null
-          stripe_customer_id?: string | null
-          stripe_subscription_id?: string | null
-          subscription_end_date?: string | null
-          subscription_start_date?: string | null
-          subscription_status?: string | null
-          subscription_tier?: string | null
-          trial_end_date?: string | null
-          trial_start_date?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          admin_permissions?: Json | null
-          admin_role?: string | null
-          avatar_url?: string | null
-          created_at?: string | null
-          created_by_admin_id?: string | null
-          email?: string | null
-          full_name?: string | null
-          id?: string | null
-          is_admin?: boolean | null
-          last_active?: string | null
-          last_admin_login?: string | null
-          stripe_customer_id?: string | null
-          stripe_subscription_id?: string | null
-          subscription_end_date?: string | null
-          subscription_start_date?: string | null
-          subscription_status?: string | null
-          subscription_tier?: string | null
-          trial_end_date?: string | null
-          trial_start_date?: string | null
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
       admin_activity_logs: {
         Row: {
           action: string
@@ -112,56 +43,7 @@ export type Database = {
           target_type?: string | null
           user_agent?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "fk_admin_activity_logs_admin_user_id"
-            columns: ["admin_user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      admin_invitations: {
-        Row: {
-          accepted: boolean | null
-          admin_role: string
-          created_at: string
-          email: string
-          expires_at: string | null
-          id: string
-          invited_by: string | null
-          permissions: Json | null
-        }
-        Insert: {
-          accepted?: boolean | null
-          admin_role?: string
-          created_at?: string
-          email: string
-          expires_at?: string | null
-          id?: string
-          invited_by?: string | null
-          permissions?: Json | null
-        }
-        Update: {
-          accepted?: boolean | null
-          admin_role?: string
-          created_at?: string
-          email?: string
-          expires_at?: string | null
-          id?: string
-          invited_by?: string | null
-          permissions?: Json | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "admin_invitations_invited_by_fkey"
-            columns: ["invited_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       admin_notes: {
         Row: {
@@ -188,22 +70,7 @@ export type Database = {
           note_type?: string | null
           user_id?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "fk_admin_notes_admin_id"
-            columns: ["admin_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "fk_admin_notes_user_id"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       aquariums: {
         Row: {
@@ -838,56 +705,6 @@ export type Database = {
         }
         Relationships: []
       }
-      manual_sync_operations: {
-        Row: {
-          admin_user_id: string | null
-          after_state: Json | null
-          before_state: Json | null
-          created_at: string | null
-          error_message: string | null
-          id: string
-          operation_type: string
-          stripe_customer_id: string | null
-          success: boolean | null
-          target_email: string | null
-          target_user_id: string | null
-        }
-        Insert: {
-          admin_user_id?: string | null
-          after_state?: Json | null
-          before_state?: Json | null
-          created_at?: string | null
-          error_message?: string | null
-          id?: string
-          operation_type: string
-          stripe_customer_id?: string | null
-          success?: boolean | null
-          target_email?: string | null
-          target_user_id?: string | null
-        }
-        Update: {
-          admin_user_id?: string | null
-          after_state?: Json | null
-          before_state?: Json | null
-          created_at?: string | null
-          error_message?: string | null
-          id?: string
-          operation_type?: string
-          stripe_customer_id?: string | null
-          success?: boolean | null
-          target_email?: string | null
-          target_user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "manual_sync_operations_admin_user_id_fkey"
-            columns: ["admin_user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       messages: {
         Row: {
           content: string
@@ -984,9 +801,7 @@ export type Database = {
         Row: {
           admin_permissions: Json | null
           admin_role: string | null
-          avatar_url: string | null
-          created_at: string
-          created_by_admin_id: string | null
+          created_at: string | null
           email: string | null
           full_name: string | null
           has_used_trial: boolean | null
@@ -995,28 +810,28 @@ export type Database = {
           last_active: string | null
           last_admin_login: string | null
           last_trial_start: string | null
+          request_admin_access: boolean | null
+          role: string | null
           stripe_customer_id: string | null
           stripe_price_id: string | null
           stripe_subscription_id: string | null
           subscription_end_date: string | null
-          subscription_metadata: Json | null
           subscription_start_date: string | null
           subscription_status: string | null
           subscription_tier: string | null
+          subscription_type: string | null
           total_trial_count: number | null
           trial_end_date: string | null
           trial_start_date: string | null
           trial_started_at: string | null
           trial_stripe_subscription_id: string | null
           trial_type: string | null
-          updated_at: string
+          updated_at: string | null
         }
         Insert: {
           admin_permissions?: Json | null
           admin_role?: string | null
-          avatar_url?: string | null
-          created_at?: string
-          created_by_admin_id?: string | null
+          created_at?: string | null
           email?: string | null
           full_name?: string | null
           has_used_trial?: boolean | null
@@ -1025,28 +840,28 @@ export type Database = {
           last_active?: string | null
           last_admin_login?: string | null
           last_trial_start?: string | null
+          request_admin_access?: boolean | null
+          role?: string | null
           stripe_customer_id?: string | null
           stripe_price_id?: string | null
           stripe_subscription_id?: string | null
           subscription_end_date?: string | null
-          subscription_metadata?: Json | null
           subscription_start_date?: string | null
           subscription_status?: string | null
           subscription_tier?: string | null
+          subscription_type?: string | null
           total_trial_count?: number | null
           trial_end_date?: string | null
           trial_start_date?: string | null
           trial_started_at?: string | null
           trial_stripe_subscription_id?: string | null
           trial_type?: string | null
-          updated_at?: string
+          updated_at?: string | null
         }
         Update: {
           admin_permissions?: Json | null
           admin_role?: string | null
-          avatar_url?: string | null
-          created_at?: string
-          created_by_admin_id?: string | null
+          created_at?: string | null
           email?: string | null
           full_name?: string | null
           has_used_trial?: boolean | null
@@ -1055,21 +870,23 @@ export type Database = {
           last_active?: string | null
           last_admin_login?: string | null
           last_trial_start?: string | null
+          request_admin_access?: boolean | null
+          role?: string | null
           stripe_customer_id?: string | null
           stripe_price_id?: string | null
           stripe_subscription_id?: string | null
           subscription_end_date?: string | null
-          subscription_metadata?: Json | null
           subscription_start_date?: string | null
           subscription_status?: string | null
           subscription_tier?: string | null
+          subscription_type?: string | null
           total_trial_count?: number | null
           trial_end_date?: string | null
           trial_start_date?: string | null
           trial_started_at?: string | null
           trial_stripe_subscription_id?: string | null
           trial_type?: string | null
-          updated_at?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -1192,13 +1009,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "fk_support_ticket_responses_user_id"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "support_ticket_responses_ticket_id_fkey"
             columns: ["ticket_id"]
             isOneToOne: false
@@ -1247,15 +1057,7 @@ export type Database = {
           updated_at?: string
           user_id?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "fk_support_tickets_user_id"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       task_lists: {
         Row: {
@@ -1475,30 +1277,6 @@ export type Database = {
           },
         ]
       }
-      user_profile_setup: {
-        Row: {
-          completed: boolean
-          created_at: string
-          id: string
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          completed?: boolean
-          created_at?: string
-          id?: string
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          completed?: boolean
-          created_at?: string
-          id?: string
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       water_test_logs: {
         Row: {
           alkalinity: number | null
@@ -1606,6 +1384,33 @@ export type Database = {
         }
         Relationships: []
       }
+      webhook_logs: {
+        Row: {
+          created_at: string | null
+          error_message: string | null
+          id: string
+          payload: Json | null
+          status: string | null
+          webhook_type: string
+        }
+        Insert: {
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          payload?: Json | null
+          status?: string | null
+          webhook_type: string
+        }
+        Update: {
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          payload?: Json | null
+          status?: string | null
+          webhook_type?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -1614,14 +1419,6 @@ export type Database = {
       admin_delete_profile: {
         Args: { requesting_admin_id: string; target_user_id: string }
         Returns: boolean
-      }
-      admin_extend_user_trial: {
-        Args: {
-          admin_user_id: string
-          target_user_id: string
-          extension_days?: number
-        }
-        Returns: Json
       }
       admin_get_all_profiles: {
         Args: { requesting_admin_id: string }
@@ -1679,14 +1476,6 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
-      check_user_access: {
-        Args: { user_id: string }
-        Returns: {
-          has_access: boolean
-          access_reason: string
-          trial_hours_remaining: number
-        }[]
-      }
       check_user_admin_status: {
         Args: { user_id: string }
         Returns: boolean
@@ -1701,14 +1490,6 @@ export type Database = {
           trial_type: string
           can_start_trial: boolean
           subscription_end_date: string
-        }[]
-      }
-      check_user_trial_status: {
-        Args: { user_id: string }
-        Returns: {
-          subscription_status: string
-          trial_hours_remaining: number
-          is_trial_expired: boolean
         }[]
       }
       complete_maintenance_task: {
@@ -1746,6 +1527,27 @@ export type Database = {
         }
         Returns: undefined
       }
+      get_expiring_subscriptions: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          user_id: string
+          email: string
+          stripe_subscription_id: string
+          subscription_end_date: string
+          days_until_expiry: number
+        }[]
+      }
+      get_subscription_metrics: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          total_users: number
+          active_subscriptions: number
+          expired_subscriptions: number
+          expiring_soon: number
+          never_subscribed: number
+          revenue_at_risk: number
+        }[]
+      }
       get_user_admin_status: {
         Args: { user_id: string }
         Returns: boolean
@@ -1765,17 +1567,18 @@ export type Database = {
         Args: { user_id: string }
         Returns: boolean
       }
-      process_webhook_event: {
-        Args: { event_id: string; event_type: string; event_data: Json }
-        Returns: Json
+      log_subscription_event: {
+        Args: {
+          p_user_id: string
+          p_event_type: string
+          p_event_data: Json
+          p_stripe_event_id?: string
+        }
+        Returns: undefined
       }
       promote_user_to_admin: {
         Args: { user_email: string; role?: string }
         Returns: boolean
-      }
-      start_user_trial: {
-        Args: { user_id: string }
-        Returns: Json
       }
       start_user_trial_safe: {
         Args: {
@@ -1786,13 +1589,20 @@ export type Database = {
         Returns: Json
       }
       sync_stripe_subscription: {
-        Args: {
-          customer_email: string
-          stripe_customer_id: string
-          stripe_subscription_id?: string
-          subscription_status?: string
-          price_id?: string
-        }
+        Args:
+          | {
+              customer_email: string
+              stripe_customer_id: string
+              stripe_subscription_id?: string
+              subscription_status?: string
+            }
+          | {
+              customer_email: string
+              stripe_customer_id: string
+              stripe_subscription_id?: string
+              subscription_status?: string
+              price_id?: string
+            }
         Returns: Json
       }
       sync_stripe_subscription_enhanced: {
@@ -1802,17 +1612,6 @@ export type Database = {
           stripe_subscription_id?: string
           subscription_status?: string
           price_id?: string
-          current_period_end?: string
-        }
-        Returns: Json
-      }
-      sync_user_subscription_from_stripe: {
-        Args: {
-          user_email: string
-          stripe_customer_id: string
-          stripe_subscription_id: string
-          subscription_status: string
-          subscription_tier?: string
           current_period_end?: string
         }
         Returns: Json
@@ -1844,6 +1643,22 @@ export type Database = {
               new_stripe_subscription_id?: string
             }
         Returns: undefined
+      }
+      update_user_subscription: {
+        Args: {
+          p_user_id: string
+          p_stripe_customer_id: string
+          p_subscription_id: string
+          p_subscription_status: string
+          p_subscription_tier: string
+          p_current_period_end: string
+          p_cancel_at_period_end?: boolean
+        }
+        Returns: undefined
+      }
+      user_has_active_subscription: {
+        Args: { user_id: string }
+        Returns: boolean
       }
     }
     Enums: {

@@ -30,7 +30,7 @@ export const useSubscriptionSync = () => {
         subscriptionStatus
       });
       
-      const { data, error } = await supabase.rpc('sync_stripe_subscription', {
+      const { data, error } = await supabase.rpc('sync_stripe_subscription_enhanced', {
         customer_email: targetEmail,
         stripe_customer_id: stripeCustomerId,
         stripe_subscription_id: stripeSubscriptionId || null,
